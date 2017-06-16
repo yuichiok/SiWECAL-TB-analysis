@@ -1,7 +1,7 @@
 #!/usr/bin/env python
+import sys
 import numpy as np
 import ROOT as rt
-
 from array import array
 
 NSLAB = 7
@@ -165,18 +165,13 @@ def get_hits(entry,bcids):
 
     return event
 
-if __name__ == "__main__":
+def build_events(filename, maxEntries = -1):
 
     ## Read channel mapping
     #chan_map = read_mapping()
     read_mapping()
 
     # Get ttree
-    #filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_9_dif_1_1_1.raw.root"
-    #filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_9__merge.root"
-    #filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_10_all_difs_merge.root"
-    filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_10__merge.root"
-
     tfile = rt.TFile(filename,"read")
     treename = "fev10"
     tree = tfile.Get(treename)
@@ -214,7 +209,9 @@ if __name__ == "__main__":
     #
     hit_isHit = array('i', 10000*[0]); outtree.Branch( 'hit_isHit', hit_isHit, 'hit_isHit[nhit_chan]/I' )
 
-    maxEntries = 1000
+    if maxEntries == -1: maxEntries = tree.GetEntries()
+    #else: maxEntries = 1000
+
     for ientry,entry in enumerate(tree):#.GetEntries():
 
         if ientry > maxEntries: break
@@ -259,3 +256,18 @@ if __name__ == "__main__":
     outf.Close()
 
     tfile.Close()
+
+
+if __name__ == "__main__":
+
+    if len(sys.argv) == 2:
+        filename = sys.argv[1]
+    else:
+        #filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_9_dif_1_1_1.raw.root"
+        filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_9__merge.root"
+        #filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_10_all_difs_merge.root"
+        #filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_10__merge.root"
+    print("# Input file is %s" % filename)
+
+    maxEntries = -1
+    build_events(filename,maxEntries)
