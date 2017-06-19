@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import sys
+import time
 import numpy as np
 import ROOT as rt
 from array import array
@@ -13,8 +14,12 @@ BCID_VALEVT = 1245
 
 chan_map = {}
 
+# Config 1
 #pos_xzero = [2,2,2,2,4,4,6]#*0.56
-pos_xzero = [2,4,6,8,12,16,22]#*0.56
+#pos_xzero = [2,4,6,8,12,16,22]
+# Config 2
+#pos_xzero = [4,2,2,4,4,6,6]
+pos_xzero  = [4,6,8,12,16,22,28]
 
 
 class EcalHit:
@@ -110,13 +115,13 @@ def get_good_bcids(entry):
 
     '''
     #bcids = [bcid for bcid in entry.bcid if bcid > -1]
-    for slab in range(NSLAB):
+    for slab in xrange(NSLAB):
         #if slab != 1: continue
-        for chip in range(NCHIP):
+        for chip in xrange(NCHIP):
 
             #if chip in [3,5,10,12]: continue
             if chip != 12: continue
-            for sca in range(NSCA):
+            for sca in xrange(NSCA):
 
                 bcid_indx = slab * NCHIP * NSCA + chip * NSCA + sca
                 bcid = entry.bcid[bcid_indx]
@@ -134,11 +139,9 @@ def get_hits(entry,bcids):
 
     event = {bcid:[] for bcid in bcids if bcids[bcid] > 0} # bcid : hits
 
-    slab_hit_cnts = NSLAB*[0]
-
-    for slab in range(NSLAB):
-        for chip in range(NCHIP):
-            for sca in range(NSCA):
+    for slab in xrange(NSLAB):
+        for chip in xrange(NCHIP):
+            for sca in xrange(NSCA):
 
                 sca_indx = (slab * NCHIP + chip) * NSCA + sca
                 bcid = entry.bcid[sca_indx]
@@ -155,7 +158,7 @@ def get_hits(entry,bcids):
                             if bcids[bcid_close] > 0: bcid = bcid_close
 
                 ## energies
-                for chan in range(NCHAN):
+                for chan in xrange(NCHAN):
                     chan_indx = sca_indx * NCHAN + chan
 
                     #if not entry.gain_hit_low[chan_indx]: continue
@@ -182,7 +185,7 @@ def build_events(filename, maxEntries = -1):
     tree = tfile.Get(treename)
 
     ##### TREE #####
-    outfname = filename.replace("merge","build")
+    outfname = filename.replace("merge","build_test")
     #outf = rt.TFile("event_tree.root","recreate")
     outf = rt.TFile(outfname,"recreate")
     outtree = rt.TTree("ecal","Build ecal events")
@@ -197,6 +200,7 @@ def build_events(filename, maxEntries = -1):
     nhit_slab = array('i', [0]); outtree.Branch( 'nhit_slab', nhit_slab, 'nhit_slab/I' )
     nhit_chip = array('i', [0]); outtree.Branch( 'nhit_chip', nhit_chip, 'nhit_chip/I' )
     nhit_chan = array('i', [0]); outtree.Branch( 'nhit_chan', nhit_chan, 'nhit_chan/I' )
+    sum_hg = array('f', [0]); outtree.Branch( 'sum_hg', sum_hg, 'sum_hg/F' )
 
     ## hit information
     # detid
@@ -233,13 +237,16 @@ def build_events(filename, maxEntries = -1):
         spill[0] = entry.acqNumber
 
         ## Collect hits in bcid container
+        #ev_hits = get_hits(entry,bcid_cnts)
         ev_hits = get_hits(entry,bcid_cnts)
+
         for bcid,hits in ev_hits.iteritems():
             if bcid_cnts[bcid] < 1: continue #skip emptied bcids
 
             ## each bcid -- single event
             corr_bcid = bcid if bcid > 1245 else bcid + 4096
-            event[0] = entry.acqNumber*10000 + corr_bcid
+            #event[0] = int(entry.acqNumber*10000 + corr_bcid)
+            event[0] = int(entry.acqNumber*1000 + corr_bcid)
             bcid_b[0] = corr_bcid
 
             # count hits per slab/chan/chip
@@ -247,6 +254,7 @@ def build_events(filename, maxEntries = -1):
             nhit_chip[0] = len(set([(hit.slab*NCHIP + hit.chip) for hit in hits]))
             #nhit_chan[0] = len(set([(hit.slab*NCHIP + hit.chip)*NCHAN + hit.chan for hit in hits]))
             nhit_chan[0] = len(hits)
+            sum_hg[0] = sum([hit.hg for hit in hits])
 
             for i,hit in enumerate(hits):
                 hit_slab[i] = hit.slab; hit_chip[i] = hit.chip; hit_chan[i] = hit.chan; hit_sca[i] = hit.sca
@@ -274,5 +282,5 @@ if __name__ == "__main__":
         #filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_10__merge.root"
     print("# Input file is %s" % filename)
 
-    maxEntries = -1
+    maxEntries = -1#100
     build_events(filename,maxEntries)
