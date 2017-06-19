@@ -13,6 +13,10 @@ BCID_VALEVT = 1245
 
 chan_map = {}
 
+#pos_xzero = [2,2,2,2,4,4,6]#*0.56
+pos_xzero = [2,4,6,8,12,16,22]#*0.56
+
+
 class EcalHit:
     def __init__(self,slab,chip,chan,sca,hg,lg,isHit):
         self.slab = slab
@@ -23,8 +27,9 @@ class EcalHit:
         self.lg = lg
         self.isHit = isHit
 
+        #global pos_xzero
         ## get x-y coordinates
-        self.z = slab#*10.
+        self.z = pos_xzero[slab] * 0.56
         (self.x,self.y) = chan_map[(chip,chan)]
 
 class EcalEvent:
