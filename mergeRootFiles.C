@@ -59,7 +59,7 @@ public:
             if(i == 3) dif = "dif_1_1_4";
             if(i == 4) dif = "dif_1_1_5";
             if(i == 5) dif = "dif_1_2_1";
-            if(i == 7) dif = "dif_1_2_2";
+            if(i == 6) dif = "dif_1_2_2";
 
             TString filename = rootname;
             //      filename += "_";
@@ -201,13 +201,14 @@ public:
                             }
                             else i = iraw;
 
-                            bcid[slab][k][i] = corrected_bcid_in[slab][k][i];//bcid_in[slab][k][i]+loopBCID*4096;
+			    bcid[slab][k][i] = bcid_in[slab][k][i];//bcid_in[slab][k][i]+loopBCID*4096;
+                            //bcid[slab][k][i] = corrected_bcid_in[slab][k][i];//bcid_in[slab][k][i]+loopBCID*4096;
                             //cout<<bcid[slab][k][i]<<"  "<<slab<<"  "<<k<<"  "<<i<<endl;
 //            if(bcid_in[slab][k][i]!=1) cout<<slab<<"  "<<k<<"  "<<i<<"  "<<bcid_in[slab][k][i]<<endl;
 //            if(badbcid_in[slab][k][i]!=-999) cout<<slab<<"  "<<k<<"  "<<i<<"  "<<badbcid_in[slab][k][i]<<endl;
 
                             badbcid[slab][k][i]=badbcid_in[slab][k][i];
-                            //corrected_bcid[slab][k][i]=corrected_bcid_in[slab][k][i];
+                            corrected_bcid[slab][k][i]=corrected_bcid_in[slab][k][i];
                             nhits[slab][k][i]=nhits_in[slab][k][i];
 
                             for (int j=0; j<NCHANNELS; j++) {
@@ -310,7 +311,7 @@ protected:
         NCHANNELS=64,
         NCHIP=16,
         MIN_BCID=5,
-        NSLABS=2
+        NSLABS=7
     };
 
 
