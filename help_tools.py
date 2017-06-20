@@ -7,7 +7,7 @@ NCHIP = 16
 NSCA = 15
 NCHAN = 64
 
-def read_pedestals():
+def read_pedestals(indir_prefix = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/pedestals/Pedestal"):
     slab_map = {
         0: '_dif_1_1_1.log',
         1: '_dif_1_1_2.log',
@@ -20,8 +20,6 @@ def read_pedestals():
 
     ## pedestal map (n-dim numpy array)
     pedestal_map = np.zeros((NSLAB,NCHIP,NCHAN,NSCA))
-
-    indir_prefix = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/pedestals/Pedestal"
 
     for slab in slab_map:
         fname = indir_prefix + slab_map[slab]
