@@ -13,13 +13,14 @@ BCID_VALEVT = 1245
 chan_map = {}
 
 # Config 1
-#pos_xzero = [2,2,2,2,4,4,6]
-#pos_xzero = [2,4,6,8,12,16,22]
+abs_thick = [2,2,2,2,4,4,6]
+##pos_xzero = [2,4,6,8,12,16,22]
 # Config 2
-#pos_xzero = [4,2,2,4,4,6,6]
+#abs_thick = [4,2,2,4,4,6,6]
 ##pos_xzero  = [4,6,8,12,16,22,28]
 # Config 3
-abs_thick = [6,2,4,4,6,6,6]
+#abs_thick = [6,2,4,4,6,6,6]
+
 ## sum up thickness
 pos_xzero = [sum(abs_thick[:i+1]) for i in range(len(abs_thick))]
 ## Print
