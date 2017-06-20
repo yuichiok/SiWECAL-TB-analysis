@@ -9,13 +9,13 @@ NCHAN = 64
 
 def read_pedestals():
     slab_map = {
-        0: '_dif_1_1_1.txt',
-        1: '_dif_1_1_2.txt',
-        2: '_dif_1_1_3.txt',
-        3: '_dif_1_1_4.txt',
-        4: '_dif_1_1_5.txt',
-        5: '_dif_1_2_1.txt',
-        6: '_dif_1_2_2.txt'
+        0: '_dif_1_1_1.log',
+        1: '_dif_1_1_2.log',
+        2: '_dif_1_1_3.log',
+        3: '_dif_1_1_4.log',
+        4: '_dif_1_1_5.log',
+        5: '_dif_1_2_1.log',
+        6: '_dif_1_2_2.log'
     }
 
     ## pedestal map (n-dim numpy array)
@@ -50,4 +50,5 @@ def read_pedestals():
     return pedestal_map
 
 if __name__ == "__main__":
-    read_pedestals()
+
+    print read_pedestals()

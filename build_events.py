@@ -4,23 +4,27 @@ import time
 import numpy as np
 import ROOT as rt
 from array import array
+from help_tools import *
 
-NSLAB = 7
-NCHIP = 16
-NSCA = 15
-NCHAN = 64
+ped_map = read_pedestals()
 
 BCID_VALEVT = 1245
 
 chan_map = {}
 
 # Config 1
-#pos_xzero = [2,2,2,2,4,4,6]#*0.56
+#pos_xzero = [2,2,2,2,4,4,6]
 #pos_xzero = [2,4,6,8,12,16,22]
 # Config 2
 #pos_xzero = [4,2,2,4,4,6,6]
-pos_xzero  = [4,6,8,12,16,22,28]
-
+##pos_xzero  = [4,6,8,12,16,22,28]
+# Config 3
+abs_thick = [6,2,4,4,6,6,6]
+## sum up thickness
+pos_xzero = [sum(abs_thick[:i+1]) for i in range(len(abs_thick))]
+## Print
+print("W config used:")
+print(abs_thick, pos_xzero)
 
 class EcalHit:
     def __init__(self,slab,chip,chan,sca,hg,lg,isHit):
@@ -32,15 +36,12 @@ class EcalHit:
         self.lg = lg
         self.isHit = isHit
 
-        #global pos_xzero
         ## get x-y coordinates
         self.z = pos_xzero[slab] * 0.56
         (self.x,self.y) = chan_map[(chip,chan)]
 
-class EcalEvent:
-
-    def __init__(self,hits):
-        self.hits = hits
+        # do pedestal subtraction
+        self.hg -= ped_map[self.slab][self.chip][self.chan][self.sca]
 
 def read_mapping(fname = "fev10_chip_channel_x_y_mapping.txt"):
 
@@ -183,6 +184,10 @@ def build_events(filename, maxEntries = -1):
     tfile = rt.TFile(filename,"read")
     treename = "fev10"
     tree = tfile.Get(treename)
+    if not tree:
+        print("No tree found in ")
+        print(tree)
+        exit(0)
 
     ##### TREE #####
     outfname = filename.replace("merge","build_test")
@@ -244,7 +249,7 @@ def build_events(filename, maxEntries = -1):
             if bcid_cnts[bcid] < 1: continue #skip emptied bcids
 
             ## each bcid -- single event
-            corr_bcid = bcid if bcid > 1245 else bcid + 4096
+            corr_bcid = bcid if bcid > BCID_VALEVT else bcid + 4096
             #event[0] = int(entry.acqNumber*10000 + corr_bcid)
             event[0] = int(entry.acqNumber*1000 + corr_bcid)
             bcid_b[0] = corr_bcid
