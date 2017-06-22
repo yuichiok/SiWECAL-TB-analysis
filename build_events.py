@@ -100,6 +100,8 @@ def merge_bcids(bcids):
 def get_good_bcids(entry):
 
     bcids = []
+    entry_badbcid = entry.badbcid
+    entry_nhits = entry.nhits
 
     for i,bcid in enumerate(entry.bcid):
 
@@ -108,8 +110,8 @@ def get_good_bcids(entry):
         #if chip != 5: continue
 
         if bcid < 0: continue
-        if entry.badbcid[i] != 0: continue
-        if entry.nhits[i] > 20: continue
+        if entry_badbcid[i] != 0: continue
+        if entry_nhits[i] > 20: continue
 
         #if i%7 == 6: print "HERE"
 
@@ -140,13 +142,18 @@ def get_hits(entry,bcids):
     ## Collect hits in bcid containe
 
     event = {bcid:[] for bcid in bcids if bcids[bcid] > 0} # bcid : hits
+    entry_bcids = entry.bcid
+    gain_hit_low = entry.gain_hit_low
+    charge_hiGain = entry.charge_hiGain
+    charge_lowGain = entry.charge_lowGain
 
     for slab in xrange(NSLAB):
         for chip in xrange(NCHIP):
             for sca in xrange(NSCA):
 
                 sca_indx = (slab * NCHIP + chip) * NSCA + sca
-                bcid = entry.bcid[sca_indx]
+                #bcid = entry.bcid[sca_indx]
+                bcid = entry_bcids[sca_indx]
 
                 # filter bad bcids
                 if bcid not in bcids: continue
@@ -164,11 +171,14 @@ def get_hits(entry,bcids):
                     chan_indx = sca_indx * NCHAN + chan
 
                     #if not entry.gain_hit_low[chan_indx]: continue
-                    isHit = entry.gain_hit_low[chan_indx]
+                    #isHit = entry.gain_hit_low[chan_indx]
+                    isHit = gain_hit_low[chan_indx]
                     if not isHit: continue
 
-                    hg_ene = entry.charge_hiGain[chan_indx]
-                    lg_ene = entry.charge_lowGain[chan_indx]
+                    #hg_ene = entry.charge_hiGain[chan_indx]
+                    #lg_ene = entry.charge_lowGain[chan_indx]
+                    hg_ene = charge_hiGain[chan_indx]
+                    lg_ene = charge_lowGain[chan_indx]
 
                     hit = EcalHit(slab,chip,chan,sca,hg_ene,lg_ene,isHit)
                     event[bcid].append(hit)
@@ -227,6 +237,7 @@ def build_events(filename, maxEntries = -1):
     if maxEntries == -1: maxEntries = tree.GetEntries()
     #else: maxEntries = 1000
 
+    print("#Going to analyze %i entries..." %maxEntries )
     for ientry,entry in enumerate(tree):#.GetEntries():
 
         if ientry > maxEntries: break
@@ -252,7 +263,7 @@ def build_events(filename, maxEntries = -1):
             ## each bcid -- single event
             corr_bcid = bcid if bcid > BCID_VALEVT else bcid + 4096
             #event[0] = int(entry.acqNumber*10000 + corr_bcid)
-            event[0] = int(entry.acqNumber*1000 + corr_bcid)
+            event[0] = int(spill[0]*1000 + corr_bcid)
             bcid_b[0] = corr_bcid
 
             # count hits per slab/chan/chip
@@ -288,5 +299,5 @@ if __name__ == "__main__":
         #filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_10__merge.root"
     print("# Input file is %s" % filename)
 
-    maxEntries = -1#100
+    maxEntries = -1#200
     build_events(filename,maxEntries)
