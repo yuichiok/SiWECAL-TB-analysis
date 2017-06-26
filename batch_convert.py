@@ -1,8 +1,22 @@
 #!/usr/bin/env python
 import sys,os,glob,fnmatch,argparse
 import ROOT as rt
+rt.gROOT.LoadMacro("RAW2ROOT.cc+")
 rt.gROOT.LoadMacro("mergeRootFiles.cc+")
 from build_events import *
+
+def convert_run_raw(run_pattern):
+
+    fnames_raw = glob.glob(run_pattern + "*.raw")
+    fnames_root = glob.glob(run_pattern + "*.raw.root")
+
+    raw2root = rt.RAW2ROOT()
+    for fname_raw in fnames_raw:
+
+        print fname_raw
+        if fname_raw + ".root" not in fnames_root:
+            print("# Need to convert " + fname_raw)
+            raw2root.ReadFile(fname_raw)
 
 def convert_dir(indir,opts):
 
@@ -28,6 +42,9 @@ def convert_dir(indir,opts):
         print 80*"#"
         print("## Analyzing run " + run_name)
         run_pattern = "%s/%s_" %(run_dir,run_name)
+
+        ## convert missing files
+        convert_run_raw(run_pattern)
 
         merge = rt.mergeRootFiles()
         merge_fname = run_pattern + "_merge.root"
