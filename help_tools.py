@@ -9,27 +9,11 @@ NCHAN = 64
 
 BCID_VALEVT = 1245
 
+## global storages
 chan_map = {}
-#ped_map = read_pedestals()
 ped_map = {}
-
-# SLAB positions
-pos_z = [0,1,2,3,4,5,9] * 15#mm gap
-
-## Tungsten / W configuration
-# Config 1
-abs_thick = [2,2,2,2,4,4,6]
-# Config 2
-#abs_thick = [4,2,2,4,4,6,6]
-# Config 3
-#abs_thick = [6,2,4,4,6,6,6]
-
-## sum up thickness
-w_xzero = 0.56#Xo per mm of W
-pos_xzero = [sum(abs_thick[:i+1])*w_xzero for i in range(len(abs_thick))]
-## Print
-print("W config used:")
-print(abs_thick, pos_xzero)
+pos_z = []
+pos_xzero = []
 
 class EcalHit:
     def __init__(self,slab,chip,chan,sca,hg,lg,isHit):
@@ -48,6 +32,30 @@ class EcalHit:
 
         # do pedestal subtraction
         self.hg -= ped_map[self.slab][self.chip][self.chan][self.sca]
+
+def build_w_config(config = 1):
+
+    global pos_z, pos_xzero
+    # SLAB positions
+    pos_z = [0,1,2,3,4,5,9] * 15#mm gap
+
+    ## Tungsten / W configuration
+    if config == 1:
+        # Config 1
+        abs_thick = [2,2,2,2,4,4,6]
+    elif config == 2:
+        # Config 2
+        abs_thick = [4,2,2,4,4,6,6]
+    elif config == 3:
+        # Config 3
+        abs_thick = [6,2,4,4,6,6,6]
+
+    ## sum up thickness
+    w_xzero = 0.56#Xo per mm of W
+    pos_xzero = [sum(abs_thick[:i+1])*w_xzero for i in range(len(abs_thick))]
+    ## Print
+    print("W config %i used:" %config )
+    print(abs_thick, pos_xzero)
 
 def read_mapping(fname = "fev10_chip_channel_x_y_mapping.txt"):
 

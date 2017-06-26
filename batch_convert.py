@@ -42,7 +42,7 @@ def convert_dir(indir,opts):
         build_fname = run_pattern + "_build.root"
         if not os.path.exists(build_fname) or opts.force_build:
             print("### Building events from merged file")
-            build_events(merge_fname,opts.maxEntries)
+            build_events(merge_fname,opts.maxEntries,opts.w_config)
         else:
             print("### Already built!")
 
@@ -55,7 +55,8 @@ if __name__ == "__main__":
     parser.add_argument('--force-merge', dest='force_merge', action='store_true', help='Force merge files (default: False)')
     parser.add_argument('--force-build', dest='force_build', action='store_true', help='Force build files (default: False)')
     parser.add_argument('-n','--maxEntries', dest='maxEntries', type=int, default = -1, help='maximum number of entries to process (default: all)')
-    parser.add_argument('--dif-pattern', dest='dif_suffix', default = "_dif_1_1_2.raw.root", help='single dif/slab suffix pattern')
+    parser.add_argument('--dif-suffix', dest='dif_suffix', default = "_dif_1_1_2.raw.root", help='single dif/slab suffix pattern (default: _dif_1_1_2.raw.root)')
+    parser.add_argument('-c','--w_config', dest='w_config', type=int, default = 1, help=' (default: 1)')
 
     args = parser.parse_args()
 

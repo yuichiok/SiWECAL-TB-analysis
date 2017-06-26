@@ -94,10 +94,13 @@ def get_hits(entry,bcids):
 
     return event
 
-def build_events(filename, maxEntries = -1):
+def build_events(filename, maxEntries = -1, w_config = 1):
 
+    ## Build tungsten config
+    build_w_config(w_config)
     ## Read channel mapping
     read_mapping()
+    ## Read pedestals
     read_pedestals()
 
     # Get ttree
