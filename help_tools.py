@@ -18,13 +18,11 @@ pos_z = [0,1,2,3,4,5,9] * 15#mm gap
 
 ## Tungsten / W configuration
 # Config 1
-#abs_thick = [2,2,2,2,4,4,6]
-##pos_xzero = [2,4,6,8,12,16,22]
+abs_thick = [2,2,2,2,4,4,6]
 # Config 2
 #abs_thick = [4,2,2,4,4,6,6]
-##pos_xzero  = [4,6,8,12,16,22,28]
 # Config 3
-abs_thick = [6,2,4,4,6,6,6]
+#abs_thick = [6,2,4,4,6,6,6]
 
 ## sum up thickness
 w_xzero = 0.56#Xo per mm of W

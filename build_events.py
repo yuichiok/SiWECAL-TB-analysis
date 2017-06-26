@@ -193,7 +193,8 @@ def build_events(filename, maxEntries = -1):
             outtree.Fill()
 
     outtree.Write()
-    outtree.Print()
+    #outtree.Print()
+    print("# Created tree with %i events" % outtree.GetEntries())
     outf.Close()
 
     tfile.Close()
