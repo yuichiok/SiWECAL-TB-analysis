@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 import sys
 import ROOT as rt
-rt.gSystem.Load("mergeRootFiles_C.so")
+#rt.gSystem.Load("mergeRootFiles_C.so")
+rt.gROOT.LoadMacro("mergeRootFiles.C+")
 
 if __name__ == "__main__":
 
