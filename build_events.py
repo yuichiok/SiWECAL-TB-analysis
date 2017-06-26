@@ -12,17 +12,22 @@ BCID_VALEVT = 1245
 
 chan_map = {}
 
+# SLAB positions
+pos_z = [0,1,2,3,4,5,9] * 15#mm gap
+
+## Tungsten / W configuration
 # Config 1
-abs_thick = [2,2,2,2,4,4,6]
+#abs_thick = [2,2,2,2,4,4,6]
 ##pos_xzero = [2,4,6,8,12,16,22]
 # Config 2
 #abs_thick = [4,2,2,4,4,6,6]
 ##pos_xzero  = [4,6,8,12,16,22,28]
 # Config 3
-#abs_thick = [6,2,4,4,6,6,6]
+abs_thick = [6,2,4,4,6,6,6]
 
 ## sum up thickness
-pos_xzero = [sum(abs_thick[:i+1]) for i in range(len(abs_thick))]
+w_xzero = 0.56#Xo per mm of W
+pos_xzero = [sum(abs_thick[:i+1])*w_xzero for i in range(len(abs_thick))]
 ## Print
 print("W config used:")
 print(abs_thick, pos_xzero)
@@ -38,7 +43,8 @@ class EcalHit:
         self.isHit = isHit
 
         ## get x-y coordinates
-        self.z = pos_xzero[slab] * 0.56
+        self.x0 = pos_xzero[slab]
+        self.z = pos_z[slab]
         (self.x,self.y) = chan_map[(chip,chan)]
 
         # do pedestal subtraction
@@ -201,10 +207,12 @@ def build_events(filename, maxEntries = -1):
         exit(0)
 
     ##### TREE #####
-    outfname = filename.replace("merge","build_test")
+    outfname = filename.replace("merge","build")
     #outf = rt.TFile("event_tree.root","recreate")
     outf = rt.TFile(outfname,"recreate")
     outtree = rt.TTree("ecal","Build ecal events")
+
+    print("# Creating ecal tree in file %s" %outfname)
 
     #### BRANCHES
     # event info
@@ -228,16 +236,17 @@ def build_events(filename, maxEntries = -1):
     hit_x = array('f', 10000*[0]); outtree.Branch( 'hit_x', hit_x, 'hit_x[nhit_chan]/F' )
     hit_y = array('f', 10000*[0]); outtree.Branch( 'hit_y', hit_y, 'hit_y[nhit_chan]/F' )
     hit_z = array('f', 10000*[0]); outtree.Branch( 'hit_z', hit_z, 'hit_z[nhit_chan]/F' )
+    hit_x0 = array('f', 10000*[0]); outtree.Branch( 'hit_x0', hit_x0, 'hit_x0[nhit_chan]/F' )
     # energy
     hit_hg = array('f', 10000*[0]); outtree.Branch( 'hit_hg', hit_hg, 'hit_hg[nhit_chan]/F' )
     hit_lg = array('f', 10000*[0]); outtree.Branch( 'hit_lg', hit_lg, 'hit_lg[nhit_chan]/F' )
     #
     hit_isHit = array('i', 10000*[0]); outtree.Branch( 'hit_isHit', hit_isHit, 'hit_isHit[nhit_chan]/I' )
 
-    if maxEntries == -1: maxEntries = tree.GetEntries()
+    if maxEntries < 0: maxEntries = tree.GetEntries()
     #else: maxEntries = 1000
 
-    print("#Going to analyze %i entries..." %maxEntries )
+    print("# Going to analyze %i entries..." %maxEntries )
     for ientry,entry in enumerate(tree):#.GetEntries():
 
         if ientry > maxEntries: break
@@ -275,7 +284,7 @@ def build_events(filename, maxEntries = -1):
 
             for i,hit in enumerate(hits):
                 hit_slab[i] = hit.slab; hit_chip[i] = hit.chip; hit_chan[i] = hit.chan; hit_sca[i] = hit.sca
-                hit_x[i] = hit.x; hit_y[i] = hit.y; hit_z[i] = hit.z
+                hit_x[i] = hit.x; hit_y[i] = hit.y; hit_z[i] = hit.z; hit_x0[i] = hit.x0
                 hit_hg[i] = hit.hg; hit_lg[i] = hit.lg
                 hit_isHit[i] = hit.isHit
 
@@ -299,5 +308,5 @@ if __name__ == "__main__":
         #filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_10__merge.root"
     print("# Input file is %s" % filename)
 
-    maxEntries = -1#200
+    maxEntries = 300
     build_events(filename,maxEntries)
