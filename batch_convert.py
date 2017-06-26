@@ -58,7 +58,7 @@ def convert_dir(indir,opts):
 
         ## Build events
         build_fname = run_pattern + "_build.root"
-        if not os.path.exists(build_fname) or opts.force_build:
+        if not os.path.exists(build_fname) or opts.force_build or opts.force_merge:
             print("### Building events from merged file")
             build_events(merge_fname,opts.maxEntries,opts.w_config)
         else:
