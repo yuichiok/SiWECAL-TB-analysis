@@ -1,72 +1,9 @@
 #!/usr/bin/env python
 import sys
-import time
 import numpy as np
 import ROOT as rt
 from array import array
 from help_tools import *
-
-ped_map = read_pedestals()
-
-BCID_VALEVT = 1245
-
-chan_map = {}
-
-# SLAB positions
-pos_z = [0,1,2,3,4,5,9] * 15#mm gap
-
-## Tungsten / W configuration
-# Config 1
-#abs_thick = [2,2,2,2,4,4,6]
-##pos_xzero = [2,4,6,8,12,16,22]
-# Config 2
-#abs_thick = [4,2,2,4,4,6,6]
-##pos_xzero  = [4,6,8,12,16,22,28]
-# Config 3
-abs_thick = [6,2,4,4,6,6,6]
-
-## sum up thickness
-w_xzero = 0.56#Xo per mm of W
-pos_xzero = [sum(abs_thick[:i+1])*w_xzero for i in range(len(abs_thick))]
-## Print
-print("W config used:")
-print(abs_thick, pos_xzero)
-
-class EcalHit:
-    def __init__(self,slab,chip,chan,sca,hg,lg,isHit):
-        self.slab = slab
-        self.chip = chip
-        self.chan = chan
-        self.sca = sca
-        self.hg = hg
-        self.lg = lg
-        self.isHit = isHit
-
-        ## get x-y coordinates
-        self.x0 = pos_xzero[slab]
-        self.z = pos_z[slab]
-        (self.x,self.y) = chan_map[(chip,chan)]
-
-        # do pedestal subtraction
-        self.hg -= ped_map[self.slab][self.chip][self.chan][self.sca]
-
-def read_mapping(fname = "fev10_chip_channel_x_y_mapping.txt"):
-
-    global chan_map# = {}
-
-    with open(fname) as fmap:
-        for i,line in enumerate(fmap.readlines()):
-            if i == 0: continue
-
-            # items: chip x0 y0 channel x y
-            items = line.split()
-
-            chip = int(items[0]); chan = int(items[3])
-            x = float(items[4]); y = float(items[5])
-
-            chan_map[(chip,chan)] = (x,y)
-
-    return chan_map
 
 def merge_bcids(bcids):
     ## Set of BCIDs present in this entry
@@ -96,11 +33,6 @@ def merge_bcids(bcids):
                     entry_bcids_cnts[bcid] -= 1
                 break
 
-            else:
-                # found no bcids closeby
-                # -> bcid counter untouched
-                pass
-
     return entry_bcids_cnts
 
 def get_good_bcids(entry):
@@ -111,37 +43,12 @@ def get_good_bcids(entry):
 
     for i,bcid in enumerate(entry.bcid):
 
-        #chip = i % NCHIP
-        #if chip not in [3,5,10,12]: continue
-        #if chip != 5: continue
-
         if bcid < 0: continue
         if entry_badbcid[i] != 0: continue
         if entry_nhits[i] > 20: continue
 
-        #if i%7 == 6: print "HERE"
-
         bcids.append(bcid)
 
-    '''
-    #bcids = [bcid for bcid in entry.bcid if bcid > -1]
-    for slab in xrange(NSLAB):
-        #if slab != 1: continue
-        for chip in xrange(NCHIP):
-
-            #if chip in [3,5,10,12]: continue
-            if chip != 12: continue
-            for sca in xrange(NSCA):
-
-                bcid_indx = slab * NCHIP * NSCA + chip * NSCA + sca
-                bcid = entry.bcid[bcid_indx]
-                if bcid < 0: continue
-
-                if entry.badbcid[bcid_indx] != 0: continue
-                if entry.nhits[bcid_indx] > 20: continue
-
-                bcids.append(bcid)
-    '''
     return bcids
 
 def get_hits(entry,bcids):
@@ -158,7 +65,6 @@ def get_hits(entry,bcids):
             for sca in xrange(NSCA):
 
                 sca_indx = (slab * NCHIP + chip) * NSCA + sca
-                #bcid = entry.bcid[sca_indx]
                 bcid = entry_bcids[sca_indx]
 
                 # filter bad bcids
@@ -177,12 +83,9 @@ def get_hits(entry,bcids):
                     chan_indx = sca_indx * NCHAN + chan
 
                     #if not entry.gain_hit_low[chan_indx]: continue
-                    #isHit = entry.gain_hit_low[chan_indx]
                     isHit = gain_hit_low[chan_indx]
                     if not isHit: continue
 
-                    #hg_ene = entry.charge_hiGain[chan_indx]
-                    #lg_ene = entry.charge_lowGain[chan_indx]
                     hg_ene = charge_hiGain[chan_indx]
                     lg_ene = charge_lowGain[chan_indx]
 
@@ -194,8 +97,8 @@ def get_hits(entry,bcids):
 def build_events(filename, maxEntries = -1):
 
     ## Read channel mapping
-    #chan_map = read_mapping()
     read_mapping()
+    read_pedestals()
 
     # Get ttree
     tfile = rt.TFile(filename,"read")
@@ -208,7 +111,6 @@ def build_events(filename, maxEntries = -1):
 
     ##### TREE #####
     outfname = filename.replace("merge","build")
-    #outf = rt.TFile("event_tree.root","recreate")
     outf = rt.TFile(outfname,"recreate")
     outtree = rt.TTree("ecal","Build ecal events")
 
@@ -302,11 +204,12 @@ if __name__ == "__main__":
     if len(sys.argv) == 2:
         filename = sys.argv[1]
     else:
-        #filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_9_dif_1_1_1.raw.root"
         filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_9__merge.root"
-        #filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_10_all_difs_merge.root"
-        #filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_10__merge.root"
     print("# Input file is %s" % filename)
 
-    maxEntries = 300
-    build_events(filename,maxEntries)
+    maxEntries = -1#300
+
+    if os.path.exists(filename):
+        build_events(filename,maxEntries)
+    else:
+        print("The file does not exist!")
