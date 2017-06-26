@@ -1,6 +1,15 @@
 # SiWECAL-TB-analysis
 Scripts for SiW ECAL test beam analysis
 
+## Batch conversion and event building
+One can use the `batch_convert.py` script to automatically convert (raw2root), merge (single slab files) and build events.
+The usage is:
+```
+./batch_convert.py path/to/dir/with/runs [options]
+```
+The options can be seen by executing without arguments.
+
+# Single steps
 ## Merge single dif/slab files
 Use `mergeRootFiles.C` to merge the root files from different slabs:
 
