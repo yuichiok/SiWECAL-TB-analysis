@@ -1,14 +1,14 @@
-#include <iostream>
-#include <fstream>
+#ifndef INFOCHIP_CC
+#define INFOCHIP_CC
 
 using std::cout;
 using std::endl;
- 
+
 
 /*   COMMENTS
 
-         ________ ________
-        |        |        |    ^ +y
+	 ________ ________
+	|        |        |    ^ +y
  _______|        |        |    |
 |DIF/            |  FEV   |    |
 |___/____________|________|    --> +x
@@ -43,12 +43,12 @@ public:
 
     for (int i=0; i<NCHIPS; i++) {
       for (int j=0; j<NCHANNELS; j++) {
-        //cout << i << "  " << j << "  " << posX[i][j] << "  " << posY[i][j] << endl;
-        if (x==posX[i][j] && y==posY[i][j]) {
-          //cout << "--> OK" << endl;
-          chip = i;
-          channel = j;
-        }
+	//cout << i << "  " << j << "  " << posX[i][j] << "  " << posY[i][j] << endl;
+	if (x==posX[i][j] && y==posY[i][j]) {
+	  //cout << "--> OK" << endl;
+	  chip = i;
+	  channel = j;
+	}
       }
     }
   }
@@ -66,7 +66,7 @@ public:
 	// 180o)
     ifstream fileChipPos("FEV10/PositionChips.txt");
     ifstream filePadPos("FEV10/PositionPads.txt");
-   
+
 
     double val;
 
@@ -75,7 +75,7 @@ public:
     for (int i=0; i<4 && !fileChipPos.eof() && !filePadPos.eof(); i++) {
       fileChipPos >> tmp;
       filePadPos >> tmp;
-      
+
     }
     // Read Chips positions
     double ChipPosX[NCHIPS];
@@ -89,7 +89,7 @@ public:
     }
     // Read Pads positions  LEFT
     double PadPosX[NCHANNELS];
-    double PadPosY[NCHANNELS];    
+    double PadPosY[NCHANNELS];
 	for (int j=0; j<NCHANNELS; j++) {
       if(!filePadPos.eof()) { filePadPos >> val; }
       if(!filePadPos.eof()) { filePadPos >> val; }
@@ -103,12 +103,12 @@ public:
       for (int j=0; j<NCHANNELS; j++) {
 	    //if (i/4==0 || i/4==2) { //for old numbering convention
 	    if (i%2==0) { //calicoes June'15
-        	posX[i][j] = ChipPosX[i] + PadPosX[j];
-        	posY[i][j] = ChipPosY[i] + PadPosY[j];
+		posX[i][j] = ChipPosX[i] + PadPosX[j];
+		posY[i][j] = ChipPosY[i] + PadPosY[j];
 		}
 		else {
-        	posX[i][j] = ChipPosX[i] - PadPosX[j]; 
-        	posY[i][j] = ChipPosY[i] - PadPosY[j];
+		posX[i][j] = ChipPosX[i] - PadPosX[j];
+		posY[i][j] = ChipPosY[i] - PadPosY[j];
 		}
       }
     }
@@ -132,3 +132,5 @@ private:
   };
 
 };
+
+#endif

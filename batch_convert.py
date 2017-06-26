@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys,os,glob,fnmatch,argparse
 import ROOT as rt
-rt.gROOT.LoadMacro("mergeRootFiles.C+")
+rt.gROOT.LoadMacro("mergeRootFiles.cc+")
 from build_events import *
 
 def convert_dir(indir,opts):
