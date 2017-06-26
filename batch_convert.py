@@ -27,14 +27,15 @@ def convert_dir(indir,opts):
 
         print 80*"#"
         print("## Analyzing run " + run_name)
-        merge = rt.mergeRootFiles()
         run_pattern = "%s/%s_" %(run_dir,run_name)
-        merge_fname = run_pattern + "_merge.root"
 
+        merge = rt.mergeRootFiles()
+        merge_fname = run_pattern + "_merge.root"
         ## Merge single slab files
         if not os.path.exists(merge_fname) or opts.force_merge:
             print("### Going to merge run pattern %s" %run_pattern)
             merge.Merge(run_pattern)
+            opts.force_build = True
         else:
             print("### Already merged!")
 
