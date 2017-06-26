@@ -12,8 +12,6 @@ def convert_run_raw(run_pattern):
 
     raw2root = rt.RAW2ROOT()
     for fname_raw in fnames_raw:
-
-        print fname_raw
         if fname_raw + ".root" not in fnames_root:
             print("# Need to convert " + fname_raw)
             raw2root.ReadFile(fname_raw)
@@ -73,13 +71,13 @@ if __name__ == "__main__":
     parser.add_argument('--force-merge', dest='force_merge', action='store_true', help='Force merge files (default: False)')
     parser.add_argument('--force-build', dest='force_build', action='store_true', help='Force build files (default: False)')
     parser.add_argument('-n','--maxEntries', dest='maxEntries', type=int, default = -1, help='maximum number of entries to process (default: all)')
-    parser.add_argument('--dif-suffix', dest='dif_suffix', default = "_dif_1_1_2.raw.root", help='single dif/slab suffix pattern (default: _dif_1_1_2.raw.root)')
+    parser.add_argument('--dif-suffix', dest='dif_suffix', default = "_dif_1_1_2.raw", help='single dif/slab suffix pattern (default: _dif_1_1_2.raw)')
     parser.add_argument('-c','--w_config', dest='w_config', type=int, default = 1, help=' (default: 1)')
 
     args = parser.parse_args()
 
     indirs = args.indirs
-    print("Input dirs are ")
+    print("Input dirs are :")
     print(indirs)
 
     for indir in indirs:
