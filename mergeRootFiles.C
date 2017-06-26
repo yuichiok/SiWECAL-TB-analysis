@@ -19,10 +19,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include "InfoChip.C"
-
-
-
+#include "InfoChip.cc"
 
 class mergeRootFiles{
 public:
