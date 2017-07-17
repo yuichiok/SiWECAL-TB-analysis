@@ -16,8 +16,150 @@
 
 using namespace std;
 
-void savePedestal::Loop(TString dif)
+
+
+void savePedestal::FindMasked(TString dif)
 {
+
+  //function that reads a root file and check which channels have or not signal (hit bit ==1).
+  //should be used for root files that contain a full position scan, in order to provide meaninful list of masked channels.
+
+  ofstream fout_masked("masked_"+dif+".log",ios::out);
+
+  fout_masked<<"#list of masked channels, per dif: "<<dif<<endl;
+  fout_masked<<"#chip channel mask (0=not masked, 1=masked)"<<endl;
+
+  
+  bool global = true;
+  int maxnhit=32;
+
+  if (fChain == 0) return;
+  Long64_t nentries = fChain->GetEntriesFast();
+  // --------------------
+  // all sca
+  //  std::vector<TCanvas*> chip;
+  std::vector<std::vector<TH1F*> > h_charge_channel;
+
+  for(int ichip=0; ichip<16; ichip++) {
+    
+    std::vector<TH1F*> chargetemp_sca;
+    for(int ichn=0; ichn<64; ichn++) {
+      TH1F *tmp_charge_chn = new TH1F(TString::Format("tmp_charge_chip%i_chn%i",ichip,ichn),TString::Format("tmp_charge_chip%i_chn%i",ichip,ichn),4096,0.5,4096.5);
+      chargetemp_sca.push_back(tmp_charge_chn);
+    }
+    h_charge_channel.push_back(chargetemp_sca);
+  }
+
+
+  
+  // -----------------------------------------------------------------------------------------------------   
+  // SCA analysis
+  Long64_t nbytes = 0, nb = 0;
+  for (Long64_t jentry=0; jentry<nentries;jentry++) {
+    Long64_t ientry = LoadTree(jentry);
+    if (ientry < 0) break;
+    nb = fChain->GetEntry(jentry);   nbytes += nb;
+
+    for(int ichip=0; ichip<16; ichip++) {
+      for(int isca=0; isca<15; isca++) {
+	bool gooddata=true;
+	if(global == true) {
+	  int ntaggedasbad = 0;
+	  for(int ichn=0; ichn<64; ichn++) {
+	    if(charge_hiGain[ichip][isca][ichn]<10 && charge_hiGain[ichip][isca][ichn]>-1 ) 
+	      ntaggedasbad++;
+	  }//ichn 
+	  if ( ntaggedasbad > 0) gooddata=false;
+	}
+	
+	for(int ichn=0; ichn<64; ichn++) {
+
+	  bool selection=false;
+	  if(charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1) selection=true;    
+	  if(gain_hit_high[ichip][isca][ichn]==1 && selection==true && gooddata==true)
+	    h_charge_channel.at(ichip).at(ichn)->Fill(charge_hiGain[ichip][isca][ichn]);
+	}//ichn
+           
+      }//isca
+    }//ichip 
+  }  // end first loop analysis to fill pedestal historgrams
+
+
+  //------------------------------------------------------------------
+  // do signal analysis (chip/channel/sca based) analysis
+  for(int ichip=0; ichip<16; ichip++) {
+    for(int ichn=0; ichn<64; ichn++) {
+      
+      fout_masked << ichip <<" " <<ichn<< " "; 
+      //minimum of 100 entries per SCA
+      if(h_charge_channel.at(ichip).at(ichn)->GetEntries()>100) fout_masked<<"0"<<endl;
+      else fout_masked<<"1"<<endl;
+      
+    }
+  }
+
+
+}
+
+void savePedestal::ReadMap(TString filename) 
+{
+
+  std::ifstream reading_file(filename);
+  if(!reading_file){
+    cout<<" dameyo - damedame"<<endl;
+  }
+  for(int i=0; i<16; i++) {
+    for(int j=0; j<64; j++) {
+      map_pointX[i][j] = -1000.;
+      map_pointY[i][j] = -1000.;
+    }
+  }
+
+  Int_t tmp_chip = 0,tmp_channel = 0;
+  Float_t tmp_x0 = 0 ,tmp_y0 = 0 , tmp_x = 0 , tmp_y = 0 ;
+  TString tmpst;
+  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
+  while(reading_file){
+    reading_file >> tmp_chip >> tmp_x0 >> tmp_y0 >> tmp_channel >> tmp_x >> tmp_y ;
+    map_pointX[tmp_chip][tmp_channel] = -tmp_x ;
+    map_pointY[tmp_chip][tmp_channel] = -tmp_y ;
+   }
+
+}
+
+void savePedestal::ReadMasked(TString filename) 
+{
+
+  std::ifstream reading_file(filename);
+  if(!reading_file){
+    cout<<" dameyo - damedame"<<endl;
+  }
+  for(int i=0; i<16; i++) {
+    for(int j=0; j<64; j++) {
+      masked[i][j] = 0;
+    }
+  }
+
+  Int_t tmp_chip = 0,tmp_channel = 0;
+  Int_t tmp_masked = 0;
+  TString tmpst;
+  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
+  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst  ;
+
+  while(reading_file){
+    reading_file >> tmp_chip >> tmp_channel >> tmp_masked ;
+    masked[tmp_chip][tmp_channel] = tmp_masked ;
+   }
+
+}
+
+void savePedestal::PedestalAnalysis(TString dif,TString map_filename="../fev10_chip_channel_x_y_mapping.txt")
+{
+
+  //Read the channel/chip -- x/y mapping
+  ReadMap(map_filename);
+  //Read the list of masked channels
+  ReadMasked("masked_"+dif+".log");
 
   ofstream fout_ped("Pedestal_"+dif+".log",ios::out);
 
@@ -45,23 +187,7 @@ void savePedestal::Loop(TString dif)
   }
   //
 
-  //mapping
-  TString filename2="../fev10_chip_channel_x_y_mapping.txt";//FEV10/map_chip.dat";
-  std::ifstream reading_file(filename2);
-  if(!reading_file){
-    cout<<" dameyo - damedame"<<endl;
-  }
-  Float_t map_pointX[16][64] = {0};
-  Float_t map_pointY[16][64] = {0};
-  Int_t tmp_chip = 0,tmp_channel = 0;
-  Float_t tmp_x0 = 0 ,tmp_y0 = 0 , tmp_x = 0 , tmp_y = 0 ;
-  TString tmpst;
-  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
-  while(reading_file){
-    reading_file >> tmp_chip >> tmp_x0 >> tmp_y0 >> tmp_channel >> tmp_x >> tmp_y ;
-    map_pointX[tmp_chip][tmp_channel] = -tmp_x ;
-    map_pointY[tmp_chip][tmp_channel] = -tmp_y ;
-   }
+
 
   TH2F* pedestal_map[15];
   TH2F* pedestal_width_map[15];
@@ -94,7 +220,7 @@ void savePedestal::Loop(TString dif)
     for(int ichn=0; ichn<64; ichn++) {
       std::vector<TH1F*> pedtemp_sca2;
       for(int isca=0; isca<15; isca++) {
-	TH1F *ped_sca2 = new TH1F("ped_sca2","ped_sca2",500,0.5,500.5);
+	TH1F *ped_sca2 = new TH1F(TString::Format("ped_chip%i_chn%i_sca%i",ichip,ichn,isca),TString::Format("ped_chip%i_chn%i_sca%i",ichip,ichn,isca),500,0.5,500.5);
 	pedtemp_sca2.push_back(ped_sca2);
       }
       pedtemp_sca.push_back(pedtemp_sca2);
@@ -128,19 +254,15 @@ void savePedestal::Loop(TString dif)
 	
 	for(int ichn=0; ichn<64; ichn++) {
 
-	  bool retrig=false;
-	  if(isca!=15){
-	    if(badbcid[ichip][isca]>0  && badbcid[ichip][isca+1]>0)  retrig = true;
-	  }
-
 	  bool selection=false;
-	  if(charge_hiGain[ichip][isca][ichn]>10 && (badbcid[ichip][isca]==0 || badbcid[ichip][isca]==1) && nhits[ichip][isca]<maxnhit+1) selection=true;
+	  if(charge_hiGain[ichip][isca][ichn]>10 && (badbcid[ichip][isca]==0 || badbcid[ichip][isca]==0 ) && nhits[ichip][isca]<maxnhit+1) selection=true;
 
-	    
-	  if(gain_hit_high[ichip][isca][ichn]==0 && selection==true && gooddata==true && retrig==false)
+	  if(masked[ichip][ichn]==1) selection=false;
+ 
+	  if(gain_hit_high[ichip][isca][ichn]==0 && selection==true && gooddata==true)
 	    ped_sca.at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[ichip][isca][ichn]);
 
-	  if(charge_hiGain[ichip][isca][ichn]>10 && gain_hit_high[ichip][isca][ichn]==1 && badbcid[ichip][isca]==1 && nhits[ichip][isca]<maxnhit+1 && gooddata==true) {
+	  /* if(charge_hiGain[ichip][isca][ichn]>10 && gain_hit_high[ichip][isca][ichn]==1 && badbcid[ichip][isca]==1 && nhits[ichip][isca]<maxnhit+1 && gooddata==true) {
 	    std::cout<<ichip<< " " << ichn<< " "<< isca << " " <<charge_hiGain[ichip][isca][ichn]<< " " << gain_hit_high[ichip][isca][ichn] << " " ;
 	    if(isca>0) std::cout<< charge_hiGain[ichip][isca-1][ichn]<< " " << gain_hit_high[ichip][isca-1][ichn] << " " << badbcid[ichip][isca-1]<< " "<< bcid[ichip][isca-1]<< " ";
 	    if(isca<15) std::cout<< charge_hiGain[ichip][isca+1][ichn]<< " "<< gain_hit_high[ichip][isca+1][ichn] << " " << badbcid[ichip][isca+1]<< " "<< bcid[ichip][isca+1]<< " ";
@@ -149,7 +271,7 @@ void savePedestal::Loop(TString dif)
 	    if(isca<12) std::cout<< charge_hiGain[ichip][isca+4][ichn]<< " "<< gain_hit_high[ichip][isca+4][ichn] << " " << badbcid[ichip][isca+4]<< bcid[ichip][isca+4]<< " ";
 
 	    std::cout<<std::endl;
-	  }
+	    }*/
 	}
            
       }//isca
@@ -162,20 +284,6 @@ void savePedestal::Loop(TString dif)
   TFile *pedfile = new TFile("Pedestal_"+dif+".root" , "RECREATE");
   pedfile->cd();
 
-  /*  std::vector<Int_t> nentries_vector; // use this vector to calculate the maximum of pedestal entries
-
-  for(int ichip=0; ichip<16; ichip++) {
-    double nentries_chip=0;
-    for(int ichn=0; ichn<64; ichn++) {
-      for(int isca=0; isca<15; isca++) {
-	nentries_chip+=ped_sca.at(ichip).at(ichn).at(isca)->GetEntries();
-      }
-    }
-    nentries_vector.push_back(nentries_chip);
-  }
-
-  Double_t max_entries = *max_element(nentries_vector.begin(), nentries_vector.end())/(64.*15.);
-  */
   
   // do pedestal (chip/channel/sca based) analysis
   for(int ichip=0; ichip<16; ichip++) {
@@ -193,14 +301,17 @@ void savePedestal::Loop(TString dif)
 	
 	if(ped_sca.at(ichip).at(ichn).at(isca)->GetEntries()> 500 ){ //max_entries/2 ) {
 	  TSpectrum *s = new TSpectrum();
-	  int npeaks = s->Search(ped_sca.at(ichip).at(ichn).at(isca),2,"",0.1); 
+	  int npeaks = s->Search(ped_sca.at(ichip).at(ichn).at(isca),2,"",0.05); 
 	  pedestal_npeaks_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , npeaks);
 
 	  if(npeaks == 1) {
 	    Double_t *mean_peak=s->GetPositionX();
 	    
-	    TF1 *f1 = new TF1("f1","gaus",mean_peak[0]-2*ped_sca.at(ichip).at(ichn).at(isca)->GetRMS(),mean_peak[0]+2*ped_sca.at(ichip).at(ichn).at(isca)->GetRMS());
-	    ped_sca.at(ichip).at(ichn).at(isca)->Fit("f1","RQ");
+	    TF1 *f0 = new TF1("f0","gaus",mean_peak[0]-2*ped_sca.at(ichip).at(ichn).at(isca)->GetRMS(),mean_peak[0]+2*ped_sca.at(ichip).at(ichn).at(isca)->GetRMS());
+	    ped_sca.at(ichip).at(ichn).at(isca)->Fit("f0","RQNOC");
+
+	    TF1 *f1 = new TF1("f1","gaus",f0->GetParameter(1)-2.*f0->GetParameter(2),f0->GetParameter(1)+2.*f0->GetParameter(2));
+	    ped_sca.at(ichip).at(ichn).at(isca)->Fit("f1","RQME");
 	    //  if(f1->GetParameter(1)>150 && f1->GetParameter(2)>2. ) {
 	      ped_mean.at(ichip).at(ichn).push_back(f1->GetParameter(1));
 	      ped_rms.at(ichip).at(ichn).push_back(f1->GetParameter(2));
@@ -347,7 +458,7 @@ void savePedestal::Loop(TString dif)
   }
 
   canvas_pedestal->Write();
-   pedfile_summary->Close();
+  pedfile_summary->Close();
 
 
 

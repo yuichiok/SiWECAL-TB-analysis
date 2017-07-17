@@ -69,9 +69,19 @@ public :
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
    virtual void     Init(TTree *tree);
-   virtual void     Loop(TString dif);
+   virtual void     PedestalAnalysis(TString dif,TString map_filename);
+   virtual void     FindMasked(TString dif);
+   virtual void     ReadMap(TString filename);
+   virtual void     ReadMasked(TString filename);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
+
+private :
+
+  Float_t map_pointX[16][64];
+  Float_t map_pointY[16][64];
+  Int_t masked[16][64];
+
 
 };
 
