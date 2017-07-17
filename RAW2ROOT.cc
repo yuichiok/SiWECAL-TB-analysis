@@ -309,7 +309,7 @@ void RAW2ROOT::treeInit() { //init data for a single SPILL ?
     for (int i=0; i<MEMDEPTH; i++) {
       //allbcid[i+k*MEMDEPTH]=0;
       bcid[k][i]=-999;
-      badbcid[k][i]=0;
+      badbcid[k][i]=-999;
       corrected_bcid[k][i]=-999;
       nhits[k][i]=-999;
       for (int j=0; j<NCHANNELS; j++) {
