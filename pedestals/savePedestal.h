@@ -69,7 +69,7 @@ public :
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
    virtual void     Init(TTree *tree);
-   virtual void     PedestalAnalysis(TString dif,TString map_filename);
+   virtual void     PedestalAnalysis(TString dif,TString grid,TString map_filename);
    virtual void     FindMasked(TString dif);
    virtual void     ReadMap(TString filename);
    virtual void     ReadMasked(TString filename);
@@ -95,7 +95,7 @@ savePedestal::savePedestal(TString tree_s) : fChain(0)
   
   TFile *f = new TFile(tree_s);
   TTree *tree = (TTree*)f->Get("fev10");
-  tree->Print();
+  //  tree->Print();
   Init(tree);
   
 }

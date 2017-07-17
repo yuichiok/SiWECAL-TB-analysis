@@ -17,7 +17,6 @@
 using namespace std;
 
 
-
 void savePedestal::FindMasked(TString dif)
 {
 
@@ -31,7 +30,7 @@ void savePedestal::FindMasked(TString dif)
 
   
   bool global = true;
-  int maxnhit=32;
+  int maxnhit=5;
 
   if (fChain == 0) return;
   Long64_t nentries = fChain->GetEntriesFast();
@@ -75,7 +74,7 @@ void savePedestal::FindMasked(TString dif)
 	for(int ichn=0; ichn<64; ichn++) {
 
 	  bool selection=false;
-	  if(charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 && corrected_bcid[ichip][isca]>1247 && corrected_bcid[ichip][isca]<2950 ) selection=true;    
+	  if(charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 && corrected_bcid[ichip][isca]>1247 && corrected_bcid[ichip][isca]<2900 ) selection=true;    
 	  if(gain_hit_high[ichip][isca][ichn]==1 && selection==true && gooddata==true)
 	    h_charge_channel.at(ichip).at(ichn)->Fill(charge_hiGain[ichip][isca][ichn]);
 	}//ichn
@@ -153,13 +152,15 @@ void savePedestal::ReadMasked(TString filename)
 
 }
 
-void savePedestal::PedestalAnalysis(TString dif,TString map_filename="../fev10_chip_channel_x_y_mapping.txt")
+void savePedestal::PedestalAnalysis(TString dif,TString grid="",TString map_filename="../fev10_chip_channel_x_y_mapping.txt")
 {
 
   //Read the channel/chip -- x/y mapping
   ReadMap(map_filename);
   //Read the list of masked channels
   ReadMasked("masked_"+dif+".log");
+
+  if(grid!="") dif=dif+"_"+grid;
 
   ofstream fout_ped("Pedestal_"+dif+".log",ios::out);
 
@@ -168,25 +169,32 @@ void savePedestal::PedestalAnalysis(TString dif,TString map_filename="../fev10_c
 
   
   bool global = true;
-  int maxnhit=32;
+  int maxnhit=5;
 
   if (fChain == 0) return;
 
   Long64_t nentries = fChain->GetEntriesFast();
-  std::vector<std::vector<std::vector<float> > > ped_mean;
-  std::vector<std::vector<std::vector<float> > > ped_rms;
+  // std::vector<std::vector<std::vector<float> > > ped_mean;
+  // std::vector<std::vector<std::vector<float> > > ped_rms;
 
-  for(int ichip=0; ichip<16; ichip++) {
-    ped_mean.push_back(std::vector<std::vector<float> >() );
-    ped_rms.push_back(std::vector<std::vector<float> >() );
+  // std::vector<std::vector<std::vector<float> > > ped_tagged_mean;
+  // std::vector<std::vector<std::vector<float> > > ped_tagged_rms;
+  // for(int ichip=0; ichip<16; ichip++) {
+  //   ped_mean.push_back(std::vector<std::vector<float> >() );
+  //   ped_rms.push_back(std::vector<std::vector<float> >() );
 
-    for(int ichn=0; ichn<64; ichn++) {
-      ped_mean.at(ichip).push_back(std::vector<float> () );
-      ped_rms.at(ichip).push_back(std::vector<float> () );
-    }
-  }
+  //   ped_tagged_mean.push_back(std::vector<std::vector<float> >() );
+  //   ped_tagged_rms.push_back(std::vector<std::vector<float> >() );
+
+  //   for(int ichn=0; ichn<64; ichn++) {
+  //     ped_mean.at(ichip).push_back(std::vector<float> () );
+  //     ped_rms.at(ichip).push_back(std::vector<float> () );
+
+  //     ped_tagged_mean.at(ichip).push_back(std::vector<float> () );
+  //     ped_tagged_rms.at(ichip).push_back(std::vector<float> () );
+  //   }
+  // }
   //
-
 
 
   TH2F* pedestal_map[15];
@@ -203,30 +211,61 @@ void savePedestal::PedestalAnalysis(TString dif,TString map_filename="../fev10_c
     pedestal_chi2ndf_map[isca]= new TH2F(TString::Format("pedestal_chi2ndf_map_sca%i",isca),TString::Format("pedestal_chi2ndf_map_sca%i;X[mm];Y[mm]",isca),32,-90,90,32,-90,90);
     pedestal_npeaks_map[isca]= new TH2F(TString::Format("pedestal_npeaks_map_sca%i",isca),TString::Format("pedestal_npeaks_map_sca%i;X[mm];Y[mm]",isca),32,-90,90,32,-90,90);
     pedestal_entries_map[isca]= new TH2F(TString::Format("pedestal_entries_map_sca%i",isca),TString::Format("pedestal_entries_map_sca%i;X[mm];Y[mm]",isca),32,-90,90,32,-90,90);
-
   }
 
+  TH2F* pedestal_tagged_map[15];
+  TH2F* pedestal_tagged_width_map[15];
+  TH2F* pedestal_tagged_error_map[15];
+  TH2F* pedestal_tagged_chi2ndf_map[15];
+  TH2F* pedestal_tagged_npeaks_map[15];
+  TH2F* pedestal_tagged_entries_map[15];
+
+  for(int isca=0; isca<15; isca++) {
+    pedestal_tagged_map[isca]= new TH2F(TString::Format("pedestal_tagged_map_sca%i",isca),TString::Format("pedestal_tagged_map_sca%i;X[mm];Y[mm]",isca),32,-90,90,32,-90,90);
+    pedestal_tagged_width_map[isca]= new TH2F(TString::Format("pedestal_tagged_width_map_sca%i",isca),TString::Format("pedestal_tagged_width_map_sca%i;X[mm];Y[mm]",isca),32,-90,90,32,-90,90);
+    pedestal_tagged_error_map[isca]= new TH2F(TString::Format("pedestal_tagged_error_map_sca%i",isca),TString::Format("pedestal_tagged_error_map_sca%i;X[mm];Y[mm]",isca),32,-90,90,32,-90,90);
+    pedestal_tagged_chi2ndf_map[isca]= new TH2F(TString::Format("pedestal_tagged_chi2ndf_map_sca%i",isca),TString::Format("pedestal_tagged_chi2ndf_map_sca%i;X[mm];Y[mm]",isca),32,-90,90,32,-90,90);
+    pedestal_tagged_npeaks_map[isca]= new TH2F(TString::Format("pedestal_tagged_npeaks_map_sca%i",isca),TString::Format("pedestal_tagged_npeaks_map_sca%i;X[mm];Y[mm]",isca),32,-90,90,32,-90,90);
+    pedestal_tagged_entries_map[isca]= new TH2F(TString::Format("pedestal_tagged_entries_map_sca%i",isca),TString::Format("pedestal_tagged_entries_map_sca%i;X[mm];Y[mm]",isca),32,-90,90,32,-90,90);
+  }
+ 
   // --------------------
   // all sca
   //  std::vector<TCanvas*> chip;
-  std::vector<std::vector<std::vector<TH1F*> > > ped_sca ;
+  std::vector<std::vector<std::vector<TH1F*> > > ped_sca;
+  std::vector<std::vector<std::vector<TH1F*> > > ped_sca_tagged;
+
   std::vector<TH1F*> pedestal_chip ;
+  std::vector<TH1F*> pedestal_tagged_chip ;
 
   for(int ichip=0; ichip<16; ichip++) {
-    TH1F *ped_chip = new TH1F(TString::Format("ped_chip%i",ichip),TString::Format("ped_chip%i",ichip),500,0.5,500.5);
+    TH1F *ped_chip = new TH1F(TString::Format("ped_chip%i",ichip),TString::Format("ped_chip%i",ichip),1000,0.5,1000.5);
     pedestal_chip.push_back(ped_chip);
+
+    TH1F *ped_tagged_chip = new TH1F(TString::Format("ped_tagged_chip%i",ichip),TString::Format("ped_tagged_chip%i",ichip),1000,0.5,1000.5);
+    pedestal_tagged_chip.push_back(ped_tagged_chip);
     
     std::vector<std::vector<TH1F*> >pedtemp_sca;
+    std::vector<std::vector<TH1F*> >pedtemp_sca_tagged;
     for(int ichn=0; ichn<64; ichn++) {
       std::vector<TH1F*> pedtemp_sca2;
+      std::vector<TH1F*> pedtemp_sca2_tagged;
       for(int isca=0; isca<15; isca++) {
-	TH1F *ped_sca2 = new TH1F(TString::Format("ped_chip%i_chn%i_sca%i",ichip,ichn,isca),TString::Format("ped_chip%i_chn%i_sca%i",ichip,ichn,isca),500,0.5,500.5);
+	TH1F *ped_sca2 = new TH1F(TString::Format("ped_chip%i_chn%i_sca%i",ichip,ichn,isca),TString::Format("ped_chip%i_chn%i_sca%i",ichip,ichn,isca),1000,0.5,1000.5);
+	TH1F *ped_sca2_tagged = new TH1F(TString::Format("ped_tagged_chip%i_chn%i_sca%i",ichip,ichn,isca),TString::Format("ped_tagged_chip%i_chn%i_sca%i",ichip,ichn,isca),1000,0.5,1000.5);
 	pedtemp_sca2.push_back(ped_sca2);
+	pedtemp_sca2_tagged.push_back(ped_sca2_tagged);
+
       }
       pedtemp_sca.push_back(pedtemp_sca2);
+      pedtemp_sca_tagged.push_back(pedtemp_sca2_tagged);
     }
     ped_sca.push_back(pedtemp_sca);
+    ped_sca_tagged.push_back(pedtemp_sca_tagged);
+
   }
+
+ 
 
 
   
@@ -254,25 +293,20 @@ void savePedestal::PedestalAnalysis(TString dif,TString map_filename="../fev10_c
 	
 	for(int ichn=0; ichn<64; ichn++) {
 
+	  //good events
 	  bool selection=false;
-	  if(charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 && corrected_bcid[ichip][isca]>1247 && corrected_bcid[ichip][isca]<2950 ) selection=true;
-
-
+	  if(charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 && corrected_bcid[ichip][isca]>1247 && corrected_bcid[ichip][isca]<2900 ) selection=true;
 	  if(masked[ichip][ichn]==1) selection=false;
- 
-	  if(gain_hit_high[ichip][isca][ichn]==0 && selection==true && gooddata==true)
+ 	  if(gain_hit_high[ichip][isca][ichn]==0 && selection==true && gooddata==true)
 	    ped_sca.at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[ichip][isca][ichn]);
 
-	  /* if(charge_hiGain[ichip][isca][ichn]>10 && gain_hit_high[ichip][isca][ichn]==1 && badbcid[ichip][isca]==1 && nhits[ichip][isca]<maxnhit+1 && gooddata==true) {
-	    std::cout<<ichip<< " " << ichn<< " "<< isca << " " <<charge_hiGain[ichip][isca][ichn]<< " " << gain_hit_high[ichip][isca][ichn] << " " ;
-	    if(isca>0) std::cout<< charge_hiGain[ichip][isca-1][ichn]<< " " << gain_hit_high[ichip][isca-1][ichn] << " " << badbcid[ichip][isca-1]<< " "<< bcid[ichip][isca-1]<< " ";
-	    if(isca<15) std::cout<< charge_hiGain[ichip][isca+1][ichn]<< " "<< gain_hit_high[ichip][isca+1][ichn] << " " << badbcid[ichip][isca+1]<< " "<< bcid[ichip][isca+1]<< " ";
-	    if(isca<14) std::cout<< charge_hiGain[ichip][isca+2][ichn]<< " "<< gain_hit_high[ichip][isca+2][ichn] << " " << badbcid[ichip][isca+2]<< " "<< bcid[ichip][isca+2]<< " ";
-	    if(isca<13) std::cout<< charge_hiGain[ichip][isca+3][ichn]<< " "<< gain_hit_high[ichip][isca+3][ichn] << " " << badbcid[ichip][isca+3]<< " "<< bcid[ichip][isca+3]<< " ";
-	    if(isca<12) std::cout<< charge_hiGain[ichip][isca+4][ichn]<< " "<< gain_hit_high[ichip][isca+4][ichn] << " " << badbcid[ichip][isca+4]<< bcid[ichip][isca+4]<< " ";
+	  //bad events
+	  selection=false;
+	  if( ( badbcid[ichip][isca]>0 || nhits[ichip][isca]>maxnhit || gooddata==false) && (corrected_bcid[ichip][isca]>1247 && corrected_bcid[ichip][isca]<2900)  ) selection=true;
+	  if(masked[ichip][ichn]==1) selection=false;
+ 	  if(gain_hit_high[ichip][isca][ichn]==0 && selection==true )
+	    ped_sca_tagged.at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[ichip][isca][ichn]);
 
-	    std::cout<<std::endl;
-	    }*/
 	}
            
       }//isca
@@ -297,12 +331,17 @@ void savePedestal::PedestalAnalysis(TString dif,TString map_filename="../fev10_c
 	ped_sca.at(ichip).at(ichn).at(isca)->SetName(TString::Format("ped_chip%i_chn%i_sca%i",ichip,ichn,isca));
 	ped_sca.at(ichip).at(ichn).at(isca)->Write();
 
+	ped_sca_tagged.at(ichip).at(ichn).at(isca)->SetTitle(TString::Format("ped_tagged_chip%i_chn%i_sca%i",ichip,ichn,isca));
+	ped_sca_tagged.at(ichip).at(ichn).at(isca)->SetName(TString::Format("ped_tagged_chip%i_chn%i_sca%i",ichip,ichn,isca));
+	ped_sca_tagged.at(ichip).at(ichn).at(isca)->Write();
+
 	pedestal_entries_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , ped_sca.at(ichip).at(ichn).at(isca)->GetEntries());
+	pedestal_tagged_entries_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , ped_sca_tagged.at(ichip).at(ichn).at(isca)->GetEntries());
 
 	
-	if(ped_sca.at(ichip).at(ichn).at(isca)->GetEntries()> 500 ){ //max_entries/2 ) {
+	if(ped_sca.at(ichip).at(ichn).at(isca)->GetEntries()> 300 ){ //max_entries/2 ) {
 	  TSpectrum *s = new TSpectrum();
-	  int npeaks = s->Search(ped_sca.at(ichip).at(ichn).at(isca),2,"",0.05); 
+	  int npeaks = s->Search(ped_sca.at(ichip).at(ichn).at(isca),2,"",0.2); 
 	  pedestal_npeaks_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , npeaks);
 
 	  if(npeaks == 1) {
@@ -313,9 +352,8 @@ void savePedestal::PedestalAnalysis(TString dif,TString map_filename="../fev10_c
 
 	    TF1 *f1 = new TF1("f1","gaus",f0->GetParameter(1)-2.*f0->GetParameter(2),f0->GetParameter(1)+2.*f0->GetParameter(2));
 	    ped_sca.at(ichip).at(ichn).at(isca)->Fit("f1","RQME");
-	    //  if(f1->GetParameter(1)>150 && f1->GetParameter(2)>2. ) {
-	      ped_mean.at(ichip).at(ichn).push_back(f1->GetParameter(1));
-	      ped_rms.at(ichip).at(ichn).push_back(f1->GetParameter(2));
+	    // ped_mean.at(ichip).at(ichn).push_back(f1->GetParameter(1));
+	    //  ped_rms.at(ichip).at(ichn).push_back(f1->GetParameter(2));
 	      fout_ped<<f1->GetParameter(1) << " " << f1->GetParError(1)<<" ";
 	      pedestal_chip.at(ichip)->Fill(f1->GetParameter(1));
 
@@ -324,21 +362,60 @@ void savePedestal::PedestalAnalysis(TString dif,TString map_filename="../fev10_c
 	      pedestal_error_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetParError(1));
 	      pedestal_chi2ndf_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetChisquare() / f1->GetNDF());
 	      
-	      /*  } else {
-	      ped_mean.at(ichip).at(ichn).push_back(0);
-	      ped_rms.at(ichip).at(ichn).push_back(0);
-      	      fout_ped<<0<< " " << 0<<" ";
-	      }*/
 	  } else {
-	    ped_mean.at(ichip).at(ichn).push_back(0);
-	    ped_rms.at(ichip).at(ichn).push_back(0);
+	    // ped_mean.at(ichip).at(ichn).push_back(0);
+	    //  ped_rms.at(ichip).at(ichn).push_back(0);
 	    fout_ped<<0<< " " << 0<<" ";
 	  }
 	} else {
-	  ped_mean.at(ichip).at(ichn).push_back(0);
-          ped_rms.at(ichip).at(ichn).push_back(0);
+	  // ped_mean.at(ichip).at(ichn).push_back(0);
+          //ped_rms.at(ichip).at(ichn).push_back(0);
 	  fout_ped<<0<< " " << 0<<" ";
 	}
+
+	// analyze pedestal for tagged events
+	if(ped_sca_tagged.at(ichip).at(ichn).at(isca)->GetEntries()> 150 ){
+	  TSpectrum *s = new TSpectrum();
+	  int npeaks = s->Search(ped_sca_tagged.at(ichip).at(ichn).at(isca));
+	  pedestal_tagged_npeaks_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , npeaks);
+
+	  if(npeaks > 0) {
+
+	    Double_t *mean_peak=s->GetPositionX();
+	    Double_t *mean_high=s->GetPositionY();
+	    double mean_peak_higher=0;
+	    double mean_high_higher=0;
+
+	    for(int ipeak=0; ipeak<npeaks; ipeak ++) {
+	      if(mean_high[ipeak]>mean_high_higher && mean_high[ipeak]>50) {
+		mean_high_higher=mean_high[ipeak];
+		mean_peak_higher=mean_peak[ipeak];
+	      }
+	    }
+
+	    if(mean_peak_higher>0) {
+	      TF1 *f0 = new TF1("f0","gaus",mean_peak_higher-10.,mean_peak_higher+10.);
+	      ped_sca_tagged.at(ichip).at(ichn).at(isca)->Fit("f0","RQNOC");
+	      if(f0->GetParameter(1)>0) {
+		double xmin=100;
+		double xmax=500;
+		if(f0->GetParameter(1)-2.*f0->GetParameter(2) > 0 ) xmin=f0->GetParameter(1)-2.*f0->GetParameter(2);
+		if(f0->GetParameter(1)+2.*f0->GetParameter(2) < 500 ) xmax=f0->GetParameter(1)+2.*f0->GetParameter(2);
+		
+		TF1 *f1 = new TF1("f1","gaus",xmin,xmax);
+		ped_sca_tagged.at(ichip).at(ichn).at(isca)->Fit("f1","RQ");
+		pedestal_tagged_chip.at(ichip)->Fill(f1->GetParameter(1));
+		
+		pedestal_tagged_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetParameter(1));
+		pedestal_tagged_width_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetParameter(2));
+		pedestal_tagged_error_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetParError(1));
+		pedestal_tagged_chi2ndf_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetChisquare() / f1->GetNDF());
+	      }
+	    }
+	  }
+	}
+
+
       }
       fout_ped<<endl;
     }
@@ -349,11 +426,12 @@ void savePedestal::PedestalAnalysis(TString dif,TString map_filename="../fev10_c
   TFile *pedfile_summary = new TFile("Pedestal_summary_"+dif+".root" , "RECREATE");
   pedfile_summary->cd();
   
-  TCanvas *canvas_map = new TCanvas("pedestal_map_"+dif, "pedestal_map_"+dif,1200,1200);
-  canvas_map->Divide(4,4);
+  // good pedestal events (not tagged events)
+  TCanvas *canvas_pedestal_map = new TCanvas("pedestal_map_"+dif, "pedestal_map_"+dif,1200,1200);
+  canvas_pedestal_map->Divide(4,4);
   for(int isca=0; isca<15; isca ++) {
     TString dif0=dif+TString::Format("_sca%i",isca);
-    canvas_map->cd(isca+1);
+    canvas_pedestal_map->cd(isca+1);
     pedestal_map[isca]->SetStats(kFALSE);
     pedestal_map[isca]->SetTitle("pedestal_map, "+dif0);
     pedestal_map[isca]->GetXaxis()->SetTitle("x");
@@ -365,25 +443,26 @@ void savePedestal::PedestalAnalysis(TString dif,TString map_filename="../fev10_c
     pedestal_map[isca]->Write();
    }
 
-  TCanvas *canvas_width_map = new TCanvas("pedestal_width_map_"+dif, "pedestal_width_map_"+dif,1200,1200);
-  canvas_width_map->Divide(4,4);
+  TCanvas *canvas_pedestal_width_map = new TCanvas("pedestal_width_map_"+dif, "pedestal_width_map_"+dif,1200,1200);
+  canvas_pedestal_width_map->Divide(4,4);
   for(int isca=0; isca<15; isca ++) {
     TString dif0=dif+TString::Format("_sca%i",isca);
-    canvas_width_map->cd(isca+1);
+    canvas_pedestal_width_map->cd(isca+1);
     pedestal_width_map[isca]->SetStats(kFALSE);
     pedestal_width_map[isca]->SetTitle("pedestal_width_map, "+dif0);
     pedestal_width_map[isca]->GetXaxis()->SetTitle("x");
     pedestal_width_map[isca]->GetYaxis()->SetTitle("y");
+    pedestal_width_map[isca]->GetZaxis()->SetRangeUser(0,7);
     //noise.at(ichip)->SetLineColor(2);
     pedestal_width_map[isca]->Draw("colz");
     pedestal_width_map[isca]->Write();
    }
 
-  TCanvas *canvas_error_map = new TCanvas("pedestal_error_map_"+dif, "pedestal_error_map_"+dif,1200,1200);
-  canvas_error_map->Divide(4,4);
+  TCanvas *canvas_pedestal_error_map = new TCanvas("pedestal_error_map_"+dif, "pedestal_error_map_"+dif,1200,1200);
+  canvas_pedestal_error_map->Divide(4,4);
   for(int isca=0; isca<15; isca ++) {
     TString dif0=dif+TString::Format("_sca%i",isca);
-    canvas_error_map->cd(isca+1);
+    canvas_pedestal_error_map->cd(isca+1);
     pedestal_error_map[isca]->SetStats(kFALSE);
     pedestal_error_map[isca]->SetTitle("pedestal_error_map, "+dif0);
     pedestal_error_map[isca]->GetXaxis()->SetTitle("x");
@@ -393,25 +472,26 @@ void savePedestal::PedestalAnalysis(TString dif,TString map_filename="../fev10_c
     pedestal_error_map[isca]->Write();
    }
 
-  TCanvas *canvas_npeaks_map = new TCanvas("pedestal_npeaks_map_"+dif, "pedestal_npeaks_map_"+dif,1200,1200);
-  canvas_npeaks_map->Divide(4,4);
+  TCanvas *canvas_pedestal_npeaks_map = new TCanvas("pedestal_npeaks_map_"+dif, "pedestal_npeaks_map_"+dif,1200,1200);
+  canvas_pedestal_npeaks_map->Divide(4,4);
   for(int isca=0; isca<15; isca ++) {
     TString dif0=dif+TString::Format("_sca%i",isca);
-    canvas_npeaks_map->cd(isca+1);
+    canvas_pedestal_npeaks_map->cd(isca+1);
     pedestal_npeaks_map[isca]->SetStats(kFALSE);
     pedestal_npeaks_map[isca]->SetTitle("pedestal_npeaks_map, "+dif0);
     pedestal_npeaks_map[isca]->GetXaxis()->SetTitle("x");
     pedestal_npeaks_map[isca]->GetYaxis()->SetTitle("y");
+    pedestal_npeaks_map[isca]->GetZaxis()->SetRangeUser(0.5,4.5);
     //noise.at(ichip)->SetLineColor(2);
     pedestal_npeaks_map[isca]->Draw("colz");
     pedestal_npeaks_map[isca]->Write();
    }
 
-  TCanvas *canvas_chi2ndf_map = new TCanvas("pedestal_chi2ndf_map_"+dif, "pedestal_chi2ndf_map_"+dif,1200,1200);
-  canvas_chi2ndf_map->Divide(4,4);
+  TCanvas *canvas_pedestal_chi2ndf_map = new TCanvas("pedestal_chi2ndf_map_"+dif, "pedestal_chi2ndf_map_"+dif,1200,1200);
+  canvas_pedestal_chi2ndf_map->Divide(4,4);
   for(int isca=0; isca<15; isca ++) {
     TString dif0=dif+TString::Format("_sca%i",isca);
-    canvas_chi2ndf_map->cd(isca+1);
+    canvas_pedestal_chi2ndf_map->cd(isca+1);
     pedestal_chi2ndf_map[isca]->SetStats(kFALSE);
     pedestal_chi2ndf_map[isca]->SetTitle("pedestal_chi2ndf_map, "+dif0);
     pedestal_chi2ndf_map[isca]->GetXaxis()->SetTitle("x");
@@ -421,11 +501,11 @@ void savePedestal::PedestalAnalysis(TString dif,TString map_filename="../fev10_c
     pedestal_chi2ndf_map[isca]->Write();
    }
 
-  TCanvas *canvas_entries_map = new TCanvas("pedestal_entries_map_"+dif, "pedestal_entries_map_"+dif,1200,1200);
-  canvas_entries_map->Divide(4,4);
+  TCanvas *canvas_pedestal_entries_map = new TCanvas("pedestal_entries_map_"+dif, "pedestal_entries_map_"+dif,1200,1200);
+  canvas_pedestal_entries_map->Divide(4,4);
   for(int isca=0; isca<15; isca ++) {
     TString dif0=dif+TString::Format("_sca%i",isca);
-    canvas_entries_map->cd(isca+1);
+    canvas_pedestal_entries_map->cd(isca+1);
     pedestal_entries_map[isca]->SetStats(kFALSE);
     pedestal_entries_map[isca]->SetTitle("pedestal_entries_map, "+dif0);
     pedestal_entries_map[isca]->GetXaxis()->SetTitle("x");
@@ -436,18 +516,18 @@ void savePedestal::PedestalAnalysis(TString dif,TString map_filename="../fev10_c
    }
   
 
-  canvas_map->Write();
-  canvas_width_map->Write();
-  canvas_error_map->Write();
-  canvas_npeaks_map->Write();
-  canvas_entries_map->Write();
-  canvas_chi2ndf_map->Write();
+  canvas_pedestal_map->Write();
+  canvas_pedestal_width_map->Write();
+  canvas_pedestal_error_map->Write();
+  canvas_pedestal_npeaks_map->Write();
+  canvas_pedestal_entries_map->Write();
+  canvas_pedestal_chi2ndf_map->Write();
 
    
-  TCanvas *canvas_pedestal = new TCanvas("pedestal_average_"+dif, "pedestal_average_"+dif,1200,1200);
-  canvas_pedestal->Divide(4,4);
+  TCanvas *canvas_pedestal_pedestal = new TCanvas("pedestal_average_"+dif, "pedestal_average_"+dif,1200,1200);
+  canvas_pedestal_pedestal->Divide(4,4);
   for(int ichip=0; ichip<16; ichip++) {
-    canvas_pedestal->cd(ichip+1);
+    canvas_pedestal_pedestal->cd(ichip+1);
     //gPad->SetLogy();
     pedestal_chip.at(ichip)->GetXaxis()->SetRangeUser(0,500);
     pedestal_chip.at(ichip)->SetTitle(TString::Format("Average pedestal, chip-%i",ichip));
@@ -458,7 +538,121 @@ void savePedestal::PedestalAnalysis(TString dif,TString map_filename="../fev10_c
     //pedestal_chip.at(ichip)->Write();
   }
 
-  canvas_pedestal->Write();
+  canvas_pedestal_pedestal->Write();
+
+  // Tagged events
+  TCanvas *canvas_pedestal_tagged_map = new TCanvas("pedestal_tagged_map_"+dif, "pedestal_tagged_map_"+dif,1200,1200);
+  canvas_pedestal_tagged_map->Divide(4,4);
+  for(int isca=0; isca<15; isca ++) {
+    TString dif0=dif+TString::Format("_sca%i",isca);
+    canvas_pedestal_tagged_map->cd(isca+1);
+    pedestal_tagged_map[isca]->SetStats(kFALSE);
+    pedestal_tagged_map[isca]->SetTitle("pedestal_tagged_map, "+dif0);
+    pedestal_tagged_map[isca]->GetXaxis()->SetTitle("x");
+    pedestal_tagged_map[isca]->GetYaxis()->SetTitle("y");
+    pedestal_tagged_map[isca]->GetZaxis()->SetRangeUser(200,400);
+
+    //noise.at(ichip)->SetLineColor(2);
+    pedestal_tagged_map[isca]->Draw("colz");
+    pedestal_tagged_map[isca]->Write();
+   }
+
+  TCanvas *canvas_pedestal_tagged_width_map = new TCanvas("pedestal_tagged_width_map_"+dif, "pedestal_tagged_width_map_"+dif,1200,1200);
+  canvas_pedestal_tagged_width_map->Divide(4,4);
+  for(int isca=0; isca<15; isca ++) {
+    TString dif0=dif+TString::Format("_sca%i",isca);
+    canvas_pedestal_tagged_width_map->cd(isca+1);
+    pedestal_tagged_width_map[isca]->SetStats(kFALSE);
+    pedestal_tagged_width_map[isca]->SetTitle("pedestal_tagged_width_map, "+dif0);
+    pedestal_tagged_width_map[isca]->GetXaxis()->SetTitle("x");
+    pedestal_tagged_width_map[isca]->GetYaxis()->SetTitle("y");
+    pedestal_tagged_width_map[isca]->GetZaxis()->SetRangeUser(0,7);
+    //noise.at(ichip)->SetLineColor(2);
+    pedestal_tagged_width_map[isca]->Draw("colz");
+    pedestal_tagged_width_map[isca]->Write();
+   }
+
+  TCanvas *canvas_pedestal_tagged_error_map = new TCanvas("pedestal_tagged_error_map_"+dif, "pedestal_tagged_error_map_"+dif,1200,1200);
+  canvas_pedestal_tagged_error_map->Divide(4,4);
+  for(int isca=0; isca<15; isca ++) {
+    TString dif0=dif+TString::Format("_sca%i",isca);
+    canvas_pedestal_tagged_error_map->cd(isca+1);
+    pedestal_tagged_error_map[isca]->SetStats(kFALSE);
+    pedestal_tagged_error_map[isca]->SetTitle("pedestal_tagged_error_map, "+dif0);
+    pedestal_tagged_error_map[isca]->GetXaxis()->SetTitle("x");
+    pedestal_tagged_error_map[isca]->GetYaxis()->SetTitle("y");
+    //noise.at(ichip)->SetLineColor(2);
+    pedestal_tagged_error_map[isca]->Draw("colz");
+    pedestal_tagged_error_map[isca]->Write();
+   }
+
+  TCanvas *canvas_pedestal_tagged_npeaks_map = new TCanvas("pedestal_tagged_npeaks_map_"+dif, "pedestal_tagged_npeaks_map_"+dif,1200,1200);
+  canvas_pedestal_tagged_npeaks_map->Divide(4,4);
+  for(int isca=0; isca<15; isca ++) {
+    TString dif0=dif+TString::Format("_sca%i",isca);
+    canvas_pedestal_tagged_npeaks_map->cd(isca+1);
+    pedestal_tagged_npeaks_map[isca]->SetStats(kFALSE);
+    pedestal_tagged_npeaks_map[isca]->SetTitle("pedestal_tagged_npeaks_map, "+dif0);
+    pedestal_tagged_npeaks_map[isca]->GetXaxis()->SetTitle("x");
+    pedestal_tagged_npeaks_map[isca]->GetYaxis()->SetTitle("y");
+    pedestal_tagged_npeaks_map[isca]->GetZaxis()->SetRangeUser(0.5,4.5);
+    //noise.at(ichip)->SetLineColor(2);
+    pedestal_tagged_npeaks_map[isca]->Draw("colz");
+    pedestal_tagged_npeaks_map[isca]->Write();
+   }
+
+  TCanvas *canvas_pedestal_tagged_chi2ndf_map = new TCanvas("pedestal_tagged_chi2ndf_map_"+dif, "pedestal_tagged_chi2ndf_map_"+dif,1200,1200);
+  canvas_pedestal_tagged_chi2ndf_map->Divide(4,4);
+  for(int isca=0; isca<15; isca ++) {
+    TString dif0=dif+TString::Format("_sca%i",isca);
+    canvas_pedestal_tagged_chi2ndf_map->cd(isca+1);
+    pedestal_tagged_chi2ndf_map[isca]->SetStats(kFALSE);
+    pedestal_tagged_chi2ndf_map[isca]->SetTitle("pedestal_tagged_chi2ndf_map, "+dif0);
+    pedestal_tagged_chi2ndf_map[isca]->GetXaxis()->SetTitle("x");
+    pedestal_tagged_chi2ndf_map[isca]->GetYaxis()->SetTitle("y");
+    //noise.at(ichip)->SetLineColor(2);
+    pedestal_tagged_chi2ndf_map[isca]->Draw("colz");
+    pedestal_tagged_chi2ndf_map[isca]->Write();
+   }
+
+  TCanvas *canvas_pedestal_tagged_entries_map = new TCanvas("pedestal_tagged_entries_map_"+dif, "pedestal_tagged_entries_map_"+dif,1200,1200);
+  canvas_pedestal_tagged_entries_map->Divide(4,4);
+  for(int isca=0; isca<15; isca ++) {
+    TString dif0=dif+TString::Format("_sca%i",isca);
+    canvas_pedestal_tagged_entries_map->cd(isca+1);
+    pedestal_tagged_entries_map[isca]->SetStats(kFALSE);
+    pedestal_tagged_entries_map[isca]->SetTitle("pedestal_tagged_entries_map, "+dif0);
+    pedestal_tagged_entries_map[isca]->GetXaxis()->SetTitle("x");
+    pedestal_tagged_entries_map[isca]->GetYaxis()->SetTitle("y");
+    //noise.at(ichip)->SetLineColor(2);
+    pedestal_tagged_entries_map[isca]->Draw("colz");
+    pedestal_tagged_entries_map[isca]->Write();
+   }
+  
+
+  canvas_pedestal_tagged_map->Write();
+  canvas_pedestal_tagged_width_map->Write();
+  canvas_pedestal_tagged_error_map->Write();
+  canvas_pedestal_tagged_npeaks_map->Write();
+  canvas_pedestal_tagged_entries_map->Write();
+  canvas_pedestal_tagged_chi2ndf_map->Write();
+
+   
+  TCanvas *canvas_pedestal_tagged_pedestal = new TCanvas("pedestal_tagged_average_"+dif, "pedestal_tagged_average_"+dif,1200,1200);
+  canvas_pedestal_tagged_pedestal->Divide(4,4);
+  for(int ichip=0; ichip<16; ichip++) {
+    canvas_pedestal_tagged_pedestal->cd(ichip+1);
+    //gPad->SetLogy();
+    pedestal_tagged_chip.at(ichip)->GetXaxis()->SetRangeUser(0,500);
+    pedestal_tagged_chip.at(ichip)->SetTitle(TString::Format("Average pedestal_tagged, chip-%i",ichip));
+    pedestal_tagged_chip.at(ichip)->GetXaxis()->SetTitle("ADC");
+    pedestal_tagged_chip.at(ichip)->GetYaxis()->SetTitle("#");
+    //noise.at(ichip)->SetLineColor(2);
+    pedestal_tagged_chip.at(ichip)->Draw("hs");
+    //pedestal_tagged_chip.at(ichip)->Write();
+  }
+
+  canvas_pedestal_tagged_pedestal->Write();
   pedfile_summary->Close();
 
 
@@ -515,7 +709,7 @@ void savePedestal::BcidCorrelations(TString dif)
 
 	  
 	  bool selection=false;
-	  if(gain_hit_high[ichip][isca][ichn]==1 && charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 && corrected_bcid[ichip][isca]>1247 && corrected_bcid[ichip][isca]<2950 ) selection=true;
+	  if(gain_hit_high[ichip][isca][ichn]==1 && charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 && corrected_bcid[ichip][isca]>1247 && corrected_bcid[ichip][isca]<2900 ) selection=true;
 
 
 	  
@@ -547,7 +741,7 @@ void savePedestal::BcidCorrelations(TString dif)
 		    h_bcid_corr_plane->Fill(chip_bcid,chip_bcid2);
 		  }
 
-		    if(ichip2==ichip &&  isca2>isca && ichn==ichn2 && gain_hit_high[ichip2][isca2][ichn2]==1 && charge_hiGain[ichip2][isca2][ichn2]>10 && badbcid[ichip2][isca2]==0 && nhits[ichip2][isca2]<maxnhit+1 && corrected_bcid[ichip2][isca2]>1247 && corrected_bcid[ichip2][isca2]<2950 ) 	h_bcid_dif_good->Fill(corrected_bcid[ichip][isca]-corrected_bcid[ichip2][isca2]);
+		    if(ichip2==ichip &&  isca2>isca && ichn==ichn2 && gain_hit_high[ichip2][isca2][ichn2]==1 && charge_hiGain[ichip2][isca2][ichn2]>10 && badbcid[ichip2][isca2]==0 && nhits[ichip2][isca2]<maxnhit+1 && corrected_bcid[ichip2][isca2]>1247 && corrected_bcid[ichip2][isca2]<2900 ) 	h_bcid_dif_good->Fill(corrected_bcid[ichip][isca]-corrected_bcid[ichip2][isca2]);
 		}
 		
 	      }
