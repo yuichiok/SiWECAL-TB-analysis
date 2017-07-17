@@ -75,7 +75,7 @@ void savePedestal::FindMasked(TString dif)
 	for(int ichn=0; ichn<64; ichn++) {
 
 	  bool selection=false;
-	  if(charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1) selection=true;    
+	  if(charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 && corrected_bcid[ichip][isca]>1247 && corrected_bcid[ichip][isca]<2950 ) selection=true;    
 	  if(gain_hit_high[ichip][isca][ichn]==1 && selection==true && gooddata==true)
 	    h_charge_channel.at(ichip).at(ichn)->Fill(charge_hiGain[ichip][isca][ichn]);
 	}//ichn
@@ -255,7 +255,8 @@ void savePedestal::PedestalAnalysis(TString dif,TString map_filename="../fev10_c
 	for(int ichn=0; ichn<64; ichn++) {
 
 	  bool selection=false;
-	  if(charge_hiGain[ichip][isca][ichn]>10 && (badbcid[ichip][isca]==0 || badbcid[ichip][isca]==0 ) && nhits[ichip][isca]<maxnhit+1) selection=true;
+	  if(charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 && corrected_bcid[ichip][isca]>1247 && corrected_bcid[ichip][isca]<2950 ) selection=true;
+
 
 	  if(masked[ichip][ichn]==1) selection=false;
  
@@ -462,4 +463,137 @@ void savePedestal::PedestalAnalysis(TString dif,TString map_filename="../fev10_c
 
 
 
+}
+
+
+void savePedestal::BcidCorrelations(TString dif)
+{
+
+  ReadMasked("masked_"+dif+".log");
+
+  //function that reads a root file and check which channels have or not signal (hit bit ==1).
+  //should be used for root files that contain a full position scan, in order to provide meaninful list of masked channels.
+ 
+  bool global = true;
+  int maxnhit=65;
+
+  if (fChain == 0) return;
+  Long64_t nentries = fChain->GetEntriesFast();
+  // --------------------
+  // all sca
+  //  std::vector<TCanvas*> chip;
+  TH1F* h_bcid_dif_retrig = new TH1F("bcid_dif_retrig_dif_"+dif,"bcid_dif_retrig_dif_"+dif,8000,0,800000);
+  TH2F* h_bcid_corr_retrig = new TH2F("bcid_correl_retrig_dif_"+dif,"bcid_correl_retrig_dif_"+dif,800,0,80000,800,0,80000);
+  TH1F* h_bcid_dif_total_retrig = new TH1F("bcid_retrig_dif_"+dif,"bcid_retrig_dif_"+dif,8002,-4000,4000);
+  TH1F* h_bcid_dif_plane = new TH1F("bcid_dif_plane_dif_"+dif,"bcid_dif_plane_dif_"+dif,8000,0,800000);
+  TH2F* h_bcid_corr_plane = new TH2F("bcid_correl_plane_dif_"+dif,"bcid_correl_plane_dif_"+dif,800,0,80000,800,0,80000);
+  TH1F* h_bcid_dif_total_plane = new TH1F("bcid_plane_dif_"+dif,"bcid_plane_dif_"+dif,8002,-4000,4000);
+  TH1F* h_bcid_dif_good = new TH1F("bcid_good_dif_"+dif,"bcid_good_dif_"+dif,8002,-4000,4000);
+
+  // -----------------------------------------------------------------------------------------------------   
+  // SCA analysis
+  Long64_t nbytes = 0, nb = 0;
+  for (Long64_t jentry=0; jentry<nentries;jentry++) {
+    Long64_t ientry = LoadTree(jentry);
+    if (ientry < 0) break;
+    nb = fChain->GetEntry(jentry);   nbytes += nb;
+
+
+    for(int ichip=0; ichip<16; ichip++) {
+      for(int isca=0; isca<15; isca++) {
+	bool gooddata=true;
+	if(global == true) {
+	  int ntaggedasbad = 0;
+	  for(int ichn=0; ichn<64; ichn++) {
+	    if(charge_hiGain[ichip][isca][ichn]<10 && charge_hiGain[ichip][isca][ichn]>-1 ) 
+	      ntaggedasbad++;
+	  }//ichn 
+	  if ( ntaggedasbad > 0) gooddata=false;
+	}
+
+	for(int ichn=0; ichn<64; ichn++) {
+
+	  
+	  bool selection=false;
+	  if(gain_hit_high[ichip][isca][ichn]==1 && charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 && corrected_bcid[ichip][isca]>1247 && corrected_bcid[ichip][isca]<2950 ) selection=true;
+
+
+	  
+	  // if(masked[ichip][ichn]==1) selection=false;
+	  
+	  double chip_bcid=ichip*5000.+bcid[ichip][isca];
+	  
+	  if(selection == true) {
+	    for(int ichip2=0; ichip2<16; ichip2++) {
+	      for(int isca2=0; isca2<15; isca2++) {
+		double chip_bcid2=ichip2*5000.+bcid[ichip2][isca2];
+
+		for(int ichn2=0; ichn2<64; ichn2++) {
+		  bool selection2=false;
+		  if(gain_hit_high[ichip2][isca2][ichn2]==1 && charge_hiGain[ichip2][isca2][ichn2]>10 && badbcid[ichip2][isca2]==3 && nhits[ichip2][isca2]<maxnhit+1) selection2=true;
+	  
+		  //  if(masked[ichip2][ichn2]==1) selection2=false;
+		  if(selection2==true) {
+		    h_bcid_dif_retrig->Fill(ichip2*50000.+(bcid[ichip][isca]-bcid[ichip2][isca2]));
+		    h_bcid_dif_total_retrig->Fill(bcid[ichip][isca]-bcid[ichip2][isca2]);
+		    h_bcid_corr_retrig->Fill(chip_bcid,chip_bcid2);
+		  }
+
+		  bool selection3=false;
+		  if(gain_hit_high[ichip2][isca2][ichn2]==1 && badbcid[ichip2][isca2]>0 && nhits[ichip2][isca2]>maxnhit) selection3=true;
+		  if(selection3==true) {
+		    h_bcid_dif_plane->Fill(ichip2*50000.+(bcid[ichip][isca]-bcid[ichip2][isca2]));
+		    h_bcid_dif_total_plane->Fill(bcid[ichip][isca]-bcid[ichip2][isca2]);
+		    h_bcid_corr_plane->Fill(chip_bcid,chip_bcid2);
+		  }
+
+		    if(ichip2==ichip &&  isca2>isca && ichn==ichn2 && gain_hit_high[ichip2][isca2][ichn2]==1 && charge_hiGain[ichip2][isca2][ichn2]>10 && badbcid[ichip2][isca2]==0 && nhits[ichip2][isca2]<maxnhit+1 && corrected_bcid[ichip2][isca2]>1247 && corrected_bcid[ichip2][isca2]<2950 ) 	h_bcid_dif_good->Fill(corrected_bcid[ichip][isca]-corrected_bcid[ichip2][isca2]);
+		}
+		
+	      }
+	    }
+	  }
+	}
+           
+      }//isca
+
+    }//ichip 
+  }  // end first loop analysis to fill pedestal historgrams
+
+  
+ 
+  TCanvas *canvas= new TCanvas("bcid_correl_"+dif, "bcid_correl_"+dif,1600,1000);
+  canvas->Divide(3,2);
+  canvas->cd(1);
+  h_bcid_corr_retrig->GetXaxis()->SetTitle("bcid hit (+ 5000*ichip)");
+  h_bcid_corr_retrig->GetYaxis()->SetTitle("bcid retrig (+ 5000*ichip)");   
+  h_bcid_corr_retrig->Draw("colz");
+
+  canvas->cd(2);
+  h_bcid_dif_retrig->GetXaxis()->SetTitle("50000*ichip + (bcid_hit-bcid_retrig)");
+  h_bcid_dif_retrig->Draw("h");
+
+  canvas->cd(3);
+  h_bcid_dif_total_retrig->GetXaxis()->SetTitle("bcid_hit-bcid_retrig (all)");
+  h_bcid_dif_total_retrig->GetXaxis()->SetRangeUser(-40,40);
+  h_bcid_dif_total_retrig->Draw("h");
+
+  canvas->cd(4);
+  h_bcid_corr_plane->GetXaxis()->SetTitle("bcid hit (+ 5000*ichip)");
+  h_bcid_corr_plane->GetYaxis()->SetTitle("bcid plane (+ 5000*ichip)");   
+  h_bcid_corr_plane->Draw("colz");
+
+  canvas->cd(5);
+  h_bcid_dif_plane->GetXaxis()->SetTitle("50000*ichip + (bcid_hit-bcid_plane)");
+  h_bcid_dif_plane->Draw("h");
+
+  
+  canvas->cd(6);
+  h_bcid_dif_total_plane->GetXaxis()->SetTitle("bcid_hit-bcid_plane (all)");
+  h_bcid_dif_total_plane->GetXaxis()->SetRangeUser(-40,40);
+  h_bcid_dif_total_plane->Draw("h");
+
+  canvas->Print("bcid_correlations_"+dif+".root");
+  
+  
 }

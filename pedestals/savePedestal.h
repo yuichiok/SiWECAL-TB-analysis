@@ -73,6 +73,7 @@ public :
    virtual void     FindMasked(TString dif);
    virtual void     ReadMap(TString filename);
    virtual void     ReadMasked(TString filename);
+   virtual void     BcidCorrelations(TString filename);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
 
