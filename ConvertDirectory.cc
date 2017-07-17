@@ -36,9 +36,9 @@ vector<TString>* list_files(const char *dirname, const char *ext=".raw")
 	return filenames;
 }
 
-void ConvertDirectory(string dirname)
+void ConvertDirectory(string dirname,const char *ext=".raw")
 {
-	vector<TString>* filenames = list_files(dirname.c_str());
+  vector<TString>* filenames = list_files(dirname.c_str(),ext);
 	RAW2ROOT *ss;
 	unsigned int nbCrb = filenames->size();
 	
