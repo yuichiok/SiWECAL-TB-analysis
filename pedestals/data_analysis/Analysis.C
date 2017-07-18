@@ -1,4 +1,4 @@
-#include <iostream>
+OB#include <iostream>
 #include <string>
 #include <algorithm>
 #include <vector>
@@ -72,7 +72,7 @@ int Analysis(int igridmin, int igridmax, bool ratio=false) {
       TH2F *tmp_pedestal_npeaks[15];
       TH2F *tmp_pedestal_tagged_npeaks[15];
 
-      TString file="Pedestal_summary_dif_"+dif+".root";
+      TString file="rootfiles/Pedestal_summary_dif_"+dif+".root";
       std::cout<<"Opening file with full run: "<<file<<std::endl;
       TFile *f_total = new TFile(file);
       
@@ -83,7 +83,7 @@ int Analysis(int igridmin, int igridmax, bool ratio=false) {
       }
       // f_total->Close();
 
-      file="Pedestal_summary_dif_"+dif+grid+".root";
+      file="rootfiles/Pedestal_summary_dif_"+dif+grid+".root";
       std::cout<<"Opening file for single run: "<<file<<std::endl;
       TFile *f = new TFile(file);
       
