@@ -23,7 +23,7 @@ void savePedestal::FindMasked(TString dif)
   //function that reads a root file and check which channels have or not signal (hit bit ==1).
   //should be used for root files that contain a full position scan, in order to provide meaninful list of masked channels.
 
-  ofstream fout_masked("masked_"+dif+".log",ios::out);
+  ofstream fout_masked("masked_"+dif+".txt",ios::out);
 
   fout_masked<<"#list of masked channels, per dif: "<<dif<<endl;
   fout_masked<<"#chip channel mask (0=not masked, 1=masked)"<<endl;
@@ -74,7 +74,7 @@ void savePedestal::FindMasked(TString dif)
 	for(int ichn=0; ichn<64; ichn++) {
 
 	  bool selection=false;
-	  if(charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 && corrected_bcid[ichip][isca]>1247 && corrected_bcid[ichip][isca]<2900 ) selection=true;    
+	  if(charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 && corrected_bcid[ichip][isca]>1250 && corrected_bcid[ichip][isca]<2900 ) selection=true;    
 	  if(gain_hit_high[ichip][isca][ichn]==1 && selection==true && gooddata==true)
 	    h_charge_channel.at(ichip).at(ichn)->Fill(charge_hiGain[ichip][isca][ichn]);
 	}//ichn
@@ -86,14 +86,38 @@ void savePedestal::FindMasked(TString dif)
 
   //------------------------------------------------------------------
   // do signal analysis (chip/channel/sca based) analysis
+
+  //first we calculate a first estimation of total number of hits per chip and total of channels non masked per chip
+  double total_entries_chip[16];
+  double total_channels_chip[16];
+  for(int ichip=0; ichip<16; ichip++) {
+    total_entries_chip[ichip]=0.;
+    total_channels_chip[ichip]=0.;
+  }
   for(int ichip=0; ichip<16; ichip++) {
     for(int ichn=0; ichn<64; ichn++) {
-      
+      total_entries_chip[ichip]+=h_charge_channel.at(ichip).at(ichn)->GetEntries();
+      if(h_charge_channel.at(ichip).at(ichn)->GetEntries()>200) total_channels_chip[ichip]++;
+
+    }
+  }
+
+  // the real estimation of masked channels is done by requiring a 0.3 of the estimated Nhits per channel for the whole data taking period run (per chip)
+  // this is done because it has been observed that some times the masked channels in the xml slightly disagree within a set of runs.
+  // possible reasons :
+  // 1- a remasking is done during the mip runs, so we will have some channels that were not masked at the begining. we do not include them in the pedestal analysis since they are masked for following runs.
+  // 2- human mistake in the masking for few runs.
+  // 3- error in the slow control loading ?
+
+  for(int ichip=0; ichip<16; ichip++) {
+    for(int ichn=0; ichn<64; ichn++) {
       fout_masked << ichip <<" " <<ichn<< " "; 
       //minimum of 100 entries per SCA
-      if(h_charge_channel.at(ichip).at(ichn)->GetEntries()>100) fout_masked<<"0"<<endl;
-      else fout_masked<<"1"<<endl;
-      
+      if(total_channels_chip[ichip]>0) {
+	if(h_charge_channel.at(ichip).at(ichn)->GetEntries()>0.3*(total_entries_chip[ichip]/total_channels_chip[ichip])) fout_masked<<"0"<<endl;
+	else fout_masked<<"1"<<endl;
+      }
+      else fout_masked<<"1"<<endl;    
     }
   }
 
@@ -158,11 +182,11 @@ void savePedestal::PedestalAnalysis(TString dif,TString grid="",TString map_file
   //Read the channel/chip -- x/y mapping
   ReadMap(map_filename);
   //Read the list of masked channels
-  ReadMasked("masked_"+dif+".log");
+  ReadMasked("masked_"+dif+".txt");
 
   if(grid!="") dif=dif+"_"+grid;
 
-  ofstream fout_ped("Pedestal_"+dif+".log",ios::out);
+  ofstream fout_ped("Pedestal_"+dif+".txt",ios::out);
 
   fout_ped<<"#pedestal results (fit to a gaussian) remove channels/sca with two pedestals peaks from the analysis : "<<dif<<endl;
   fout_ped<<"#chip channel ped0 eped1 ped1 eped1 ... ped14 ped14 (all SCA)"<<endl;
@@ -237,6 +261,9 @@ void savePedestal::PedestalAnalysis(TString dif,TString grid="",TString map_file
 
   std::vector<TH1F*> pedestal_chip ;
   std::vector<TH1F*> pedestal_tagged_chip ;
+  std::vector<TH1F*> pedestal_diff_chip ;
+  std::vector<TH1F*> pedestal_tagged_diff_chip ;
+
 
   for(int ichip=0; ichip<16; ichip++) {
     TH1F *ped_chip = new TH1F(TString::Format("ped_chip%i",ichip),TString::Format("ped_chip%i",ichip),1000,0.5,1000.5);
@@ -244,25 +271,31 @@ void savePedestal::PedestalAnalysis(TString dif,TString grid="",TString map_file
 
     TH1F *ped_tagged_chip = new TH1F(TString::Format("ped_tagged_chip%i",ichip),TString::Format("ped_tagged_chip%i",ichip),1000,0.5,1000.5);
     pedestal_tagged_chip.push_back(ped_tagged_chip);
+
+    TH1F *ped_diff_chip = new TH1F(TString::Format("ped_diff_chip%i",ichip),TString::Format("ped_diff_chip%i",ichip),1002,-500,500);
+    pedestal_diff_chip.push_back(ped_diff_chip);
     
+    TH1F *ped_tagged_diff_chip = new TH1F(TString::Format("ped_tagged_diff_chip%i",ichip),TString::Format("ped_tagged_diff_chip%i",ichip),1002,-500,500);
+    pedestal_tagged_diff_chip.push_back(ped_tagged_diff_chip);
+
     std::vector<std::vector<TH1F*> >pedtemp_sca;
     std::vector<std::vector<TH1F*> >pedtemp_sca_tagged;
+
     for(int ichn=0; ichn<64; ichn++) {
       std::vector<TH1F*> pedtemp_sca2;
       std::vector<TH1F*> pedtemp_sca2_tagged;
+
       for(int isca=0; isca<15; isca++) {
 	TH1F *ped_sca2 = new TH1F(TString::Format("ped_chip%i_chn%i_sca%i",ichip,ichn,isca),TString::Format("ped_chip%i_chn%i_sca%i",ichip,ichn,isca),1000,0.5,1000.5);
 	TH1F *ped_sca2_tagged = new TH1F(TString::Format("ped_tagged_chip%i_chn%i_sca%i",ichip,ichn,isca),TString::Format("ped_tagged_chip%i_chn%i_sca%i",ichip,ichn,isca),1000,0.5,1000.5);
 	pedtemp_sca2.push_back(ped_sca2);
 	pedtemp_sca2_tagged.push_back(ped_sca2_tagged);
-
       }
       pedtemp_sca.push_back(pedtemp_sca2);
       pedtemp_sca_tagged.push_back(pedtemp_sca2_tagged);
     }
     ped_sca.push_back(pedtemp_sca);
     ped_sca_tagged.push_back(pedtemp_sca_tagged);
-
   }
 
  
@@ -344,6 +377,29 @@ void savePedestal::PedestalAnalysis(TString dif,TString grid="",TString map_file
 	  int npeaks = s->Search(ped_sca.at(ichip).at(ichn).at(isca),2,"",0.2); 
 	  pedestal_npeaks_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , npeaks);
 
+
+	  if(npeaks > 0) {
+
+            Double_t *mean_peak=s->GetPositionX();
+            Double_t *mean_high=s->GetPositionY();
+            double mean_peak_higher=0;
+            double mean_high_higher=0;
+	    int npeak_max=0;
+
+            for(int ipeak=0; ipeak<npeaks; ipeak ++) {
+              if(mean_high[ipeak]>mean_high_higher && mean_high[ipeak]>50) {
+                mean_high_higher=mean_high[ipeak];
+                mean_peak_higher=mean_peak[ipeak];
+		npeak_max=ipeak;
+              }
+            }
+
+            for(int ipeak=0; ipeak<npeaks; ipeak ++) {
+	      if(ipeak != npeak_max) pedestal_diff_chip.at(ichip)->Fill( mean_peak[npeak_max] - mean_peak[ipeak]);
+	    }
+
+	  }
+
 	  if(npeaks == 1) {
 	    Double_t *mean_peak=s->GetPositionX();
 	    
@@ -385,13 +441,19 @@ void savePedestal::PedestalAnalysis(TString dif,TString grid="",TString map_file
 	    Double_t *mean_high=s->GetPositionY();
 	    double mean_peak_higher=0;
 	    double mean_high_higher=0;
+	    int npeak_max=0;
 
 	    for(int ipeak=0; ipeak<npeaks; ipeak ++) {
 	      if(mean_high[ipeak]>mean_high_higher && mean_high[ipeak]>50) {
 		mean_high_higher=mean_high[ipeak];
 		mean_peak_higher=mean_peak[ipeak];
+		npeak_max=ipeak;
 	      }
 	    }
+
+	    for(int ipeak=0; ipeak<npeaks; ipeak ++) {
+              if(ipeak != npeak_max) pedestal_tagged_diff_chip.at(ichip)->Fill( mean_peak[npeak_max] - mean_peak[ipeak] );
+            }
 
 	    if(mean_peak_higher>0) {
 	      TF1 *f0 = new TF1("f0","gaus",mean_peak_higher-10.,mean_peak_higher+10.);
@@ -540,6 +602,21 @@ void savePedestal::PedestalAnalysis(TString dif,TString grid="",TString map_file
 
   canvas_pedestal_pedestal->Write();
 
+  TCanvas *canvas_pedestal_diff = new TCanvas("pedestal_diff_"+dif, "pedestal_diff_"+dif,1200,1200);
+  canvas_pedestal_diff->Divide(4,4);
+  for(int ichip=0; ichip<16; ichip++) {
+    canvas_pedestal_diff->cd(ichip+1);
+
+    pedestal_diff_chip.at(ichip)->GetXaxis()->SetRangeUser(-100,100);
+    pedestal_diff_chip.at(ichip)->SetTitle(TString::Format("Pedestal diff, chip-%i",ichip));
+    pedestal_diff_chip.at(ichip)->GetXaxis()->SetTitle("ADC");
+    pedestal_diff_chip.at(ichip)->GetYaxis()->SetTitle("#");
+    pedestal_diff_chip.at(ichip)->Draw("hs");
+  }
+
+  canvas_pedestal_diff->Write();
+
+
   // Tagged events
   TCanvas *canvas_pedestal_tagged_map = new TCanvas("pedestal_tagged_map_"+dif, "pedestal_tagged_map_"+dif,1200,1200);
   canvas_pedestal_tagged_map->Divide(4,4);
@@ -653,6 +730,22 @@ void savePedestal::PedestalAnalysis(TString dif,TString grid="",TString map_file
   }
 
   canvas_pedestal_tagged_pedestal->Write();
+
+
+  TCanvas *canvas_pedestal_tagged_diff = new TCanvas("pedestal_tagged_diff_"+dif, "pedestal_tagged_diff_"+dif,1200,1200);
+  canvas_pedestal_tagged_diff->Divide(4,4);
+  for(int ichip=0; ichip<16; ichip++) {
+    canvas_pedestal_tagged_diff->cd(ichip+1);
+
+    pedestal_tagged_diff_chip.at(ichip)->GetXaxis()->SetRangeUser(-100,100);
+    pedestal_tagged_diff_chip.at(ichip)->SetTitle(TString::Format("Pedestal diff, chip-%i",ichip));
+    pedestal_tagged_diff_chip.at(ichip)->GetXaxis()->SetTitle("ADC");
+    pedestal_tagged_diff_chip.at(ichip)->GetYaxis()->SetTitle("#");
+    pedestal_tagged_diff_chip.at(ichip)->Draw("hs");
+  }
+
+  canvas_pedestal_tagged_diff->Write();
+
   pedfile_summary->Close();
 
 
@@ -663,7 +756,7 @@ void savePedestal::PedestalAnalysis(TString dif,TString grid="",TString map_file
 void savePedestal::BcidCorrelations(TString dif)
 {
 
-  ReadMasked("masked_"+dif+".log");
+  ReadMasked("masked_"+dif+".txt");
 
   //function that reads a root file and check which channels have or not signal (hit bit ==1).
   //should be used for root files that contain a full position scan, in order to provide meaninful list of masked channels.
