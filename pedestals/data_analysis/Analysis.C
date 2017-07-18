@@ -25,7 +25,7 @@
 
 using namespace std;
 
-int Analysis(int igridmin, int igridmax) {
+int Analysis(int igridmin, int igridmax, bool ratio=false) {
   gROOT->Reset();
 
   gStyle->SetOptFit(0); 
@@ -95,13 +95,16 @@ int Analysis(int igridmin, int igridmax) {
       }
       
       //f->Close();
-
-      for(int isca=0; isca<15;isca++) {
-	// tmp_pedestal_total[isca]->Draw("colz");
-	tmp_pedestal[isca]->Divide(tmp_pedestal_total[isca]);
-	tmp_pedestal_width[isca]->Divide(tmp_pedestal_width_total[isca]);
-	tmp_pedestal_npeaks[isca]->Divide(tmp_pedestal_npeaks_total[isca]);
-	tmp_pedestal_tagged_npeaks[isca]->Divide(tmp_pedestal_npeaks_total[isca]);
+      TString title="map";
+      if(ratio==true) {
+	title="ratiomap";
+	for(int isca=0; isca<15;isca++) {
+	  // tmp_pedestal_total[isca]->Draw("colz");
+	  tmp_pedestal[isca]->Divide(tmp_pedestal_total[isca]);
+	  tmp_pedestal_width[isca]->Divide(tmp_pedestal_width_total[isca]);
+	  tmp_pedestal_npeaks[isca]->Divide(tmp_pedestal_npeaks_total[isca]);
+	  tmp_pedestal_tagged_npeaks[isca]->Divide(tmp_pedestal_npeaks_total[isca]);
+	}
       }
       
       // good pedestal events (not tagged events)
@@ -110,14 +113,15 @@ int Analysis(int igridmin, int igridmax) {
 	TString dif0=dif+TString::Format("_sca%i",isca);
 	pedestal->cd(isca+1);
 	tmp_pedestal[isca]->SetStats(kFALSE);
-	tmp_pedestal[isca]->SetTitle("Ped-ratio "+grid+" dif="+dif);
+	tmp_pedestal[isca]->SetTitle("Ped-"+title+" "+grid+" dif="+dif);
 	tmp_pedestal[isca]->GetXaxis()->SetTitle("x");
 	tmp_pedestal[isca]->GetYaxis()->SetTitle("y");
-	tmp_pedestal[isca]->GetZaxis()->SetRangeUser(0.98,1.02);
+	if(ratio==true) tmp_pedestal[isca]->GetZaxis()->SetRangeUser(0.98,1.02);
+	else tmp_pedestal[isca]->GetZaxis()->SetRangeUser(200,400);
 	
 	tmp_pedestal[isca]->Draw("colz");
       }
-      pedestal->Print("plots/pedestal_ratiomap_dif_"+dif+grid+".png");
+      pedestal->Print("plots/pedestal_"+title+"_dif_"+dif+grid+".png");
       
       // good pedestal_width events (not tagged events)
       pedestal_width->Divide(4,4);
@@ -125,14 +129,14 @@ int Analysis(int igridmin, int igridmax) {
 	TString dif0=dif+TString::Format("_sca%i",isca);
 	pedestal_width->cd(isca+1);
 	tmp_pedestal_width[isca]->SetStats(kFALSE);
-	tmp_pedestal_width[isca]->SetTitle("Width-ratio "+grid+" dif="+dif);
+	tmp_pedestal_width[isca]->SetTitle("Width-"+title+" "+grid+" dif="+dif);
 	tmp_pedestal_width[isca]->GetXaxis()->SetTitle("x");
 	tmp_pedestal_width[isca]->GetYaxis()->SetTitle("y");
-	tmp_pedestal_width[isca]->GetZaxis()->SetRangeUser(0.8,1.2);
-	
+	if(ratio==true) tmp_pedestal_width[isca]->GetZaxis()->SetRangeUser(0.8,1.2);
+	else tmp_pedestal_width[isca]->GetZaxis()->SetRangeUser(0,4.5);
 	tmp_pedestal_width[isca]->Draw("colz");
       }
-      pedestal_width->Print("plots/pedestal_width_ratiomap_dif_"+dif+grid+".png");
+      pedestal_width->Print("plots/pedestal_width_"+title+"_dif_"+dif+grid+".png");
 
       // good pedestal_npeaks events (not tagged events)
       pedestal_npeaks->Divide(4,4);
@@ -140,14 +144,14 @@ int Analysis(int igridmin, int igridmax) {
 	TString dif0=dif+TString::Format("_sca%i",isca);
 	pedestal_npeaks->cd(isca+1);
 	tmp_pedestal_npeaks[isca]->SetStats(kFALSE);
-	tmp_pedestal_npeaks[isca]->SetTitle("NPeaks-ratio "+grid+" dif="+dif);
+	tmp_pedestal_npeaks[isca]->SetTitle("NPeaks-"+title+" "+grid+" dif="+dif);
 	tmp_pedestal_npeaks[isca]->GetXaxis()->SetTitle("x");
 	tmp_pedestal_npeaks[isca]->GetYaxis()->SetTitle("y");
 	tmp_pedestal_npeaks[isca]->GetZaxis()->SetRangeUser(0,3);
 	
 	tmp_pedestal_npeaks[isca]->Draw("colz");
       }
-      pedestal_npeaks->Print("plots/pedestal_npeaks_ratiomap_dif_"+dif+grid+".png");
+      pedestal_npeaks->Print("plots/pedestal_npeaks_"+title+"_dif_"+dif+grid+".png");
 
       // good pedestal_tagged_npeaks events (not tagged events)
       pedestal_tagged_npeaks->Divide(4,4);
@@ -155,14 +159,14 @@ int Analysis(int igridmin, int igridmax) {
 	TString dif0=dif+TString::Format("_sca%i",isca);
 	pedestal_tagged_npeaks->cd(isca+1);
 	tmp_pedestal_tagged_npeaks[isca]->SetStats(kFALSE);
-	tmp_pedestal_tagged_npeaks[isca]->SetTitle("NPeaks(tagged)-ratio "+grid+" dif="+dif);
+	tmp_pedestal_tagged_npeaks[isca]->SetTitle("NPeaks(tagged)-"+title+" "+grid+" dif="+dif);
 	tmp_pedestal_tagged_npeaks[isca]->GetXaxis()->SetTitle("x");
 	tmp_pedestal_tagged_npeaks[isca]->GetYaxis()->SetTitle("y");
 	tmp_pedestal_tagged_npeaks[isca]->GetZaxis()->SetRangeUser(0,3);
 	
 	tmp_pedestal_tagged_npeaks[isca]->Draw("colz");
       }
-      pedestal_tagged_npeaks->Print("plots/pedestal_tagged_npeaks_ratiomap_dif_"+dif+grid+".png");
+      pedestal_tagged_npeaks->Print("plots/pedestal_tagged_npeaks_"+title+"_dif_"+dif+grid+".png");
       
       f_total->Close();
       f->Close();
