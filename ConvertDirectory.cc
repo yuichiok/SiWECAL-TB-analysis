@@ -36,7 +36,7 @@ vector<TString>* list_files(const char *dirname, const char *ext=".raw")
 	return filenames;
 }
 
-void ConvertDirectory(string dirname,const char *ext=".raw")
+void ConvertDirectory(string dirname,const char *ext=".raw", int bcidthres=15)
 {
   vector<TString>* filenames = list_files(dirname.c_str(),ext);
 	RAW2ROOT *ss;
@@ -45,7 +45,7 @@ void ConvertDirectory(string dirname,const char *ext=".raw")
 	for (int i = 0 ; i<nbCrb ; i++)
 	{
 		ss = new RAW2ROOT();
-		ss->ReadFile((*filenames)[i], true);
+		ss->ReadFile((*filenames)[i], true, bcidthres);
 		delete ss;
 	}
 	for (int i = 0 ; i<nbCrb ; i++)

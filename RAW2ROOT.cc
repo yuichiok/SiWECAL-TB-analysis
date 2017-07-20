@@ -64,7 +64,7 @@ public:
     delete info;
   };
   
-  void ReadFile(TString inputFileName,  bool overwrite=false,  int maxevt=99999999);
+  void ReadFile(TString inputFileName,  bool overwrite=false, int bcidthres=15, int maxevt=99999999);
 
 protected:
 
@@ -79,7 +79,7 @@ protected:
 
   int R2Rstate;
 
-  int readEvent(std::vector < unsigned short int > & eventData);
+  int readEvent(std::vector < unsigned short int > & eventData, int bcidthres);
   int data_integrity(std::vector < unsigned short int > & eventData, int i, int local_offset, int nColumns, int ichip);
   void Initialisation();
   void analyse_hits();
@@ -450,7 +450,7 @@ void RAW2ROOT::printEvent(std::vector < unsigned short int > & eventData) {
 
 //******************************************************************************************************************
 
-int RAW2ROOT::readEvent(std::vector < unsigned short int > & eventData) {
+int RAW2ROOT::readEvent(std::vector < unsigned short int > & eventData, int bcidthres) {
 
   // ASSUMES HIGH/LOW GAIN mode  !!!
   // ----------------------
@@ -632,35 +632,78 @@ int RAW2ROOT::readEvent(std::vector < unsigned short int > & eventData) {
     if (chipID[k]>=0) {
       for (int ibc=0; ibc<numCol[k]; ibc++) {
 
-
 	// if sca+1 is filled with consec bcid, but sca+2 not, then badbcid[sca]==1 && badbcid[sca+1]==2 (bcid+1 issue, events are not bad, just the next sca is bad)
 	// if sca+1 is filled with consec bcid, and sca+2 also, then badbcid[sca]==3 && badbcid[sca+1]==3 (retriggering)
 	// if sca+1 is not filled with consec bcid,  badbcid==0
 
-	if(badbcid[k][ibc]<0) {
-	  
+	if(ibc==0) {
 	  badbcid[k][ibc]=0;
+	  int corri=corrected_bcid[k][ibc];
+	  
+	  if(corrected_bcid[k][ibc+1]>0 && corrected_bcid[k][ibc]>0 && (corrected_bcid[k][ibc+1]-corrected_bcid[k][ibc])>0) {
+	    int corri1=corrected_bcid[k][ibc+1];
 
-	  if(corrected_bcid[k][ibc+1]>0) {
-	    if(corrected_bcid[k][ibc+2]>0) {
-	      if( ( corrected_bcid[k][ibc+1] - corrected_bcid[k][ibc]) < 15 && (corrected_bcid[k][ibc+2] -  corrected_bcid[k][ibc+1]) < 15) {
+	    if(corrected_bcid[k][ibc+2]>0 && (corrected_bcid[k][ibc+2]-corrected_bcid[k][ibc+1])>0) {
+	      int corri2=corrected_bcid[k][ibc+2];
+	      if( ( corri2-corri1) < bcidthres && (corri1-corri) < bcidthres) {
+		badbcid[k][ibc]=3;
+		badbcid[k][ibc+1]=3;
+		badbcid[k][ibc+2]=3;
+	      }
+	      if( ( corri2-corri1) >(bcidthres - 1) && (corri1-corri) > 1 && (corri1-corri) <bcidthres) {
 		badbcid[k][ibc]=3;
 		badbcid[k][ibc+1]=3;
 	      }
-	      if( ( corrected_bcid[k][ibc+1] - corrected_bcid[k][ibc]) <15  && (corrected_bcid[k][ibc+2] -  corrected_bcid[k][ibc+1]) > 15) {
+	      if( ( corri2-corri1) >(bcidthres - 1) && (corri1-corri) ==1) {
 		badbcid[k][ibc]=1;
 		badbcid[k][ibc+1]=2;
 	      }
-	    } else {
-	      if( ( corrected_bcid[k][ibc+1] - corrected_bcid[k][ibc]) < 15 ) {
+	  } else {
+	      if( (corri1-corri) < bcidthres) {
 		badbcid[k][ibc]=3;
 		badbcid[k][ibc+1]=3;
-		//for the last but one sca, conseq events are tagged as retrigger (we don't know if they were just bcid+1
 	      }
-	    }
+	    } //ibc+2 if
+	  }//ibc+1 if
+	} //ibc==0 if 
 
-	  }
-	}
+      if(ibc>0 && badbcid[k][ibc]<0 && corrected_bcid[k][ibc] >0 &&  (corrected_bcid[k][ibc]-corrected_bcid[k][ibc-1])>0 ) {
+	  badbcid[k][ibc]=0;
+	  int corri=corrected_bcid[k][ibc];
+	  int corriminus=corrected_bcid[k][ibc-1];
+
+	  if(corrected_bcid[k][ibc+1]>0 && (corrected_bcid[k][ibc+1]-corrected_bcid[k][ibc])>0) {
+	    int corri1=corrected_bcid[k][ibc+1];
+
+	    if(corrected_bcid[k][ibc+2]>0 && (corrected_bcid[k][ibc+2]-corrected_bcid[k][ibc+1])>0) {
+	      int corri2=corrected_bcid[k][ibc+2];
+	      if( ( corri2-corri1) < bcidthres && (corri1-corri) < bcidthres) {
+		badbcid[k][ibc]=3;
+		badbcid[k][ibc+1]=3;
+		badbcid[k][ibc+2]=3;
+	      }
+	      if( (corri1-corri) < bcidthres && (corri-corriminus) < bcidthres ) badbcid[k][ibc]=3;
+
+	      if( badbcid[k][ibc]!=3 && ( corri2-corri1) >(bcidthres - 1) && (corri1-corri) ==1) {
+		badbcid[k][ibc]=1;
+		badbcid[k][ibc+1]=2;
+	      }
+	      if( badbcid[k][ibc]!=3 && ( corri2-corri1) >(bcidthres - 1) && (corri1-corri) > 1 && (corri1-corri) <bcidthres) {
+		badbcid[k][ibc]=3;
+		badbcid[k][ibc+1]=3;
+	      }
+	      if( (corri-corriminus) < bcidthres ) badbcid[k][ibc]=3;
+
+	      //if( badbcid[k][ibc-1]==1 && (corri1-corri) > (bcidthres - 1)) badbcid[k][ibc]=2;
+	    } else {
+	      if( (corri1-corri) < bcidthres ) badbcid[k][ibc]=3;
+	      if( (corri-corriminus) < bcidthres ) badbcid[k][ibc]=3;
+	    } //ibc+2 if
+	  } else {
+	    if( (corri-corriminus) < bcidthres ) badbcid[k][ibc]=3;
+	  }//ibc+1 if
+	} //ibc>0 if 
+
 	
 	for (int ichan=0; ichan<NCHANNELS; ichan++) {
 	  if(gain_hit_high[k][ibc][ichan]%2==1){
@@ -677,8 +720,10 @@ int RAW2ROOT::readEvent(std::vector < unsigned short int > & eventData) {
 
 	if (count_negdata>0) {badbcid[k][ibc]+=32;}
 
-
+	//if(k==15) out_log<<ibc<< " " <<badbcid[k][ibc]<<" "<<corrected_bcid[k][ibc]<<endl;
 	}//ibc
+      //if(k==15) out_log<<" ------------------ " <<std::endl;
+
     }//chipID
   }//k
 
@@ -806,7 +851,7 @@ int RAW2ROOT::data_integrity(std::vector < unsigned short int > & eventData, int
 }
 //******************************************************************************************************************
 
-void RAW2ROOT::ReadFile(TString inputFileName, bool overwrite,int maxevt) {
+void RAW2ROOT::ReadFile(TString inputFileName, bool overwrite, int bcidthres, int maxevt) {
 
   TString out_log_name = inputFileName+"_conversion.log";
 
@@ -888,7 +933,7 @@ void RAW2ROOT::ReadFile(TString inputFileName, bool overwrite,int maxevt) {
                 //out_log<<"SPILL END= "<<packetData.size()<<endl;
 	      if(recordEvent){
 		if (countchip>0){
-		  int data_int = readEvent(packetData);
+		  int data_int = readEvent(packetData,bcidthres);
 		  h_dataIntegrity->Fill(data_int);
 		  if(_debug) out_log<<" Data Int = "<<data_int<<endl;
 		  if(data_int==0) {
