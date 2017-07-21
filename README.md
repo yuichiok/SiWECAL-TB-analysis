@@ -1,6 +1,25 @@
 # SiWECAL-TB-analysis
 Scripts for SiW ECAL test beam analysis
 
+###################################
+## Single slab analysis
+RAW2ROOT.cc is the macro that reads the raw files and makes covnersion to root files, for single slabs.
+Example of how to run it is in ConvertDirectory.cc:
+root -l -q /home/irles/cernbox/TB2017/SiWECAL-TB-analysis-dev/ConvertDirectory.cc\(\"/Folder_path/"/"\",\""dif_1_1_1.raw"\",bcid_threshold\)
+The bcid threshold is used to refine retriggers (retriggers are consecutive triggers with bcid[sca+1}-bcid[sca] < bcid_trheshold
+
+Analysis tools are provided in
+
+cd singleslab/
+
+--> pedestal studies
+--> mip studies.
+(see README in the folder)
+
+
+##################################3
+## Built Events
+
 ## Batch conversion and event building
 One can use the `batch_convert.py` script to automatically convert (raw2root), merge (single slab files) and build events.
 The usage is:
@@ -37,5 +56,4 @@ For now simple analysis is possible directly from the ROOT prompt with `ecal->Dr
 A python analyzer will be added soon.
 
 # TODO:
-- per-channel MIP calibration
 - python event analyzer

@@ -1,9 +1,9 @@
 ## Pedestal Analysis
-## savePedestal.cc
+## singleSlabAnalysis.cc
 ## A. Irles, 19 July 2017
 ## irles@lal.in2p3.fr
 
-Five functions in savePedestal.cc
+Five functions in singleSlabAnalysis.cc
 Analyzes single slabs.
 uses the output of RAW2ROOT.cc
 
@@ -23,4 +23,9 @@ Read and save the info of masked channels.  It is always run in 1)
 5)    BcidCorrelations(TString filename)
 Study bcid correlation of tagged events (on construction).
 
+6) SignalAnalysis(TString dif,TString map_filename);
+Reads the files and subtract the pedestal to signal and calculates mip positions and signal over noie ratios for all channels.
+
+
 Examples of how to run the different functions are in PedAnalysis.cc and pedestal.sh
+or in SigAnalysis.cc

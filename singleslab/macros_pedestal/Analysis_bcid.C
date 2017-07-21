@@ -70,7 +70,7 @@ int Analysis_bcid(TString dif="1_1_2", bool ratio=true) {
       TH2F *tmp_pedestal_npeaks[15];
       TH2F *tmp_pedestal_tagged_npeaks[15];
   
-      TString file="rootfiles/Pedestal_summary_dif_"+dif+"_bcidTh15.root";
+      TString file="/home/irles/cernbox/TB2017/TBdata/MIPscan/pedestal/rootfiles/Pedestal_summary_dif_"+dif+"_bcidTh15.root";
       std::cout<<"Opening file with full run: "<<file<<std::endl;
       TFile *f_total = new TFile(file);
   
@@ -81,7 +81,7 @@ int Analysis_bcid(TString dif="1_1_2", bool ratio=true) {
       }
       // f_total->Close();
   
-      file="rootfiles/Pedestal_summary_dif_"+dif+grid+".root";
+      file="/home/irles/cernbox/TB2017/TBdata/MIPscan/pedestal/rootfiles/Pedestal_summary_dif_"+dif+grid+".root";
       std::cout<<"Opening file for single run: "<<file<<std::endl;
       TFile *f = new TFile(file);
   
