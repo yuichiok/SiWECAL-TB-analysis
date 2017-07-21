@@ -20,6 +20,7 @@
 #include <TCanvas.h>
 #include <TString.h>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include "InfoChip.cc"
@@ -35,7 +36,9 @@ class RAW2ROOT {
 public:
   RAW2ROOT(){
     recordEvent = false;
-    _debug=false;
+    _savelog = true;
+    _debug = false;
+    if(_debug==true) _savelog=true;
 
     chipIds.push_back(0x0000);//chip 2
     chipIds.push_back(0x0001);//chip 4
@@ -54,66 +57,14 @@ public:
     chipIds.push_back(0x000E);//chip
     chipIds.push_back(0x000F);//chip
 	
-    //       chipIds.push_back(0x0010);//chip
-
-    /*chipIds.push_back(0x0011);//chip 4
-      chipIds.push_back(0x0012);//chip 3
-      chipIds.push_back(0x0013);//chip 1
-      chipIds.push_back(0x0014);//chip
-      chipIds.push_back(0x0015);//chip
-      chipIds.push_back(0x0016);//chip
-      chipIds.push_back(0x0017);//chip
-      chipIds.push_back(0x0018);//chip
-      chipIds.push_back(0x0019);//chip
-      chipIds.push_back(0x001A);//chip
-      chipIds.push_back(0x001B);//chip
-      chipIds.push_back(0x001C);//chip
-      chipIds.push_back(0x001D);//chip
-      chipIds.push_back(0x001E);//chip
-      chipIds.push_back(0x001F);//chip
-      chipIds.push_back(0x0020);//chip
-
-      chipIds.push_back(0x0021);//chip 4
-      chipIds.push_back(0x0022);//chip 3
-      chipIds.push_back(0x0023);//chip 1
-      chipIds.push_back(0x0024);//chip
-      chipIds.push_back(0x0025);//chip
-      chipIds.push_back(0x0026);//chip
-      chipIds.push_back(0x0027);//chip
-      chipIds.push_back(0x0028);//chip
-      chipIds.push_back(0x0029);//chip
-      chipIds.push_back(0x002A);//chip
-      chipIds.push_back(0x002B);//chip
-      chipIds.push_back(0x002C);//chip
-      chipIds.push_back(0x002D);//chip
-      chipIds.push_back(0x002E);//chip
-      chipIds.push_back(0x002F);//chip
-      chipIds.push_back(0x0030);//chip
-
-      chipIds.push_back(0x0031);//chip 4
-      chipIds.push_back(0x0032);//chip 3
-      chipIds.push_back(0x0033);//chip 1
-      chipIds.push_back(0x0034);//chip
-      chipIds.push_back(0x0035);//chip
-      chipIds.push_back(0x0036);//chip
-      chipIds.push_back(0x0037);//chip
-      chipIds.push_back(0x0038);//chip
-      chipIds.push_back(0x0039);//chip
-      chipIds.push_back(0x003A);//chip
-      chipIds.push_back(0x003B);//chip
-      chipIds.push_back(0x003C);//chip
-      chipIds.push_back(0x003D);//chip
-      chipIds.push_back(0x003E);//chip
-      chipIds.push_back(0x003F);//chip
-      chipIds.push_back(0x0040);//chip */
-
     info = new InfoChip(); R2Rstate=-1;
 
   };
   ~RAW2ROOT(){
     delete info;
   };
-  void ReadFile(TString inputFileName,  bool overwrite=false,  int maxevt=99999999);
+  
+  void ReadFile(TString inputFileName,  bool overwrite=false, int bcidthres=15, int maxevt=99999999);
 
 protected:
 
@@ -123,20 +74,20 @@ protected:
     NCHIP=16,
     CHIPHEAD=4,
     CHIPENDTAG=2,
-    NEGDATA_THR=10 //event with data below are tagged badbcid+=32
+    NEGDATA_THR=11 //event with data below are tagged badbcid+=32
   };
 
   int R2Rstate;
 
-  int readEvent(std::vector < unsigned short int > & eventData);
-  int data_integrity(std::vector < unsigned short int > & eventData, int i, int local_offset, int nColumns);
+  int readEvent(std::vector < unsigned short int > & eventData, int bcidthres);
+  int data_integrity(std::vector < unsigned short int > & eventData, int i, int local_offset, int nColumns, int ichip);
   void Initialisation();
   void analyse_hits();
   void analyse_dataintegrity();
   void plotHistos();
   void treeInit();
   void printEvent(std::vector < unsigned short int > & eventData);
-  void DebugMode(bool t){ _debug=t; }
+  void DebugMode(bool t){ _savelog=t; }
   void searchNmax(int N, int Size, Float_t * table, Float_t * tableout ,int * ranks);
   int  GetTree(TString rootfilename);
   int  BuildTimedEvents(TString rootfilename);
@@ -159,6 +110,10 @@ protected:
 
   // data integrity mistakes counter
   TH1F* h_dataIntegrity;
+  TH1F* h_dataIntegrity_bcid;
+  TH1F* h_dataIntegrity_sca;
+  TH2F* h_dataIntegrity_map;
+
   //Data Integrity
   // value = 0 --> OK
   // value = 1 --> bad data size
@@ -194,12 +149,15 @@ protected:
   int chipID[NCHIP];
   int acqNumber;
 
-  //int allbcid[NCHIP*MEMDEPTH];
 
   bool recordEvent;
+  bool _savelog;
   bool _debug;
 
   std::vector <int> chipIds;
+  
+  ofstream out_log; //file where the log info will be
+
 
   InfoChip * info;
 };
@@ -261,6 +219,10 @@ void RAW2ROOT::Initialisation() {
   h2_hits_Acq = new TH2F("Hits_XY_Acq","Hits per Acq",32,-89.5,90-0.5,32,-89.5,90-0.5);
 
   h_dataIntegrity = new TH1F("Data_Integrity","Data Integrity",10,-0.5,9.5);
+  h_dataIntegrity_bcid = new TH1F("Data_Integrity_BCID","Data Integrity_BCID",4096,0.5,4096.5);
+  h_dataIntegrity_sca = new TH1F("Data_Integrity_SCA","Data Integrity_SCA",15,-0.5,14.5);
+  h_dataIntegrity_map = new TH2F("Data_Integrity_map","Data Integrity_map",64,-0.5,63.5,16,-0.5,15.5);
+
 
   for (int j=0; j<NCHIP; j++) {
     name = "hits_chip_";
@@ -329,7 +291,7 @@ void RAW2ROOT::Initialisation() {
 
   fout->cd();
 
-  cout<<"End Initialisation"<<endl;
+  if(_savelog) out_log<<"End Initialisation"<<endl;
 
   return;
 }
@@ -347,7 +309,7 @@ void RAW2ROOT::treeInit() { //init data for a single SPILL ?
     for (int i=0; i<MEMDEPTH; i++) {
       //allbcid[i+k*MEMDEPTH]=0;
       bcid[k][i]=-999;
-      badbcid[k][i]=0;
+      badbcid[k][i]=-999;
       corrected_bcid[k][i]=-999;
       nhits[k][i]=-999;
       for (int j=0; j<NCHANNELS; j++) {
@@ -388,19 +350,19 @@ void RAW2ROOT::searchNmax(int N, int Size, Float_t * table, Float_t * tableout ,
 
 void RAW2ROOT::analyse_dataintegrity() {
 
-  cout<<" "<<endl;
-  cout<< " DATA INTEGRITY SUMMARY "<<endl;
-  cout<< " total number of spills = "<< h_dataIntegrity->GetEntries() << endl;
-  cout<< " TOTALGOOD  "<< 100.*h_dataIntegrity->GetBinContent(1)/h_dataIntegrity->GetEntries() << " %   are spills with acceptable data"<<endl;
-  cout<< " bad -- " << 100.*h_dataIntegrity->GetBinContent(2)/h_dataIntegrity->GetEntries() << " %   have bad data size"<<endl;
-  cout<< " bad -- " << 100.*h_dataIntegrity->GetBinContent(3)/h_dataIntegrity->GetEntries() << " %   have more than 15 SCA"<<endl;
-  cout<< " bad -- " << 100.*h_dataIntegrity->GetBinContent(4)/h_dataIntegrity->GetEntries() << " %   have bad chip number"<<endl;
-  cout<< " bad -- " << 100.*h_dataIntegrity->GetBinContent(5)/h_dataIntegrity->GetEntries() << " %   have extra bits in BCID"<<endl;
-  cout<< " bad -- " << 100.*h_dataIntegrity->GetBinContent(6)/h_dataIntegrity->GetEntries() << " %   have extrabits in low gain."<<endl;
-  cout<< " bad -- " << 100.*h_dataIntegrity->GetBinContent(7)/h_dataIntegrity->GetEntries() << " %   have extrabits in high gain"<<endl;
-  cout<< " bad -- " << 100.*h_dataIntegrity->GetBinContent(8)/h_dataIntegrity->GetEntries() << " %   have different hit bit for low and high gain"<<endl;
-  // cout<< " bad -- " << 100.*h_dataIntegrity->GetBinContent(9)/h_dataIntegrity->GetEntries() << " %   gain = 1 but charge <10"<<endl;
-  cout<< " bad -- " << 100.*h_dataIntegrity->GetBinContent(9)/h_dataIntegrity->GetEntries() << " %   bad number of SCA or channels"<<endl;
+  out_log<<" "<<endl;
+  out_log<< " DATA INTEGRITY SUMMARY "<<endl;
+  out_log<< " total number of spills = "<< h_dataIntegrity->GetEntries() << endl;
+  out_log<< " TOTALGOOD  "<< 100.*h_dataIntegrity->GetBinContent(1)/h_dataIntegrity->GetEntries() << " %   are spills with acceptable data"<<endl;
+  out_log<< " bad -- " << 100.*h_dataIntegrity->GetBinContent(2)/h_dataIntegrity->GetEntries() << " %   have bad data size"<<endl;
+  out_log<< " bad -- " << 100.*h_dataIntegrity->GetBinContent(3)/h_dataIntegrity->GetEntries() << " %   have more than 15 SCA"<<endl;
+  out_log<< " bad -- " << 100.*h_dataIntegrity->GetBinContent(4)/h_dataIntegrity->GetEntries() << " %   have bad chip number"<<endl;
+  out_log<< " bad -- " << 100.*h_dataIntegrity->GetBinContent(5)/h_dataIntegrity->GetEntries() << " %   have extra bits in BCID"<<endl;
+  out_log<< " bad -- " << 100.*h_dataIntegrity->GetBinContent(6)/h_dataIntegrity->GetEntries() << " %   have extrabits in low gain."<<endl;
+  out_log<< " bad -- " << 100.*h_dataIntegrity->GetBinContent(7)/h_dataIntegrity->GetEntries() << " %   have extrabits in high gain"<<endl;
+  out_log<< " bad -- " << 100.*h_dataIntegrity->GetBinContent(8)/h_dataIntegrity->GetEntries() << " %   have different hit bit for low and high gain"<<endl;
+  // out_log<< " bad -- " << 100.*h_dataIntegrity->GetBinContent(9)/h_dataIntegrity->GetEntries() << " %   gain = 1 but charge <10"<<endl;
+  out_log<< " bad -- " << 100.*h_dataIntegrity->GetBinContent(9)/h_dataIntegrity->GetEntries() << " %   bad number of SCA or channels"<<endl;
 
 }
 
@@ -409,7 +371,7 @@ void RAW2ROOT::analyse_hits() {
   // good hits are identified according to algo in readEvent function
   // total events is the cumulated sum of columns over spills
   TString name;
-  cout << "ANALYSE HITS"<<endl;
+ if(_savelog)  out_log << "ANALYSE HITS"<<endl;
 
   //one get total events using sum(bin x bin value) from the histo of the number of columns
   Double_t TotEvents[NCHIP]; //Double_t
@@ -423,8 +385,8 @@ void RAW2ROOT::analyse_hits() {
 
     UnFilteredEvents[nchip] = TotEvents[nchip] - h_TagHist[nchip]->GetEntries();
     
-    cout << "   get " << UnFilteredEvents[nchip] << " out of " << TotEvents[nchip] << " events for chip " << nchip ;
-    cout << "  (" << UnFilteredEvents[nchip]*100/TotEvents[nchip] << "%)"<<endl;
+   if(_savelog)  out_log << "   get " << UnFilteredEvents[nchip] << " out of " << TotEvents[nchip] << " events for chip " << nchip ;
+   if(_savelog)  out_log << "  (" << UnFilteredEvents[nchip]*100/TotEvents[nchip] << "%)"<<endl;
   }
   
   //map of Tagged events, % of tagged evt per chip per column
@@ -452,7 +414,7 @@ void RAW2ROOT::analyse_hits() {
     }
   }
 
-  cout<<" ------------------------------- "<<endl;
+  if(_savelog) out_log<<" ------------------------------- "<<endl;
   return;
 }
 
@@ -478,9 +440,9 @@ void RAW2ROOT::plotHistos() {
 
 void RAW2ROOT::printEvent(std::vector < unsigned short int > & eventData) {
   if (_debug) {
-    cout << "printing event for debug" << endl;
+    out_log << "printing event for debug" << endl;
     for (unsigned int i=0; i<eventData.size(); i++) {
-      cout << i << " 0x" << hex << eventData[i] << " "<< dec <<int(eventData[i] & 0x0fff) << endl;
+      out_log << i << " 0x" << hex << eventData[i] << " "<< dec <<int(eventData[i] & 0x0fff) << endl;
     }
   }
   return;
@@ -488,7 +450,7 @@ void RAW2ROOT::printEvent(std::vector < unsigned short int > & eventData) {
 
 //******************************************************************************************************************
 
-int RAW2ROOT::readEvent(std::vector < unsigned short int > & eventData) {
+int RAW2ROOT::readEvent(std::vector < unsigned short int > & eventData, int bcidthres) {
 
   // ASSUMES HIGH/LOW GAIN mode  !!!
   // ----------------------
@@ -524,7 +486,7 @@ int RAW2ROOT::readEvent(std::vector < unsigned short int > & eventData) {
 
     if( eventData[i] == 0xfffd){// find start chip tag
       chipStartIndex=i+CHIPHEAD;
-      if (_debug) cout << "   start chip";
+      if (_debug) out_log << "   start chip";
     }
 
     if(last == 0xfffe){// find end chip tag
@@ -541,23 +503,23 @@ int RAW2ROOT::readEvent(std::vector < unsigned short int > & eventData) {
 	local_offset = (rawDataSize-offset)%(1+NCHANNELS*2);
 	
 	if(local_offset!=0){
-	  cout<<"<!> WARNING <!> Additionnal data words detected"<<endl;
+	  if (_savelog) out_log<<"<!> WARNING <!> Additionnal data words detected"<<endl;
 	  //  last=eventData[i];
 	}
 
 	nColumns = (rawDataSize-offset-local_offset)/(1+NCHANNELS*2);
 
-	if (_debug) cout<<"Chip data: "  <<" size: "<<rawDataSize<<" col: "<<nColumns<<" evt: "<<(rawDataSize-offset)%(1+NCHANNELS*2)
+	if (_debug) out_log<<"Chip data: "  <<" size: "<<rawDataSize<<" col: "<<nColumns<<" evt: "<<(rawDataSize-offset)%(1+NCHANNELS*2)
 			<<"   local_offset :"<< local_offset  << endl;
 
 	if((rawDataSize-offset-local_offset)%(1+NCHANNELS*2)!=0){
-	  if(_debug) cout<<"<!> ERROR <!> Bad data size"<<endl;
+	  if(_savelog) out_log<<"<!> ERROR <!> Bad data size"<<endl;
 	  last=eventData[i];
 	  return 1;
 	}
 
 	if (nColumns>MEMDEPTH){
-	  if(_debug) cout << "<!> ERROR <!> Bad number of columns" <<endl;
+	  if(_savelog) out_log << "<!> ERROR <!> Bad number of columns" <<endl;
 	  last=eventData[i];
 	  return 2;
 	}
@@ -572,13 +534,13 @@ int RAW2ROOT::readEvent(std::vector < unsigned short int > & eventData) {
 	  if(chipid==chipIds[iChip]) isGoodChipNumber=true;
 	}
 	if(!isGoodChipNumber){
-	  if(_debug) cout << "<!> ERROR <!> Bad Chip ID: " << chipid <<endl;
+	  if(_savelog) out_log << "<!> ERROR <!> Bad Chip ID: " << chipid <<endl;
 	  last=eventData[i];
 	  return 3;
 	}
 
 	//data integrity 
-	int data_integ=data_integrity(eventData,i,local_offset,nColumns);
+	int data_integ=data_integrity(eventData,i,local_offset,nColumns,chipid);
 	if(data_integ>0) return data_integ;
 
 	// ----------------------
@@ -613,7 +575,7 @@ int RAW2ROOT::readEvent(std::vector < unsigned short int > & eventData) {
 	      gain_hit_low[chipid][ibc][ichan]= (eventData[jj] >> 12 ) & 0xf;
 	    }
 	    else {
-	      cout << "<!> ERROR <!> Low Gain : Bad number of columns: " << ibc << " or bad number of channels: " << ichan << endl;
+	      if (_savelog) out_log << "<!> ERROR <!> Low Gain : Bad number of columns: " << ibc << " or bad number of channels: " << ichan << endl;
 	    }
 	    ichan++;
 	  }
@@ -628,11 +590,11 @@ int RAW2ROOT::readEvent(std::vector < unsigned short int > & eventData) {
 	    if (ibc<MEMDEPTH && ichan<NCHANNELS){
 	      charge_high[chipid][ibc][ichan]=eventData[jj] & 0x0fff;
 	      gain_hit_high[chipid][ibc][ichan] = (eventData[jj] >> 12 ) & 0xf;
-	      if(gain_hit_high[chipid][ibc][ichan]==1 && charge_high[chipid][ibc][ichan]>NEGDATA_THR ){
+	      if(gain_hit_high[chipid][ibc][ichan]==1 && charge_high[chipid][ibc][ichan]>0 ){
 		count_hits++;
 	      }
 	    }  else {
-	      cout << "<!> ERROR <!> High Gain : Bad number of columns: " << ibc << " or bad number of channels: " << ichan << endl;
+	      if (_savelog) out_log << "<!> ERROR <!> High Gain : Bad number of columns: " << ibc << " or bad number of channels: " << ichan << endl;
 	    }
 	    ichan++;
 	  }
@@ -645,11 +607,11 @@ int RAW2ROOT::readEvent(std::vector < unsigned short int > & eventData) {
 	//print event info
 	if(_debug) {
 	  for(int ibc=0; ibc<nColumns; ibc++)
-	    cout<< "bcid = "<<bcid[chipid][ibc]<<endl;
+	    out_log<< "bcid = "<<bcid[chipid][ibc]<<endl;
 	  
 	  for(int ibc=0; ibc<nColumns; ibc++) {
 	    for(int ich=0; ich<NCHANNELS; ich++) {
-	      cout<< chipid <<" "<< ibc <<" "<< ich << " low = "<<charge_high[chipid][ibc][ich]<< " high = "<<charge_low[chipid][ibc][ich]<<endl;
+	      out_log<< chipid <<" "<< ibc <<" "<< ich << " low = "<<charge_high[chipid][ibc][ich]<< " high = "<<charge_low[chipid][ibc][ich]<<endl;
 	    }
 	  }
 	} //
@@ -670,29 +632,86 @@ int RAW2ROOT::readEvent(std::vector < unsigned short int > & eventData) {
     if (chipID[k]>=0) {
       for (int ibc=0; ibc<numCol[k]; ibc++) {
 
-	//tag successive bcids
-	if (ibc==0) {
-	  badbcid[k][ibc]=0;  //first col is always ok
-	  for (int ichan=0; ichan<NCHANNELS; ichan++) {
-	    if(gain_hit_high[k][ibc][ichan]%2==1){
-	      h_hit_filtered[k]->Fill(ichan);
-	    }
-	  }
-	} else {
-	  for (int ichan=0; ichan<NCHANNELS; ichan++) {
-	    if(gain_hit_high[k][ibc][ichan]%2==1){
-	      h_hit_filtered[k]->Fill(ichan);
-	    }
-	  }
-	  //irles 
-	  if( ( corrected_bcid[k][ibc] - corrected_bcid[k][ibc-1]) > 0  &&  (corrected_bcid[k][ibc] - corrected_bcid[k][ibc-1]) < 16 ) {
-	    badbcid[k][ibc]=corrected_bcid[k][ibc] - corrected_bcid[k][ibc-1];
-	  } else {
-	    badbcid[k][ibc]=0; 
-	  }
-	}//if ibc == 0
+	// if sca+1 is filled with consec bcid, but sca+2 not, then badbcid[sca]==1 && badbcid[sca+1]==2 (bcid+1 issue, events are not bad, just the next sca is bad)
+	// if sca+1 is filled with consec bcid, and sca+2 also, then badbcid[sca]==3 && badbcid[sca+1]==3 (retriggering)
+	// if sca+1 is not filled with consec bcid,  badbcid==0
 
-	//tag zero data
+	if(ibc==0) {
+	  badbcid[k][ibc]=0;
+	  int corri=corrected_bcid[k][ibc];
+	  
+	  if(corrected_bcid[k][ibc+1]>0 && corrected_bcid[k][ibc]>0 && (corrected_bcid[k][ibc+1]-corrected_bcid[k][ibc])>0) {
+	    int corri1=corrected_bcid[k][ibc+1];
+
+	    if(corrected_bcid[k][ibc+2]>0 && (corrected_bcid[k][ibc+2]-corrected_bcid[k][ibc+1])>0) {
+	      int corri2=corrected_bcid[k][ibc+2];
+	      if( ( corri2-corri1) < bcidthres && (corri1-corri) < bcidthres) {
+		badbcid[k][ibc]=3;
+		badbcid[k][ibc+1]=3;
+		badbcid[k][ibc+2]=3;
+	      }
+	      if( ( corri2-corri1) >(bcidthres - 1) && (corri1-corri) > 1 && (corri1-corri) <bcidthres) {
+		badbcid[k][ibc]=3;
+		badbcid[k][ibc+1]=3;
+	      }
+	      if( ( corri2-corri1) >(bcidthres - 1) && (corri1-corri) ==1) {
+		badbcid[k][ibc]=1;
+		badbcid[k][ibc+1]=2;
+	      }
+	  } else {
+	      if( (corri1-corri) < bcidthres) {
+		badbcid[k][ibc]=3;
+		badbcid[k][ibc+1]=3;
+	      }
+	    } //ibc+2 if
+	  }//ibc+1 if
+	} //ibc==0 if 
+
+      if(ibc>0 && badbcid[k][ibc]<0 && corrected_bcid[k][ibc] >0 &&  (corrected_bcid[k][ibc]-corrected_bcid[k][ibc-1])>0 ) {
+	  badbcid[k][ibc]=0;
+	  int corri=corrected_bcid[k][ibc];
+	  int corriminus=corrected_bcid[k][ibc-1];
+
+	  if(corrected_bcid[k][ibc+1]>0 && (corrected_bcid[k][ibc+1]-corrected_bcid[k][ibc])>0) {
+	    int corri1=corrected_bcid[k][ibc+1];
+
+	    if(corrected_bcid[k][ibc+2]>0 && (corrected_bcid[k][ibc+2]-corrected_bcid[k][ibc+1])>0) {
+	      int corri2=corrected_bcid[k][ibc+2];
+	      if( ( corri2-corri1) < bcidthres && (corri1-corri) < bcidthres) {
+		badbcid[k][ibc]=3;
+		badbcid[k][ibc+1]=3;
+		badbcid[k][ibc+2]=3;
+	      }
+	      if( (corri1-corri) < bcidthres && (corri-corriminus) < bcidthres ) badbcid[k][ibc]=3;
+
+	      if( badbcid[k][ibc]!=3 && ( corri2-corri1) >(bcidthres - 1) && (corri1-corri) ==1) {
+		badbcid[k][ibc]=1;
+		badbcid[k][ibc+1]=2;
+	      }
+	      if( badbcid[k][ibc]!=3 && ( corri2-corri1) >(bcidthres - 1) && (corri1-corri) > 1 && (corri1-corri) <bcidthres) {
+		badbcid[k][ibc]=3;
+		badbcid[k][ibc+1]=3;
+	      }
+	      if( (corri-corriminus) < bcidthres ) badbcid[k][ibc]=3;
+
+	      //if( badbcid[k][ibc-1]==1 && (corri1-corri) > (bcidthres - 1)) badbcid[k][ibc]=2;
+	    } else {
+	      if( (corri1-corri) < bcidthres ) badbcid[k][ibc]=3;
+	      if( (corri-corriminus) < bcidthres ) badbcid[k][ibc]=3;
+	    } //ibc+2 if
+	  } else {
+	    if( (corri-corriminus) < bcidthres ) badbcid[k][ibc]=3;
+	  }//ibc+1 if
+	} //ibc>0 if 
+
+	
+	for (int ichan=0; ichan<NCHANNELS; ichan++) {
+	  if(gain_hit_high[k][ibc][ichan]%2==1){
+	    h_hit_filtered[k]->Fill(ichan);
+	  }
+	}
+
+	//tag zero (under/over flow) data
 	count_negdata=0;
 	
 	for (int ichan=0; ichan<NCHANNELS; ichan++) {
@@ -701,8 +720,10 @@ int RAW2ROOT::readEvent(std::vector < unsigned short int > & eventData) {
 
 	if (count_negdata>0) {badbcid[k][ibc]+=32;}
 
+	//if(k==15) out_log<<ibc<< " " <<badbcid[k][ibc]<<" "<<corrected_bcid[k][ibc]<<endl;
+	}//ibc
+      //if(k==15) out_log<<" ------------------ " <<std::endl;
 
-      }//ibc
     }//chipID
   }//k
 
@@ -711,9 +732,9 @@ int RAW2ROOT::readEvent(std::vector < unsigned short int > & eventData) {
 
 
 
-int RAW2ROOT::data_integrity(std::vector < unsigned short int > & eventData, int i, int local_offset, int nColumns){
+int RAW2ROOT::data_integrity(std::vector < unsigned short int > & eventData, int i, int local_offset, int nColumns, int ichip){
 
-  if (_debug) cout << "DataIntegrity: analysing event with " << eventData.size() << " entries " << event << endl;
+  if (_debug) out_log << "DataIntegrity: analysing event with " << eventData.size() << " entries " << event << endl;
 
   // ASSUMES HIGH/LOW GAIN mode  !!!
   // ----------------------
@@ -729,7 +750,7 @@ int RAW2ROOT::data_integrity(std::vector < unsigned short int > & eventData, int
   // value = 7 --> hit bit from high gain != hit bit from low gain 
   // value = 8 --> Bad number of columns or bad number of channels
     
-  int check_data;
+  int check_data=0;
     
   //create vectors of high/low gain hit bits for comparison 
   int gain_high[15][64], gain_low[15][64];
@@ -742,11 +763,13 @@ int RAW2ROOT::data_integrity(std::vector < unsigned short int > & eventData, int
     
 
   for (int ibc=0; ibc<nColumns; ibc++) {
-    
+    int bcid = int(eventData[i-3-1*local_offset-ibc] & 0x0fff);
     if( int(eventData[i-3-1*local_offset-ibc] & 0xf000) !=0 ) {
       check_data=4; //extra bits
-      cout << "<!> DataIntegrity ERROR <!> Extra bits in BCID " << ibc <<  endl;
-      return check_data;
+      if (_savelog) out_log << "<!> DataIntegrity ERROR <!> Extra bits in BCID " << ibc <<  endl;
+      h_dataIntegrity_bcid->Fill(bcid); 
+      h_dataIntegrity_sca->Fill(ibc);
+      //return check_data;
     }
     
     // fill the charges
@@ -762,21 +785,24 @@ int RAW2ROOT::data_integrity(std::vector < unsigned short int > & eventData, int
 
 	if( gain_low[ibc][ichan] > 1 ) {
 	  check_data=5; //extra bits
-	  cout << "<!> DataIntegrity ERROR <!> Extra bits in LOW GAIN " << ibc <<  " "<< gain_low[ibc][ichan] << endl;
-	  return check_data;
+	  if (_savelog) out_log << "<!> DataIntegrity ERROR <!> Extra bits in LOW GAIN " << ibc <<  " "<< gain_low[ibc][ichan] << endl;
+	  h_dataIntegrity_bcid->Fill(bcid); 
+	  h_dataIntegrity_sca->Fill(ibc);
+	  h_dataIntegrity_map->Fill(ichan,ichip);
+	  //	  return check_data;
 	}
-	/*if( gain_low[ibc][ichan] ==1 && charge < NEGDATA_THR ) {
-	  check_data=8; //negative data but hit bit = 1
-	  cout << "<!> DataIntegrity ERROR <!> HIT HIGH LOW ==1 but negative data" << gain_low[ibc][ichan]<<" "<< charge <<  endl;
-	  return check_data;
-	  }*/
       }	else {
 	check_data=8;
-	cout << "<!> DataIntegrity ERROR <!> Low Gain : Bad number of columns: " << ibc << " or bad number of channels: " << ichan << endl;
+	if (_savelog) out_log << "<!> DataIntegrity ERROR <!> Low Gain : Bad number of columns: " << ibc << " or bad number of channels: " << ichan << endl;
+	h_dataIntegrity_bcid->Fill(bcid);
+	h_dataIntegrity_sca->Fill(ibc);
+	h_dataIntegrity_map->Fill(ichan,ichip);
 	return check_data;
       }
       ichan++;
     }
+    //if(check_data>0) return check_data;                                                                                                                                                   
+
     
     // analyse hits and bcids
     begin=end;
@@ -791,26 +817,33 @@ int RAW2ROOT::data_integrity(std::vector < unsigned short int > & eventData, int
 
 	if( gain_high[ibc][ichan] > 1 ) {
 	  check_data=6; //extra bits
-	  cout << "<!> DataIntegrity ERROR <!> Extra bits in HIGH GAIN " << ibc << " "<< gain_high[ibc][ichan] << endl;
-	  return check_data;
+	  if (_savelog) out_log << "<!> DataIntegrity ERROR <!> Extra bits in HIGH GAIN " << ibc << " "<< gain_high[ibc][ichan] << endl;
+	  h_dataIntegrity_bcid->Fill(bcid); 
+	  h_dataIntegrity_sca->Fill(ibc);
+	  h_dataIntegrity_map->Fill(ichan,ichip);
+	  //return check_data;
 	}
 	if( gain_high[ibc][ichan] != gain_low[ibc][ichan] ) {
 	  check_data=7; //extra bits
-	  cout << "<!> DataIntegrity ERROR <!> HIT HIGH GAIN != HIT LOW GAIN for ibc="<<ibc<<" ichan="<<ichan << gain_high[ibc][ichan]<<" "<< gain_low[ibc][ichan] <<  endl;
-	  return check_data;
+	  if (_savelog) out_log << "<!> DataIntegrity ERROR <!> HIT HIGH GAIN != HIT LOW GAIN for ibc="<<ibc<<" ichan="<<ichan << gain_high[ibc][ichan]<<" "<< gain_low[ibc][ichan] <<  endl;
+	  h_dataIntegrity_bcid->Fill(bcid); 
+	  h_dataIntegrity_sca->Fill(ibc);
+	  h_dataIntegrity_map->Fill(ichan,ichip);
+	  //return check_data;
 	}
-	/*if( gain_high[ibc][ichan] ==1 && charge <NEGDATA_THR ) {
-	  check_data=8; //negative data but hit bit = 1
-	  cout << "<!> DataIntegrity ERROR <!> HIT HIGH GAIN ==1 but negative data" << gain_high[ibc][ichan]<<" "<< charge <<  endl;
-	  return check_data;
-	  }*/
       }  else {
 	check_data=8;
-	cout << "<!> DataIntegrity ERROR <!> High Gain : Bad number of columns: " << ibc << " or bad number of channels: " << ichan << endl;
+	if (_savelog) out_log << "<!> DataIntegrity ERROR <!> High Gain : Bad number of columns: " << ibc << " or bad number of channels: " << ichan << endl;
+	h_dataIntegrity_bcid->Fill(bcid);
+	h_dataIntegrity_sca->Fill(ibc);
+        h_dataIntegrity_map->Fill(ichan,ichip);
 	return check_data;
       }
       ichan++;
     }
+    if(check_data>0) return check_data;
+
+
   }
 
   return 0;
@@ -818,15 +851,19 @@ int RAW2ROOT::data_integrity(std::vector < unsigned short int > & eventData, int
 }
 //******************************************************************************************************************
 
-void RAW2ROOT::ReadFile(TString inputFileName, bool overwrite,int maxevt) {
+void RAW2ROOT::ReadFile(TString inputFileName, bool overwrite, int bcidthres, int maxevt) {
 
-cout <<endl;
-    cout << "            **** READING FILE " << inputFileName << " ****"<<endl;
+  TString out_log_name = inputFileName+"_conversion.log";
+
+  if(_savelog) out_log.open(out_log_name.Data());
+  
+  if(_savelog) out_log <<endl;
+  if(_savelog) out_log << "            **** READING FILE " << inputFileName << " ****"<<endl;
 
     // read threshold value from event number
     if(inputFileName.Contains("_trig")){
-	thr = std::stoi(inputFileName(inputFileName.Index("_trig")+5,3));
-	cout << endl << "Opened file with threshold\t" << thr << endl <<  endl;
+      //	thr = std::stoi(inputFileName(inputFileName.Index("_trig")+5,3));
+	if(_savelog) out_log << endl << "Opened file with threshold\t" << thr << endl <<  endl;
     }
 
     event=0;
@@ -835,7 +872,7 @@ cout <<endl;
     if(!overwrite){
         fout = new TFile(inputFileName+".root","create");
         if(!fout->IsOpen()){
-            cout<<"<!> ERROR <!>   File already created!"<<endl;
+            if(_savelog) out_log<<"<!> ERROR <!>   File already created!"<<endl;
             return;
         }
     }
@@ -852,7 +889,6 @@ cout <<endl;
 
     //int rawDataSize=0;
     //int nColumns = 0;
-    bool outlog = false;
     bool altTag = false;
     int countchipdata=0;
     int countchip=0;
@@ -864,7 +900,7 @@ cout <<endl;
     unsigned short int lastTwo[2]={0};
 
     if(fin.is_open())
-        while (fin.read((char *)&dataResult, sizeof dataResult) && event<maxevt ) {
+      while (fin.read((char *)&dataResult, sizeof(dataResult) ) && event<maxevt ) {
 
             packetData.push_back(dataResult);countchipdata++;
 
@@ -873,20 +909,20 @@ cout <<endl;
             }
 
             if(lastTwo[1] == 0xFFFC){
-                if (outlog) cout << "   SPILL "<< lastTwo[0] << " " << dataResult << " START--->" <<endl;
+                if (_debug) out_log << "   SPILL "<< lastTwo[0] << " " << dataResult << " START--->" <<endl;
                 countchip=0;
             }
             if(lastTwo[1] == 0xFFFD){
-                if (outlog) cout << "       CHIP "<< lastTwo[0] - 65280 << " Begin..."; countchipdata=0;
+                if (_debug) out_log << "       CHIP "<< lastTwo[0] - 65280 << " Begin..."; countchipdata=0;
             }
 
             if(lastTwo[1] == 0xFFFE){
-                if (outlog) cout << "...End CHIP "<< lastTwo[0] - 65280 << " with " << countchipdata-2-3 << " words" <<endl;
+                if (_debug) out_log << "...End CHIP "<< lastTwo[0] - 65280 << " with " << countchipdata-2-3 << " words" <<endl;
                 if (countchipdata>100) {countchip++;};
             }
 
             if(lastTwo[1] == 0xFFFF){
-                if (outlog) cout << "   ----->END SPILL "<< lastTwo[0] << " " << dataResult << "  with " << countchip << " chips"<< endl<<acqNumber<<endl;
+                if (_debug) out_log << "   ----->END SPILL "<< lastTwo[0] << " " << dataResult << "  with " << countchip << " chips"<< endl<<acqNumber<<endl;
                 packetData.clear();
                 lastTwo[0]=lastTwo[1]=dataResult=0;
                 altTag = false;
@@ -894,12 +930,12 @@ cout <<endl;
 
 
             if(lastTwo[1] == 0x2020 && lastTwo[0] == 0x2020 && dataResult == 0xFFFF){// SPILL END
-                //cout<<"SPILL END= "<<packetData.size()<<endl;
+                //out_log<<"SPILL END= "<<packetData.size()<<endl;
 	      if(recordEvent){
 		if (countchip>0){
-		  int data_int = readEvent(packetData);
+		  int data_int = readEvent(packetData,bcidthres);
 		  h_dataIntegrity->Fill(data_int);
-		  if(_debug) cout<<" Data Int = "<<data_int<<endl;
+		  if(_debug) out_log<<" Data Int = "<<data_int<<endl;
 		  if(data_int==0) {
 		    event++;
 		    tree->Fill();
@@ -929,7 +965,7 @@ cout <<endl;
 	    
             if(lastTwo[1] == 0x5053 && lastTwo[0] == 0x4C49 && dataResult == 0x2020){ //New SPILL: extract SPILL number
 	      if(altTag)
-		cout<<"<!> WARNING <!> New spill without end flag of the previous spill - some chips found "<<endl;
+		if (_savelog) out_log<<"<!> WARNING <!> New spill without end flag of the previous spill - some chips found "<<endl;
 	      acqNumber= packetData[packetData.size()-5]*65536+packetData[packetData.size()-4];
 	      
 	      treeInit();
@@ -944,14 +980,16 @@ cout <<endl;
 
         }
 
+    if(_savelog) {
+      out_log <<endl;
+      out_log << "           **** Finished reading file ****" << endl;
+      out_log << "           ****  with  "<< tree->GetEntries()<< "  entries  ****" << endl;
+      out_log <<endl;
+      
+      out_log << " FILEINTEGRITY "<< inputFileName<< " "<< h_dataIntegrity->GetBinContent(1)/h_dataIntegrity->GetEntries()<<endl;
+      analyse_dataintegrity();
+    }
 
-    cout <<endl;
-    cout << "           **** Finished reading file ****" << endl;
-    cout << "           ****  with  "<< tree->GetEntries()<< "  entries  ****" << endl;
-    cout <<endl;
-
-    cout << " FILEINTEGRITY "<< inputFileName<< " "<< h_dataIntegrity->GetBinContent(1)/h_dataIntegrity->GetEntries()<<endl;
-    analyse_dataintegrity();
     analyse_hits();
     plotHistos();
 
@@ -987,7 +1025,7 @@ cout <<endl;
     fev10read->SetBranchAddress("nColumns",numCol);
     fev10read->SetBranchAddress("chipid",chipID);
 
-    cout << "PlotFool::GetTree : Get tree from "<< rootfilename.Data() << endl;
+    if(_savelog) out_log << "PlotFool::GetTree : Get tree from "<< rootfilename.Data() << endl;
 
     R2Rstate=1;
     return 1;
@@ -1022,7 +1060,7 @@ cout <<endl;
 
 
     if (! GetTree(rootfilename)) {
-      cout << "RAW2ROOT ERROR: "<< rootfilename.Data() << " not found" << endl;
+      if(_savelog) out_log << "RAW2ROOT ERROR: "<< rootfilename.Data() << " not found" << endl;
       return 0;
     }
 
@@ -1077,3 +1115,4 @@ cout <<endl;
   }//method BuildTimedEvents
 
 #endif
+
