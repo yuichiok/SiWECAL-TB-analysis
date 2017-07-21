@@ -39,10 +39,10 @@ int Analysis_bcid(TString dif="1_1_2", bool ratio=true) {
   gROOT->ForceStyle();
 
   for(int igrid=0;igrid<4;igrid++) {
-    TString grid="";
-    if(igrid == 1) grid = "00";
-    if(igrid == 2) grid = "41";
-    if(igrid == 3) grid = "80";
+    TString grid0="";
+    if(igrid == 1) grid0 = "00";
+    if(igrid == 2) grid0 = "41";
+    if(igrid == 3) grid0 = "80";
 
 
     for(int ibcid=0; ibcid<5; ibcid++) {
@@ -52,8 +52,8 @@ int Analysis_bcid(TString dif="1_1_2", bool ratio=true) {
       if(ibcid==3) bcid="30";
       if(ibcid==4) bcid="60";
 
-  
-      if(grid!="") grid="_grid"+grid+"_bcidTh"+bcid;
+      TString grid="";
+      if(grid0!="") grid ="_grid"+grid0+"_bcidTh"+bcid;
       else  grid="_bcidTh"+bcid;
 
       TCanvas *pedestal = new TCanvas("pedestal","pedestal",1000,1000);
