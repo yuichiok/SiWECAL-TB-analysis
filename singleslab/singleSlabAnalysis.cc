@@ -17,7 +17,7 @@
 using namespace std;
 
 
-void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1_bcidTh15", TString map_filename="../fev10_chip_channel_x_y_mapping.txt")
+void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString map_filename="../fev10_chip_channel_x_y_mapping.txt")
 {
 
   int maxnhit=10; // plane event threshold
@@ -25,7 +25,7 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1_bcidTh15", TStrin
   //Read the channel/chip -- x/y mapping
   ReadMap(map_filename);
   //Read the list of pedestals (this information contains, implicitily, the masked channels information )
-  ReadPedestals("Pedestal_"+dif+".txt");
+  ReadPedestals("Pedestal_"+dif+"_bcidTh15.txt");
 
   ofstream fout_mip("MIP_"+dif+".txt",ios::out);
   fout_mip<<"#mip results "<<dif<<endl;

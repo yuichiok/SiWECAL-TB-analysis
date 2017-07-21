@@ -2,16 +2,13 @@
 #include "TFile.h"
 #include "singleSlabAnalysis.cc"
 
-void SigAnalysis(){//
-  TString filename_in = "grid00_dif_1_1_2.raw.root";
+void SigAnalysis(TString filename_in = "dif_1_1_1"){
   //, TString filename_out,TString filename_grid) {
 
-  
+  filename_in="/home/irles/cernbox/TB2017/TBdata/MIPscan/rootfiles_bcidTh15/"+filename_in+".raw.root"
   singleSlabAnalysis ss(filename_in); 
-  //if(filename_grid=="") ss.FindMasked(filename_out);
   ss.SignalAnalysis();
-  //ss.BcidCorrelations("dif_1_1_2");
   
-  //  gSystem->Exit(0);
+  gSystem->Exit(0);
 
 }
