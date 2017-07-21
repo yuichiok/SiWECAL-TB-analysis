@@ -5,8 +5,8 @@
 // found on file: cosmics_dif_1_1_commissioning.raw.root
 //////////////////////////////////////////////////////////
 
-#ifndef savePedestal_h
-#define savePedestal_h
+#ifndef singleSlabAnalysis_h
+#define singleSlabAnalysis_h
 
 #include <TROOT.h>
 #include <TChain.h>
@@ -23,7 +23,7 @@
 
 // Fixed size dimensions of array or collections stored in the TTree if any.
 
-class savePedestal {
+class singleSlabAnalysis {
 public :
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
    Int_t           fCurrent; //!current Tree number in a TChain
@@ -59,20 +59,29 @@ public :
    TBranch        *b_gain_hit_low;   //!
    TBranch        *b_gain_hit_high;   //!
 
-   //savePedestal(TTree *tree=0);
-   savePedestal(TString tree_s);
-   savePedestal(TList *f=0);
+   //singleSlabAnalysis(TTree *tree=0);
+   singleSlabAnalysis(TString tree_s);
+   singleSlabAnalysis(TList *f=0);
 
-   virtual ~savePedestal();
+   virtual ~singleSlabAnalysis();
    // int     main(int argc, char* argv[2]);
    virtual Int_t    Cut(Long64_t entry);
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
    virtual void     Init(TTree *tree);
-   virtual void     PedestalAnalysis(TString dif,TString grid,TString map_filename);
+   // write file with masked channels
    virtual void     FindMasked(TString dif);
+   // analysis of pedestal and writting of the file with pedestals per chi/channel/sca
+   virtual void     PedestalAnalysis(TString dif,TString grid,TString map_filename);
+   // read pedestals, maps, masked channels
    virtual void     ReadMap(TString filename);
    virtual void     ReadMasked(TString filename);
+   virtual void     ReadPedestals(TString filename);
+   //signal analysis: MIP fitt and signal/noise 
+   virtual void     SignalAnalysis(TString dif, TString map_filename);
+   virtual TF1 *langaufit(TH1F *his, Double_t *fitrange, Double_t *startvalues, Double_t *parlimitslo, Double_t *parlimitshi, Double_t *fitparams, Double_t *fiterrors, Double_t *ChiSqr, Int_t *NDF);
+   //   virtual Double_t langaufun(Double_t *x, Double_t *par);
+   // bcid correlations of retriggers (good vs bad events)
    virtual void     BcidCorrelations(TString filename);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
@@ -82,14 +91,18 @@ private :
   Float_t map_pointX[16][64];
   Float_t map_pointY[16][64];
   Int_t masked[16][64];
+  std::vector<std::vector<std::vector<Double_t> > > ped_mean;
+  std::vector<std::vector<std::vector<Double_t> > > ped_error;
+  std::vector<std::vector<std::vector<Double_t> > > ped_width;
+
 
 
 };
 
 #endif
 
-#ifdef savePedestal_cxx
-savePedestal::savePedestal(TString tree_s) : fChain(0) 
+#ifdef singleSlabAnalysis_cxx
+singleSlabAnalysis::singleSlabAnalysis(TString tree_s) : fChain(0) 
 {
 
   
@@ -100,7 +113,7 @@ savePedestal::savePedestal(TString tree_s) : fChain(0)
   
 }
 
-savePedestal::savePedestal(TList *f) : fChain(0) 
+singleSlabAnalysis::singleSlabAnalysis(TList *f) : fChain(0) 
 {
 // if parameter tree is not specified (or zero), use a list of of files provided as input
 
@@ -118,19 +131,19 @@ savePedestal::savePedestal(TList *f) : fChain(0)
 
 }
 
-savePedestal::~savePedestal()
+singleSlabAnalysis::~singleSlabAnalysis()
 {
    if (!fChain) return;
    delete fChain->GetCurrentFile();
 }
 
-Int_t savePedestal::GetEntry(Long64_t entry)
+Int_t singleSlabAnalysis::GetEntry(Long64_t entry)
 {
 // Read contents of entry.
    if (!fChain) return 0;
    return fChain->GetEntry(entry);
 }
-Long64_t savePedestal::LoadTree(Long64_t entry)
+Long64_t singleSlabAnalysis::LoadTree(Long64_t entry)
 {
 // Set the environment to read one entry
    if (!fChain) return -5;
@@ -145,7 +158,7 @@ Long64_t savePedestal::LoadTree(Long64_t entry)
 
 
 
-void savePedestal::Init(TTree *tree)
+void singleSlabAnalysis::Init(TTree *tree)
 {
    // The Init() function is called when the selector needs to initialize
    // a new tree or chain. Typically here the branch addresses and branch
@@ -177,7 +190,7 @@ void savePedestal::Init(TTree *tree)
    Notify();
 }
 
-Bool_t savePedestal::Notify()
+Bool_t singleSlabAnalysis::Notify()
 {
    // The Notify() function is called when a new file is opened. This
    // can be either for a new TTree in a TChain or when when a new TTree
@@ -187,18 +200,18 @@ Bool_t savePedestal::Notify()
   return kTRUE;
 }
 
-void savePedestal::Show(Long64_t entry)
+void singleSlabAnalysis::Show(Long64_t entry)
 {
 // Print contents of entry.
 // If entry is not specified, print current entry
    if (!fChain) return;
    fChain->Show(entry);
 }
-Int_t savePedestal::Cut(Long64_t entry)
+Int_t singleSlabAnalysis::Cut(Long64_t entry)
 {
 // This function may be called from Loop.
 // returns  1 if entry is accepted.
 // returns -1 otherwise.
    return 1;
 }
-#endif // #ifdef savePedestal_cxx
+#endif // #ifdef singleSlabAnalysis_cxx
