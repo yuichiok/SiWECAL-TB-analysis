@@ -189,7 +189,7 @@ void savePedestal::PedestalAnalysis(TString dif,TString grid="",TString map_file
   ofstream fout_ped("Pedestal_"+dif+".txt",ios::out);
 
   fout_ped<<"#pedestal results (fit to a gaussian) remove channels/sca with two pedestals peaks from the analysis : "<<dif<<endl;
-  fout_ped<<"#chip channel ped0 eped1 ped1 eped1 ... ped14 ped14 (all SCA)"<<endl;
+  fout_ped<<"#chip channel ped0 eped0 widthped0 ped1 eped1 widthped1... ped14 eped14 widhtped14 (all SCA)"<<endl;
 
   
   bool global = true;
@@ -410,7 +410,7 @@ void savePedestal::PedestalAnalysis(TString dif,TString grid="",TString map_file
 	    ped_sca.at(ichip).at(ichn).at(isca)->Fit("f1","RQME");
 	    // ped_mean.at(ichip).at(ichn).push_back(f1->GetParameter(1));
 	    //  ped_rms.at(ichip).at(ichn).push_back(f1->GetParameter(2));
-	      fout_ped<<f1->GetParameter(1) << " " << f1->GetParError(1)<<" ";
+	    fout_ped<<f1->GetParameter(1) << " " << f1->GetParError(1)<<" "<<f1->GetParameter(2)<< " ";
 	      pedestal_chip.at(ichip)->Fill(f1->GetParameter(1));
 
 	      pedestal_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetParameter(1));
@@ -421,12 +421,12 @@ void savePedestal::PedestalAnalysis(TString dif,TString grid="",TString map_file
 	  } else {
 	    // ped_mean.at(ichip).at(ichn).push_back(0);
 	    //  ped_rms.at(ichip).at(ichn).push_back(0);
-	    fout_ped<<0<< " " << 0<<" ";
+	    fout_ped<<0<< " " << 0<<" "<<0<<" ";
 	  }
 	} else {
 	  // ped_mean.at(ichip).at(ichn).push_back(0);
           //ped_rms.at(ichip).at(ichn).push_back(0);
-	  fout_ped<<0<< " " << 0<<" ";
+	  fout_ped<<0<< " " << 0<<" "<<0<<" ";
 	}
 
 	// analyze pedestal for tagged events
