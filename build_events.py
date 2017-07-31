@@ -102,6 +102,8 @@ def build_events(filename, maxEntries = -1, w_config = 1):
     read_mapping()
     ## Read pedestals
     read_pedestals()
+    ## Read mip MPV values
+    read_mip_values()
 
     # Get ttree
     tfile = rt.TFile(filename,"read")
@@ -130,6 +132,7 @@ def build_events(filename, maxEntries = -1, w_config = 1):
     nhit_chip = array('i', [0]); outtree.Branch( 'nhit_chip', nhit_chip, 'nhit_chip/I' )
     nhit_chan = array('i', [0]); outtree.Branch( 'nhit_chan', nhit_chan, 'nhit_chan/I' )
     sum_hg = array('f', [0]); outtree.Branch( 'sum_hg', sum_hg, 'sum_hg/F' )
+    sum_energy = array('f', [0]); outtree.Branch( 'sum_energy', sum_energy, 'sum_energy/F' )
 
     ## hit information
     # detid
@@ -145,6 +148,7 @@ def build_events(filename, maxEntries = -1, w_config = 1):
     # energy
     hit_hg = array('f', 10000*[0]); outtree.Branch( 'hit_hg', hit_hg, 'hit_hg[nhit_chan]/F' )
     hit_lg = array('f', 10000*[0]); outtree.Branch( 'hit_lg', hit_lg, 'hit_lg[nhit_chan]/F' )
+    hit_energy = array('f', 10000*[0]); outtree.Branch( 'hit_energy', hit_energy, 'hit_energy[nhit_chan]/F' )
     #
     hit_isHit = array('i', 10000*[0]); outtree.Branch( 'hit_isHit', hit_isHit, 'hit_isHit[nhit_chan]/I' )
 
@@ -186,12 +190,15 @@ def build_events(filename, maxEntries = -1, w_config = 1):
             #nhit_chan[0] = len(set([(hit.slab*NCHIP + hit.chip)*NCHAN + hit.chan for hit in hits]))
             nhit_chan[0] = len(hits)
             sum_hg[0] = sum([hit.hg for hit in hits])
+            sum_energy[0] = sum([hit.energy for hit in hits])
 
             for i,hit in enumerate(hits):
                 hit_slab[i] = hit.slab; hit_chip[i] = hit.chip; hit_chan[i] = hit.chan; hit_sca[i] = hit.sca
                 hit_x[i] = hit.x; hit_y[i] = hit.y; hit_z[i] = hit.z; hit_x0[i] = hit.x0
                 hit_hg[i] = hit.hg; hit_lg[i] = hit.lg
                 hit_isHit[i] = hit.isHit
+
+                hit_energy[i] = hit.energy
 
             outtree.Fill()
 

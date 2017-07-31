@@ -12,6 +12,8 @@ BCID_VALEVT = 1245
 ## global storages
 chan_map = {}
 ped_map = {}
+mip_map = {}
+
 pos_z = []
 pos_xzero = []
 
@@ -42,6 +44,11 @@ class EcalHit:
 
         # do pedestal subtraction
         self.hg -= ped_map[self.slab][self.chip][self.chan][self.sca]
+        # MIP calibration
+        if mip_map[self.slab][self.chip][self.chan] > 10:
+            self.energy = self.hg / mip_map[self.slab][self.chip][self.chan]
+        else:
+            self.energy = 0
 
 def build_w_config(config = 1):
 
