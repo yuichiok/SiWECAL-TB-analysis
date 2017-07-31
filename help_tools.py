@@ -13,6 +13,7 @@ BCID_VALEVT = 1245
 chan_map = {}
 ped_map = {}
 mip_map = {}
+mask_map = {}
 
 pos_z = []
 pos_xzero = []
@@ -36,6 +37,9 @@ class EcalHit:
         self.hg = hg
         self.lg = lg
         self.isHit = isHit
+
+        ## check channel is masked
+        self.isMasked = int(mask_map[self.slab][self.chip][self.chan])
 
         ## get x-y coordinates
         self.x0 = pos_xzero[slab]
@@ -150,7 +154,35 @@ def read_mip_values(indir_prefix = "./mip_calib/"):
     #mip_map = mpv_map
     return mip_map
 
+def read_masked(indir_prefix = "./masked/"):
+
+    global slab_map
+    global mask_map
+
+    ## masked channels map (n-dim numpy array)
+    mask_map = np.zeros((NSLAB,NCHIP,NCHAN))
+
+    for slab in slab_map:
+        fname = indir_prefix + "masked%s.txt" % slab_map[slab]
+        print("Reading masked channels for %s from %s" %(slab,fname))
+        if not os.path.exists(fname):
+            print fname, " does not exist"
+            continue
+
+        with open(fname) as fmap:
+            for i,line in enumerate(fmap.readlines()):
+                if '#' in line: continue
+
+                items = [int(item) for item in line.split()]
+
+                chip,chan = int(items[0]),int(items[1])
+                masked = int(items[2])
+                mask_map[slab][chip][chan] = masked
+
+    return mask_map
+
 if __name__ == "__main__":
 
     #print read_pedestals()
-    print read_mip_values()
+    #print read_mip_values()
+    print read_masked()

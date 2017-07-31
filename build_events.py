@@ -100,6 +100,8 @@ def build_events(filename, maxEntries = -1, w_config = 1):
     build_w_config(w_config)
     ## Read channel mapping
     read_mapping()
+    ## Read masked channels
+    read_masked()
     ## Read pedestals
     read_pedestals()
     ## Read mip MPV values
@@ -149,8 +151,9 @@ def build_events(filename, maxEntries = -1, w_config = 1):
     hit_hg = array('f', 10000*[0]); outtree.Branch( 'hit_hg', hit_hg, 'hit_hg[nhit_chan]/F' )
     hit_lg = array('f', 10000*[0]); outtree.Branch( 'hit_lg', hit_lg, 'hit_lg[nhit_chan]/F' )
     hit_energy = array('f', 10000*[0]); outtree.Branch( 'hit_energy', hit_energy, 'hit_energy[nhit_chan]/F' )
-    #
+    # boolean
     hit_isHit = array('i', 10000*[0]); outtree.Branch( 'hit_isHit', hit_isHit, 'hit_isHit[nhit_chan]/I' )
+    hit_isMasked = array('i', 10000*[0]); outtree.Branch( 'hit_isMasked', hit_isMasked, 'hit_isMasked[nhit_chan]/I' )
 
     if maxEntries < 0: maxEntries = tree.GetEntries()
     #else: maxEntries = 1000
@@ -196,7 +199,7 @@ def build_events(filename, maxEntries = -1, w_config = 1):
                 hit_slab[i] = hit.slab; hit_chip[i] = hit.chip; hit_chan[i] = hit.chan; hit_sca[i] = hit.sca
                 hit_x[i] = hit.x; hit_y[i] = hit.y; hit_z[i] = hit.z; hit_x0[i] = hit.x0
                 hit_hg[i] = hit.hg; hit_lg[i] = hit.lg
-                hit_isHit[i] = hit.isHit
+                hit_isHit[i] = hit.isHit; hit_isMasked[i] = hit.isMasked
 
                 hit_energy[i] = hit.energy
 
