@@ -1,14 +1,18 @@
 #include "TROOT.h"
 #include "TFile.h"
-#include "savePedestal.cc"
+#include "singleSlabAnalysis.cc"
 
 void PedAnalysis(TString filename_in, TString filename_out,TString filename_grid) {
  
-  savePedestal ss(filename_in); 
-  //if(filename_grid=="") ss.FindMasked(filename_out);
-  ss.PedestalAnalysis(filename_out,filename_grid);
-  //ss.BcidCorrelations("dif_1_1_2");
-  
+  singleSlabAnalysis ss(filename_in); 
+  if(filename_grid=="") {
+    //ss.FindMasked(filename_out);
+    //ss.PedestalAnalysis_bcid(filename_out,filename_grid);
+    ss.BcidCorrelations(filename_out);
+  } else {
+    //    ss.PedestalAnalysis_bcid(filename_out,filename_grid);
+    ss.PedestalAnalysis_gridpoints(filename_out,filename_grid);
+  }
   gSystem->Exit(0);
 
 }

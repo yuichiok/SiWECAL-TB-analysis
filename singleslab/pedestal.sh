@@ -1,11 +1,26 @@
 #!/bin/bash
 ## For all grid points, merge all runs with same grid number and change naming to have two numbers (00-80)
 
-sleep 5h
+bcid=15
+dif=1_1_1
+root -l PedAnalysis.cc\(\"/home/irles/cernbox/TB2017/TBdata/MIPscan/rootfiles_bcidTh${bcid}/dif_$dif.raw.root\",\"dif_$dif\",\"\"\) &
+dif=1_1_2
+root -l PedAnalysis.cc\(\"/home/irles/cernbox/TB2017/TBdata/MIPscan/rootfiles_bcidTh${bcid}/dif_$dif.raw.root\",\"dif_$dif\",\"\"\) &
+dif=1_1_3
+root -l PedAnalysis.cc\(\"/home/irles/cernbox/TB2017/TBdata/MIPscan/rootfiles_bcidTh${bcid}/dif_$dif.raw.root\",\"dif_$dif\",\"\"\) &
+dif=1_1_4
+root -l PedAnalysis.cc\(\"/home/irles/cernbox/TB2017/TBdata/MIPscan/rootfiles_bcidTh${bcid}/dif_$dif.raw.root\",\"dif_$dif\",\"\"\)
+dif=1_1_5
+root -l PedAnalysis.cc\(\"/home/irles/cernbox/TB2017/TBdata/MIPscan/rootfiles_bcidTh${bcid}/dif_$dif.raw.root\",\"dif_$dif\",\"\"\) &
+dif=1_2_1
+root -l PedAnalysis.cc\(\"/home/irles/cernbox/TB2017/TBdata/MIPscan/rootfiles_bcidTh${bcid}/dif_$dif.raw.root\",\"dif_$dif\",\"\"\) &
+dif=1_2_2
+root -l PedAnalysis.cc\(\"/home/irles/cernbox/TB2017/TBdata/MIPscan/rootfiles_bcidTh${bcid}/dif_$dif.raw.root\",\"dif_$dif\",\"\"\)
 
-for bcid in {5,10,15,30,60}
+
+for bcid in {5,15,30}
 do
-    for grid in {0..81}
+    for grid in {0,41,80}
     do
 	if [ $grid -lt 10 ]
 	then

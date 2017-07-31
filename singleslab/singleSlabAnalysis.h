@@ -73,12 +73,14 @@ public :
    virtual void     FindMasked(TString dif);
    // analysis of pedestal and writting of the file with pedestals per chi/channel/sca
    virtual void     PedestalAnalysis(TString dif,TString grid,TString map_filename);
+   virtual void     PedestalAnalysis_gridpoints(TString dif,TString grid,TString map_filename);
+   virtual void     PedestalAnalysis_bcid(TString dif,TString grid,TString map_filename);
    // read pedestals, maps, masked channels
    virtual void     ReadMap(TString filename);
    virtual void     ReadMasked(TString filename);
    virtual void     ReadPedestals(TString filename);
    //signal analysis: MIP fitt and signal/noise 
-   virtual void     SignalAnalysis(TString dif, TString map_filename);
+   virtual void     SignalAnalysis(TString dif, TString outputname, bool readpedestal, TString map_filename);
    virtual TF1 *langaufit(TH1F *his, Double_t *fitrange, Double_t *startvalues, Double_t *parlimitslo, Double_t *parlimitshi, Double_t *fitparams, Double_t *fiterrors, Double_t *ChiSqr, Int_t *NDF);
    //   virtual Double_t langaufun(Double_t *x, Double_t *par);
    // bcid correlations of retriggers (good vs bad events)
