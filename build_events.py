@@ -128,6 +128,7 @@ def build_events(filename, maxEntries = -1, w_config = 1):
     event = array('i', [0]); outtree.Branch( 'event', event, 'event/I' )
     spill = array('i', [0]); outtree.Branch( 'spill', spill, 'spill/I' )
     bcid_b = array('i', [0]); outtree.Branch( 'bcid', bcid_b, 'bcid/I' )
+    delta_bcid_b = array('i', [0]); outtree.Branch( 'delta_bcid', delta_bcid_b, 'delta_bcid/I' )
 
     # occupancy/hit info
     nhit_slab = array('i', [0]); outtree.Branch( 'nhit_slab', nhit_slab, 'nhit_slab/I' )
@@ -158,6 +159,8 @@ def build_events(filename, maxEntries = -1, w_config = 1):
     if maxEntries < 0: maxEntries = tree.GetEntries()
     #else: maxEntries = 1000
 
+    spill_cnt = 0
+
     print("# Going to analyze %i entries..." %maxEntries )
     for ientry,entry in enumerate(tree):#.GetEntries():
 
@@ -172,7 +175,9 @@ def build_events(filename, maxEntries = -1, w_config = 1):
 
         ## reset counters
         #nhit_slab[0] = nhit_chip[0] = nhit_chan[0] = nhit_sca[0] = 0
-        spill[0] = entry.acqNumber
+
+        spill[0] = spill_cnt
+        spill_cnt += 1
 
         ## Collect hits in bcid container
         #ev_hits = get_hits(entry,bcid_cnts)
