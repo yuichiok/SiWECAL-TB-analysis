@@ -6,8 +6,8 @@ from array import array
 from help_tools import *
 
 def get_corr_bcid(bcid):
-    #return bcid if bcid > BCID_VALEVT else bcid + 4096
-    return bcid
+    return bcid if bcid > BCID_VALEVT else bcid + 4096
+    #return bcid
 
 def merge_bcids(bcids):
     ## Set of BCIDs present in this entry
@@ -196,9 +196,8 @@ def build_events(filename, maxEntries = -1, w_config = 1):
                 continue #skip emptied bcids
 
             ## each bcid -- single event
-            corr_bcid = bcid if bcid > BCID_VALEVT else bcid + 4096
-            #event[0] = int(entry.acqNumber*10000 + corr_bcid)
-            event[0] = int(spill[0]*1000 + corr_bcid)
+            corr_bcid = get_corr_bcid(bcid)
+            event[0] = int(spill[0]*5000 + corr_bcid)
             bcid_b[0] = corr_bcid
 
             ## store distance to previous bcid
