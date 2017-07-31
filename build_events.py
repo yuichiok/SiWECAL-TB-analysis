@@ -5,6 +5,10 @@ import ROOT as rt
 from array import array
 from help_tools import *
 
+def get_corr_bcid(bcid):
+    #return bcid if bcid > BCID_VALEVT else bcid + 4096
+    return bcid
+
 def merge_bcids(bcids):
     ## Set of BCIDs present in this entry
     #entry_bcids = [bcid for bcid in entry.bcid if bcid > -1]
@@ -183,14 +187,28 @@ def build_events(filename, maxEntries = -1, w_config = 1):
         #ev_hits = get_hits(entry,bcid_cnts)
         ev_hits = get_hits(entry,bcid_cnts)
 
-        for bcid,hits in ev_hits.iteritems():
-            if bcid_cnts[bcid] < 1: continue #skip emptied bcids
+        #for bcid,hits in ev_hits.iteritems():
+        for ibc,bcid in enumerate(sorted(ev_hits)):
+            hits = ev_hits[bcid]
+
+            if bcid_cnts[bcid] < 1:
+                print "Hits with empty bcid! %i ! This should not happen." %bcid
+                continue #skip emptied bcids
 
             ## each bcid -- single event
             corr_bcid = bcid if bcid > BCID_VALEVT else bcid + 4096
             #event[0] = int(entry.acqNumber*10000 + corr_bcid)
             event[0] = int(spill[0]*1000 + corr_bcid)
             bcid_b[0] = corr_bcid
+
+            ## store distance to previous bcid
+            if ibc > 0:
+                prev_bcid = sorted(ev_hits)[ibc -1]
+                #prev_bcid = prev_bcid if prev_bcid > BCID_VALEVT else prev_bcid + 4096
+                prev_bcid = get_corr_bcid(prev_bcid)
+                delta_bcid_b[0] = bcid_b[0] - prev_bcid
+            else:
+                delta_bcid_b[0] = -1
 
             # count hits per slab/chan/chip
             nhit_slab[0] = len(set([hit.slab for hit in hits]))
