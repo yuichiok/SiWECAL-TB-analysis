@@ -15,6 +15,16 @@ ped_map = {}
 pos_z = []
 pos_xzero = []
 
+slab_map = {
+    0: '_dif_1_1_1',
+    1: '_dif_1_1_2',
+    2: '_dif_1_1_3',
+    3: '_dif_1_1_4',
+    4: '_dif_1_1_5',
+    5: '_dif_1_2_1',
+    6: '_dif_1_2_2'
+}
+
 class EcalHit:
     def __init__(self,slab,chip,chan,sca,hg,lg,isHit):
         self.slab = slab
@@ -77,23 +87,14 @@ def read_mapping(fname = "fev10_chip_channel_x_y_mapping.txt"):
 
 def read_pedestals(indir_prefix = "./pedestals/"):
 
+    global slab_map
     global ped_map
-
-    slab_map = {
-        0: '_dif_1_1_1.txt',
-        1: '_dif_1_1_2.txt',
-        2: '_dif_1_1_3.txt',
-        3: '_dif_1_1_4.txt',
-        4: '_dif_1_1_5.txt',
-        5: '_dif_1_2_1.txt',
-        6: '_dif_1_2_2.txt'
-    }
 
     ## pedestal map (n-dim numpy array)
     pedestal_map = np.zeros((NSLAB,NCHIP,NCHAN,NSCA))
 
     for slab in slab_map:
-        fname = indir_prefix + "Pedestal" + slab_map[slab]
+        fname = indir_prefix + "Pedestal" + slab_map[slab] + ".txt"
         print("Reading pedestals for %s from %s" %(slab,fname))
         if not os.path.exists(fname):
             print fname, " does not exist"
@@ -113,6 +114,36 @@ def read_pedestals(indir_prefix = "./pedestals/"):
     ped_map = pedestal_map
     return pedestal_map
 
+def read_mip_values(indir_prefix = "./mip_calib/"):
+
+    global slab_map
+    global mip_map
+
+    ## mip MPV map (n-dim numpy array)
+    mip_map = np.zeros((NSLAB,NCHIP,NCHAN))
+
+    for slab in slab_map:
+        fname = indir_prefix + "MIP%s_improvedPedestals.txt" % slab_map[slab]
+        print("Reading MIP values for %s from %s" %(slab,fname))
+        if not os.path.exists(fname):
+            print fname, " does not exist"
+            continue
+
+        with open(fname) as fmap:
+            for i,line in enumerate(fmap.readlines()):
+                if '#' in line: continue
+
+                items = [float(item) for item in line.split()]
+
+                chip,chan = int(items[0]),int(items[1])
+                mpv = items[2]
+                mpv_err = items[3]
+                mip_map[slab][chip][chan] = mpv
+
+    #mip_map = mpv_map
+    return mip_map
+
 if __name__ == "__main__":
 
-    print read_pedestals()
+    #print read_pedestals()
+    print read_mip_values()
