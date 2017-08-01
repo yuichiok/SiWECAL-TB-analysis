@@ -64,7 +64,7 @@ public:
     delete info;
   };
   
-  void ReadFile(TString inputFileName,  bool overwrite=false, int bcidthres=15, int maxevt=99999999);
+    void ReadFile(TString inputFileName, bool overwrite=false, TString outFileName = "default", int bcidthres=15, int maxevt=99999999);
 
 protected:
 
@@ -851,7 +851,7 @@ int RAW2ROOT::data_integrity(std::vector < unsigned short int > & eventData, int
 }
 //******************************************************************************************************************
 
-void RAW2ROOT::ReadFile(TString inputFileName, bool overwrite, int bcidthres, int maxevt) {
+void RAW2ROOT::ReadFile(TString inputFileName, bool overwrite, TString outFileName, int bcidthres, int maxevt) {
 
   TString out_log_name = inputFileName+"_conversion.log";
 
@@ -869,15 +869,19 @@ void RAW2ROOT::ReadFile(TString inputFileName, bool overwrite, int bcidthres, in
     event=0;
     acqNumber=0;
 
+    if(outFileName == "default"){
+	outFileName = inputFileName+".root";
+    }
+
     if(!overwrite){
-        fout = new TFile(inputFileName+".root","create");
+        fout = new TFile(outFileName,"create");
         if(!fout->IsOpen()){
             if(_savelog) out_log<<"<!> ERROR <!>   File already created!"<<endl;
             return;
         }
     }
     else {
-        fout = new TFile(inputFileName+".root","recreate");
+        fout = new TFile(outFileName,"recreate");
     }
 
     dPlots = fout->mkdir("plots");
