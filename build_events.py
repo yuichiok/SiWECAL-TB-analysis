@@ -48,7 +48,7 @@ def get_good_bcids(entry):
     for i,bcid in enumerate(entry.bcid):
 
         if bcid < 0: continue
-        if entry_badbcid[i] != 0: continue
+        if entry_badbcid[i] > 1 or entry_badbcid[i] < 0: continue
         if entry_nhits[i] > 20: continue
 
         bcids.append(get_corr_bcid(bcid))
