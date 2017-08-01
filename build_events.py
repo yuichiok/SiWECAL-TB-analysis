@@ -51,7 +51,7 @@ def get_good_bcids(entry):
         if entry_badbcid[i] != 0: continue
         if entry_nhits[i] > 20: continue
 
-        bcids.append(bcid)
+        bcids.append(get_corr_bcid(bcid))
 
     return bcids
 
@@ -69,7 +69,7 @@ def get_hits(entry,bcids):
             for sca in xrange(NSCA):
 
                 sca_indx = (slab * NCHIP + chip) * NSCA + sca
-                bcid = entry_bcids[sca_indx]
+                bcid = get_corr_bcid(entry_bcids[sca_indx])
 
                 # filter bad bcids
                 if bcid not in bcids: continue
@@ -203,7 +203,6 @@ def build_events(filename, maxEntries = -1, w_config = 1):
             ## store distance to previous bcid
             if ibc > 0:
                 prev_bcid = sorted(ev_hits)[ibc -1]
-                #prev_bcid = prev_bcid if prev_bcid > BCID_VALEVT else prev_bcid + 4096
                 prev_bcid = get_corr_bcid(prev_bcid)
                 delta_bcid_b[0] = bcid_b[0] - prev_bcid
             else:
@@ -216,6 +215,11 @@ def build_events(filename, maxEntries = -1, w_config = 1):
             nhit_chan[0] = len(hits)
             sum_hg[0] = sum([hit.hg for hit in hits])
             sum_energy[0] = sum([hit.energy for hit in hits])
+
+            if len(hits) > 10000:
+                print("Suspicious number of hits! %i for bcid %i " %(len(hits),bcid_b[0]))
+                print("Skipping event")
+                continue
 
             for i,hit in enumerate(hits):
                 hit_slab[i] = hit.slab; hit_chip[i] = hit.chip; hit_chan[i] = hit.chan; hit_sca[i] = hit.sca
