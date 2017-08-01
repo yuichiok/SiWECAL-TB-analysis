@@ -5,6 +5,10 @@ import ROOT as rt
 from array import array
 from help_tools import *
 
+def get_corr_bcid(bcid):
+    return bcid if bcid > BCID_VALEVT else bcid + 4096
+    #return bcid
+
 def merge_bcids(bcids):
     ## Set of BCIDs present in this entry
     #entry_bcids = [bcid for bcid in entry.bcid if bcid > -1]
@@ -44,10 +48,10 @@ def get_good_bcids(entry):
     for i,bcid in enumerate(entry.bcid):
 
         if bcid < 0: continue
-        if entry_badbcid[i] != 0: continue
+        if entry_badbcid[i] > 1 or entry_badbcid[i] < 0: continue
         if entry_nhits[i] > 20: continue
 
-        bcids.append(bcid)
+        bcids.append(get_corr_bcid(bcid))
 
     return bcids
 
@@ -65,7 +69,7 @@ def get_hits(entry,bcids):
             for sca in xrange(NSCA):
 
                 sca_indx = (slab * NCHIP + chip) * NSCA + sca
-                bcid = entry_bcids[sca_indx]
+                bcid = get_corr_bcid(entry_bcids[sca_indx])
 
                 # filter bad bcids
                 if bcid not in bcids: continue
@@ -100,8 +104,12 @@ def build_events(filename, maxEntries = -1, w_config = 1):
     build_w_config(w_config)
     ## Read channel mapping
     read_mapping()
+    ## Read masked channels
+    read_masked()
     ## Read pedestals
     read_pedestals()
+    ## Read mip MPV values
+    read_mip_values()
 
     # Get ttree
     tfile = rt.TFile(filename,"read")
@@ -124,12 +132,14 @@ def build_events(filename, maxEntries = -1, w_config = 1):
     event = array('i', [0]); outtree.Branch( 'event', event, 'event/I' )
     spill = array('i', [0]); outtree.Branch( 'spill', spill, 'spill/I' )
     bcid_b = array('i', [0]); outtree.Branch( 'bcid', bcid_b, 'bcid/I' )
+    prev_bcid_b = array('i', [0]); outtree.Branch( 'prev_bcid', prev_bcid_b, 'prev_bcid/I' )
 
     # occupancy/hit info
     nhit_slab = array('i', [0]); outtree.Branch( 'nhit_slab', nhit_slab, 'nhit_slab/I' )
     nhit_chip = array('i', [0]); outtree.Branch( 'nhit_chip', nhit_chip, 'nhit_chip/I' )
     nhit_chan = array('i', [0]); outtree.Branch( 'nhit_chan', nhit_chan, 'nhit_chan/I' )
     sum_hg = array('f', [0]); outtree.Branch( 'sum_hg', sum_hg, 'sum_hg/F' )
+    sum_energy = array('f', [0]); outtree.Branch( 'sum_energy', sum_energy, 'sum_energy/F' )
 
     ## hit information
     # detid
@@ -145,11 +155,15 @@ def build_events(filename, maxEntries = -1, w_config = 1):
     # energy
     hit_hg = array('f', 10000*[0]); outtree.Branch( 'hit_hg', hit_hg, 'hit_hg[nhit_chan]/F' )
     hit_lg = array('f', 10000*[0]); outtree.Branch( 'hit_lg', hit_lg, 'hit_lg[nhit_chan]/F' )
-    #
+    hit_energy = array('f', 10000*[0]); outtree.Branch( 'hit_energy', hit_energy, 'hit_energy[nhit_chan]/F' )
+    # boolean
     hit_isHit = array('i', 10000*[0]); outtree.Branch( 'hit_isHit', hit_isHit, 'hit_isHit[nhit_chan]/I' )
+    hit_isMasked = array('i', 10000*[0]); outtree.Branch( 'hit_isMasked', hit_isMasked, 'hit_isMasked[nhit_chan]/I' )
 
     if maxEntries < 0: maxEntries = tree.GetEntries()
     #else: maxEntries = 1000
+
+    spill_cnt = 0
 
     print("# Going to analyze %i entries..." %maxEntries )
     for ientry,entry in enumerate(tree):#.GetEntries():
@@ -165,20 +179,33 @@ def build_events(filename, maxEntries = -1, w_config = 1):
 
         ## reset counters
         #nhit_slab[0] = nhit_chip[0] = nhit_chan[0] = nhit_sca[0] = 0
-        spill[0] = entry.acqNumber
+
+        spill[0] = spill_cnt
+        spill_cnt += 1
 
         ## Collect hits in bcid container
         #ev_hits = get_hits(entry,bcid_cnts)
         ev_hits = get_hits(entry,bcid_cnts)
 
-        for bcid,hits in ev_hits.iteritems():
-            if bcid_cnts[bcid] < 1: continue #skip emptied bcids
+        #for bcid,hits in ev_hits.iteritems():
+        for ibc,bcid in enumerate(sorted(ev_hits)):
+            hits = ev_hits[bcid]
+
+            if bcid_cnts[bcid] < 1:
+                print "Hits with empty bcid! %i ! This should not happen." %bcid
+                continue #skip emptied bcids
 
             ## each bcid -- single event
-            corr_bcid = bcid if bcid > BCID_VALEVT else bcid + 4096
-            #event[0] = int(entry.acqNumber*10000 + corr_bcid)
-            event[0] = int(spill[0]*1000 + corr_bcid)
+            corr_bcid = get_corr_bcid(bcid)
+            event[0] = int(spill[0]*5000 + corr_bcid)
             bcid_b[0] = corr_bcid
+
+            ## store distance to previous bcid
+            if ibc > 0:
+                prev_bcid = sorted(ev_hits)[ibc -1]
+                prev_bcid_b[0] = get_corr_bcid(prev_bcid)
+            else:
+                prev_bcid_b[0] = -1
 
             # count hits per slab/chan/chip
             nhit_slab[0] = len(set([hit.slab for hit in hits]))
@@ -186,12 +213,20 @@ def build_events(filename, maxEntries = -1, w_config = 1):
             #nhit_chan[0] = len(set([(hit.slab*NCHIP + hit.chip)*NCHAN + hit.chan for hit in hits]))
             nhit_chan[0] = len(hits)
             sum_hg[0] = sum([hit.hg for hit in hits])
+            sum_energy[0] = sum([hit.energy for hit in hits])
+
+            if len(hits) > 10000:
+                print("Suspicious number of hits! %i for bcid %i " %(len(hits),bcid_b[0]))
+                print("Skipping event %i" % event[0] )
+                continue
 
             for i,hit in enumerate(hits):
                 hit_slab[i] = hit.slab; hit_chip[i] = hit.chip; hit_chan[i] = hit.chan; hit_sca[i] = hit.sca
                 hit_x[i] = hit.x; hit_y[i] = hit.y; hit_z[i] = hit.z; hit_x0[i] = hit.x0
                 hit_hg[i] = hit.hg; hit_lg[i] = hit.lg
-                hit_isHit[i] = hit.isHit
+                hit_isHit[i] = hit.isHit; hit_isMasked[i] = hit.isMasked
+
+                hit_energy[i] = hit.energy
 
             outtree.Fill()
 
