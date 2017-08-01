@@ -197,7 +197,7 @@ def build_events(filename, maxEntries = -1, w_config = 1):
 
             ## each bcid -- single event
             corr_bcid = get_corr_bcid(bcid)
-            event[0] = int(spill[0]*5000 + corr_bcid)
+            event[0] = int(spill[0]*10000 + corr_bcid)
             bcid_b[0] = corr_bcid
 
             ## store distance to previous bcid
