@@ -217,7 +217,7 @@ def build_events(filename, maxEntries = -1, w_config = 1):
 
             if len(hits) > 10000:
                 print("Suspicious number of hits! %i for bcid %i " %(len(hits),bcid_b[0]))
-                print("Skipping event %i" % event )
+                print("Skipping event %i" % event[0] )
                 continue
 
             for i,hit in enumerate(hits):
