@@ -1,0 +1,31 @@
+## Pedestal Analysis
+## singleSlabAnalysis.cc
+## A. Irles, 19 July 2017
+## irles@lal.in2p3.fr
+
+Five functions in singleSlabAnalysis.cc
+Analyzes single slabs.
+uses the output of RAW2ROOT.cc
+
+1)    PedestalAnalysis(TString dif,TString grid,TString map_filename);
+Saves a pedestal txt file for all channels/sca and 2d maps.
+
+2)    FindMasked(TString dif);
+And algorithm that finds the masked channels. 
+USE ONLY WITH THE FULL SCAN FILE (it expects that all chips have received beam data moreless homogeneusly).
+
+3)    ReadMap(TString filename);
+Read a chip-chn to x-y map and saves the coordinates. It is always run in 1)
+
+4)    ReadMasked(TString filename);
+Read and save the info of masked channels.  It is always run in 1)
+
+5)    BcidCorrelations(TString filename)
+Study bcid correlation of tagged events (on construction).
+
+6) SignalAnalysis(TString dif,TString map_filename);
+Reads the files and subtract the pedestal to signal and calculates mip positions and signal over noie ratios for all channels.
+
+
+Examples of how to run the different functions are in PedAnalysis.cc and pedestal.sh
+or in SigAnalysis.cc
