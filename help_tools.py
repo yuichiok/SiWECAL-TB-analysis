@@ -134,7 +134,7 @@ def read_mip_values(indir_prefix = "./mip_calib/"):
     mip_map = np.zeros((NSLAB,NCHIP,NCHAN))
 
     for slab in slab_map:
-        fname = indir_prefix + "MIP%s_improvedPedestals.txt" % slab_map[slab]
+        fname = indir_prefix + "MIP%s.txt" % slab_map[slab]
         print("Reading MIP values for %s from %s" %(slab,fname))
         if not os.path.exists(fname):
             print fname, " does not exist"
