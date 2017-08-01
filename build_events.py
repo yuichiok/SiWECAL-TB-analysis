@@ -132,7 +132,7 @@ def build_events(filename, maxEntries = -1, w_config = 1):
     event = array('i', [0]); outtree.Branch( 'event', event, 'event/I' )
     spill = array('i', [0]); outtree.Branch( 'spill', spill, 'spill/I' )
     bcid_b = array('i', [0]); outtree.Branch( 'bcid', bcid_b, 'bcid/I' )
-    delta_bcid_b = array('i', [0]); outtree.Branch( 'delta_bcid', delta_bcid_b, 'delta_bcid/I' )
+    prev_bcid_b = array('i', [0]); outtree.Branch( 'prev_bcid', prev_bcid_b, 'prev_bcid/I' )
 
     # occupancy/hit info
     nhit_slab = array('i', [0]); outtree.Branch( 'nhit_slab', nhit_slab, 'nhit_slab/I' )
@@ -203,10 +203,9 @@ def build_events(filename, maxEntries = -1, w_config = 1):
             ## store distance to previous bcid
             if ibc > 0:
                 prev_bcid = sorted(ev_hits)[ibc -1]
-                prev_bcid = get_corr_bcid(prev_bcid)
-                delta_bcid_b[0] = bcid_b[0] - prev_bcid
+                prev_bcid_b[0] = get_corr_bcid(prev_bcid)
             else:
-                delta_bcid_b[0] = -1
+                prev_bcid_b[0] = -1
 
             # count hits per slab/chan/chip
             nhit_slab[0] = len(set([hit.slab for hit in hits]))
@@ -218,7 +217,7 @@ def build_events(filename, maxEntries = -1, w_config = 1):
 
             if len(hits) > 10000:
                 print("Suspicious number of hits! %i for bcid %i " %(len(hits),bcid_b[0]))
-                print("Skipping event")
+                print("Skipping event %i" % event )
                 continue
 
             for i,hit in enumerate(hits):
