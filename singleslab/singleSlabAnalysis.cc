@@ -25,7 +25,7 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
   //Read the channel/chip -- x/y mapping
   ReadMap(map_filename);
   //Read the list of pedestals (this information contains, implicitily, the masked channels information )
-  if(readpedestal==true) ReadPedestals("results_pedestal/gridpoints/Pedestal_"+dif+"_merged.txt");
+  if(readpedestal==true) ReadPedestals("../pedestals/Pedestal_"+dif+".txt");
 
   ofstream fout_mip("results_mipcalibration/MIP_"+dif+outputname+".txt",ios::out);
   fout_mip<<"#mip results "<<dif<<endl;
@@ -141,7 +141,7 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
   for(int ichip=0; ichip<16; ichip++) {
     for(int ichn=0; ichn<64; ichn++) {
             
-      if(mip_histo.at(ichip).at(ichn)->GetEntries()>300 && mip_histo.at(ichip).at(ichn)->GetMean()>20){
+      if(mip_histo.at(ichip).at(ichn)->GetEntries()> 1000 && mip_histo.at(ichip).at(ichn)->GetMean()>20){
 
 	fr[0]=mip_histo.at(ichip).at(ichn)->GetMean()-0.8*mip_histo.at(ichip).at(ichn)->GetRMS();
 	fr[1]=mip_histo.at(ichip).at(ichn)->GetMean();//+0.1*mip_histo.at(ichip).at(ichn)->GetRMS();
@@ -385,7 +385,7 @@ void singleSlabAnalysis::FindMasked(TString dif)
   //function that reads a root file and check which channels have or not signal (hit bit ==1).
   //should be used for root files that contain a full position scan, in order to provide meaninful list of masked channels.
 
-  ofstream fout_masked("maskedchannels/masked_"+dif+".txt",ios::out);
+  ofstream fout_masked("../masked/masked_"+dif+".txt",ios::out);
 
   fout_masked<<"#list of masked channels, per dif: "<<dif<<endl;
   fout_masked<<"#chip channel mask (0=not masked, 1=masked)"<<endl;
@@ -604,7 +604,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
   //Read the channel/chip -- x/y mapping
   ReadMap(map_filename);
   //Read the list of masked channels
-  ReadMasked("maskedchannels/masked_"+dif+".txt");
+  //  ReadMasked("maskedchannels/masked_"+dif+".txt");
 
   if(grid!="") dif=dif+"_"+grid;
 
