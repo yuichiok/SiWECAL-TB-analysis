@@ -5,16 +5,16 @@ rt.gROOT.LoadMacro("RAW2ROOT.cc+")
 rt.gROOT.LoadMacro("mergeRootFiles.cc+")
 from build_events import *
 
-def convert_run_raw(run_pattern):
+def convert_run_raw(run_pattern,force_convert):
 
     fnames_raw = glob.glob(run_pattern + "*.raw")
     fnames_root = glob.glob(run_pattern + "*.raw.root")
 
     raw2root = rt.RAW2ROOT()
     for fname_raw in fnames_raw:
-        if fname_raw + ".root" not in fnames_root:
+        if fname_raw + ".root" not in fnames_root or force_convert:
             print("# Need to convert " + fname_raw)
-            raw2root.ReadFile(fname_raw)
+            raw2root.ReadFile(fname_raw,force_convert)
 
 def convert_dir(indir,opts):
 
@@ -42,7 +42,9 @@ def convert_dir(indir,opts):
         run_pattern = "%s/%s_" %(run_dir,run_name)
 
         ## convert missing files
-        convert_run_raw(run_pattern)
+        convert_run_raw(run_pattern,opts.force_convert)
+
+        if opts.force_convert: opts.force_merge = True
 
         merge = rt.mergeRootFiles()
         merge_fname = run_pattern + "_merge.root"
@@ -68,6 +70,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Batch convert (merge&build) ecal runs.')
     parser.add_argument('indirs', nargs='+', help='input run dirs')
+    parser.add_argument('--force-convert', dest='force_convert', action='store_true', help='Force convert files (default: False)')
     parser.add_argument('--force-merge', dest='force_merge', action='store_true', help='Force merge files (default: False)')
     parser.add_argument('--force-build', dest='force_build', action='store_true', help='Force build files (default: False)')
     parser.add_argument('-n','--maxEntries', dest='maxEntries', type=int, default = -1, help='maximum number of entries to process (default: all)')
