@@ -240,7 +240,7 @@ def build_events(filename, maxEntries = -1, w_config = 1):
 
 if __name__ == "__main__":
 
-    if len(sys.argv) == 2:
+    if len(sys.argv) > 1:
         filename = sys.argv[1]
     else:
         filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_9__merge.root"
