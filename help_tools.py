@@ -70,6 +70,9 @@ def build_w_config(config = 1):
     elif config == 3:
         # Config 3
         abs_thick = [6,2,4,4,6,6,6]
+    elif config == 0:
+        # No absorber runs, use 1
+        abs_thick = [1,1,1,1,1,1,1]
 
     ## sum up thickness
     w_xzero = 0.56#Xo per mm of W
@@ -118,9 +121,9 @@ def read_pedestals(indir_prefix = "./pedestals/"):
                 items = [float(item) for item in line.split()]
 
                 chip,chan = int(items[0]),int(items[1])
-                peds = items[2]
-                peds_err = items[3]
-                peds_width = items[4]
+                peds = items[2::3]
+                peds_err = items[3::3]
+                peds_width = items[4::3]
                 pedestal_map[slab][chip][chan] = peds
     ped_map = pedestal_map
     return pedestal_map
