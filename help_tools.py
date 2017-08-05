@@ -71,8 +71,8 @@ def build_w_config(config = 1):
         # Config 3
         abs_thick = [6,2,4,4,6,6,6]
     elif config == 0:
-        # No absorber runs, use 1
-        abs_thick = [1,1,1,1,1,1,1]
+        # No absorber runs, use 0
+        abs_thick = [0,0,0,0,0,0,0]
 
     ## sum up thickness
     w_xzero = 0.56#Xo per mm of W
