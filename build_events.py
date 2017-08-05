@@ -70,35 +70,35 @@ def get_hits(entry,bcids):
 
                 sca_indx = (slab * NCHIP + chip) * NSCA + sca
                 bcid = get_corr_bcid(entry_bcids[sca_indx])
-
+                
                 # filter bad bcids
                 if bcid not in bcids: continue
                 # filter merged bcids
                 #if bcids[bcid] == 0: continue
-
+                
                 ## if merged bcid, find closeby bcid
                 if bcids[bcid] == 0:
                     for bcid_close in [bcid-1,bcid+1,bcid-2,bcid+2]:
                         if bcid_close in bcids:
                             if bcids[bcid_close] > 0: bcid = bcid_close
-
-                ## energies
+                            
+                            ## energies
                 for chan in xrange(NCHAN):
                     chan_indx = sca_indx * NCHAN + chan
-
+                    
                     #if not entry.gain_hit_low[chan_indx]: continue
                     isHit = gain_hit_low[chan_indx]
                     if not isHit: continue
-
+                    
                     hg_ene = charge_hiGain[chan_indx]
                     lg_ene = charge_lowGain[chan_indx]
-
+                    
                     hit = EcalHit(slab,chip,chan,sca,hg_ene,lg_ene,isHit)
                     event[bcid].append(hit)
 
     return event
 
-def build_events(filename, maxEntries = -1, w_config = 1):
+def build_events(filename, maxEntries = -1, w_config = 0):
 
     ## Build tungsten config
     build_w_config(w_config)
@@ -215,8 +215,8 @@ def build_events(filename, maxEntries = -1, w_config = 1):
             sum_hg[0] = sum([hit.hg for hit in hits])
             sum_energy[0] = sum([hit.energy for hit in hits])
 
-            if len(hits) > 10000:
-                print("Suspicious number of hits! %i for bcid %i " %(len(hits),bcid_b[0]))
+            if len(hits) > 1000:
+                print("Suspicious number of hits! %i for bcid %i and previous bcid %i" %(len(hits),bcid_b[0],prev_bcid_b[0]))
                 print("Skipping event %i" % event[0] )
                 continue
 
@@ -242,11 +242,27 @@ if __name__ == "__main__":
 
     if len(sys.argv) > 1:
         filename = sys.argv[1]
-    else:
+    else: 
         filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_9__merge.root"
-    print("# Input file is %s" % filename)
+        maxEntries = -1
+        w_config = 0
 
-    maxEntries = -1#300
+    if len(sys.argv) > 2:
+        maxEntries = int(sys.argv[2])
+    else:
+        maxEntries = -1
+        w_config = 0
+
+    if len(sys.argv) > 3:
+        print(sys.argv[3])
+        w_config = int(sys.argv[3])
+    else:
+        w_config = 0
+
+    print("# Input file is %s" % filename)
+    print("# maxEntries is %i" % maxEntries)
+    print("# W-config is %i" % w_config)
+
 
     if os.path.exists(filename):
         build_events(filename,maxEntries)
