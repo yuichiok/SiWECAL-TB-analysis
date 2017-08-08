@@ -6,8 +6,9 @@ from array import array
 from help_tools import *
 
 def get_corr_bcid(bcid):
-    return bcid if bcid > BCID_VALEVT else bcid + 4096
-    #return bcid
+    if bcid < 0: return bcid
+    if bcid > BCID_VALEVT: return bcid
+    else: return bcid + 4096
 
 def merge_bcids(bcids):
     ## Set of BCIDs present in this entry
