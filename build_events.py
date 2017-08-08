@@ -98,7 +98,7 @@ def get_hits(entry,bcids):
 
     return event
 
-def build_events(filename, maxEntries = -1, w_config = 0):
+def build_events(filename, maxEntries = -1, w_config = -1):
 
     ## Build tungsten config
     build_w_config(w_config)
@@ -240,24 +240,20 @@ def build_events(filename, maxEntries = -1, w_config = 0):
 
 if __name__ == "__main__":
 
-    if len(sys.argv) > 1:
+
+    filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_9__merge.root"
+    maxEntries = -1
+    w_config = 0
+
+    if len(sys.argv) < 3:
         filename = sys.argv[1]
-    else: 
-        filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_9__merge.root"
-        maxEntries = -1
-        w_config = 0
-
-    if len(sys.argv) > 2:
+    elif len(sys.argv) < 4:
+        filename = sys.argv[1]
         maxEntries = int(sys.argv[2])
-    else:
-        maxEntries = -1
-        w_config = 0
-
-    if len(sys.argv) > 3:
-        print(sys.argv[3])
+    elif len(sys.argv) < 5:
+        filename = sys.argv[1]
+        maxEntries = int(sys.argv[2])
         w_config = int(sys.argv[3])
-    else:
-        w_config = 0
 
     print("# Input file is %s" % filename)
     print("# maxEntries is %i" % maxEntries)
@@ -265,6 +261,6 @@ if __name__ == "__main__":
 
 
     if os.path.exists(filename):
-        build_events(filename,maxEntries)
+        build_events(filename,maxEntries,w_config)
     else:
         print("The file does not exist!")
