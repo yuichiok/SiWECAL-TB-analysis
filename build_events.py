@@ -197,6 +197,8 @@ def build_events(filename, maxEntries = -1, w_config = 1):
 
             hits = ev_hits[bcid]
 
+            if len(hits) == 0: continue
+
             ## each bcid -- single event
             corr_bcid = get_corr_bcid(bcid)
             event[0] = int(spill[0]*10000 + corr_bcid)
