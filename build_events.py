@@ -83,7 +83,7 @@ def get_hits(entry,bcid_map):
 
                 sca_indx = (slab * NCHIP + chip) * NSCA + sca
                 bcid = get_corr_bcid(entry_bcids[sca_indx])
-
+                
                 # filter bad bcids
                 if bcid not in bcid_map: continue
                 # get assigned bcid
@@ -94,20 +94,20 @@ def get_hits(entry,bcid_map):
                 ## energies
                 for chan in xrange(NCHAN):
                     chan_indx = sca_indx * NCHAN + chan
-
+                    
                     #if not entry.gain_hit_low[chan_indx]: continue
                     isHit = gain_hit_low[chan_indx]
                     if not isHit: continue
-
+                    
                     hg_ene = charge_hiGain[chan_indx]
                     lg_ene = charge_lowGain[chan_indx]
-
+                    
                     hit = EcalHit(slab,chip,chan,sca,hg_ene,lg_ene,isHit)
                     event[bcid].append(hit)
 
     return event
 
-def build_events(filename, maxEntries = -1, w_config = 1):
+def build_events(filename, maxEntries = -1, w_config = -1):
 
     ## Build tungsten config
     build_w_config(w_config)
@@ -219,8 +219,8 @@ def build_events(filename, maxEntries = -1, w_config = 1):
             sum_hg[0] = sum([hit.hg for hit in hits])
             sum_energy[0] = sum([hit.energy for hit in hits])
 
-            if len(hits) > 10000:
-                print("Suspicious number of hits! %i for bcid %i " %(len(hits),bcid_b[0]))
+            if len(hits) > 1000:
+                print("Suspicious number of hits! %i for bcid %i and previous bcid %i" %(len(hits),bcid_b[0],prev_bcid_b[0]))
                 print("Skipping event %i" % event[0] )
                 continue
 
@@ -244,15 +244,27 @@ def build_events(filename, maxEntries = -1, w_config = 1):
 
 if __name__ == "__main__":
 
-    if len(sys.argv) == 2:
-        filename = sys.argv[1]
-    else:
-        filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_9__merge.root"
-    print("# Input file is %s" % filename)
 
-    maxEntries = -1#300
+    filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_9__merge.root"
+    maxEntries = -1
+    w_config = 0
+
+    if len(sys.argv) < 3:
+        filename = sys.argv[1]
+    elif len(sys.argv) < 4:
+        filename = sys.argv[1]
+        maxEntries = int(sys.argv[2])
+    elif len(sys.argv) < 5:
+        filename = sys.argv[1]
+        maxEntries = int(sys.argv[2])
+        w_config = int(sys.argv[3])
+
+    print("# Input file is %s" % filename)
+    print("# maxEntries is %i" % maxEntries)
+    print("# W-config is %i" % w_config)
+
 
     if os.path.exists(filename):
-        build_events(filename,maxEntries)
+        build_events(filename,maxEntries,w_config)
     else:
         print("The file does not exist!")

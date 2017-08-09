@@ -1992,10 +1992,14 @@ void singleSlabAnalysis::BcidCorrelations(TString dif)
   // all sca
   //  std::vector<TCanvas*> chip;
   TH2F* h_badevents_samechip = new TH2F("badevents_ifhit_samechip_dif_"+dif,"badevents_ifhit_samechip_dif_"+dif,32,-90,90,32,-90,90);
-  TH1F* h_bcid_dif_total_samechip = new TH1F("bcid_samechip_dif_"+dif,"bcid_samechip_dif_"+dif,16002,-4000,4000);
+  TH1F* h_bcid_dif_total_samechip = new TH1F("bcid_samechip_dif_"+dif,"bcid_samechip_dif_"+dif,8001,-4000.5,4000.5);
   TH2F* h_badevents_diffchip = new TH2F("badevents_ifhit_diffchip_dif_"+dif,"badevents_ifhit_diffchip__dif_"+dif,32,-90,90,32,-90,90);
-  TH1F* h_bcid_dif_total_diffchip = new TH1F("bcid_diffchip_dif_"+dif,"bcid_diffchip_dif_"+dif,8002,-4000,4000);
+  TH1F* h_bcid_dif_total_diffchip = new TH1F("bcid_diffchip_dif_"+dif,"bcid_diffchip_dif_"+dif,8001,-4000.5,4000.5);
 
+  TH2F* h_goodevents_samechip = new TH2F("goodevents_ifhit_samechip_dif_"+dif,"goodevents_ifhit_samechip_dif_"+dif,32,-90,90,32,-90,90);
+  TH1F* h_bcid_good_dif_total_samechip = new TH1F("good_bcid_samechip_dif_"+dif,"good_bcid_samechip_dif_"+dif,8001,-4000.5,4000.5);
+  TH2F* h_goodevents_diffchip = new TH2F("goodevents_ifhit_diffchip_dif_"+dif,"goodevents_ifhit_diffchip__dif_"+dif,32,-90,90,32,-90,90);
+  TH1F* h_bcid_good_dif_total_diffchip = new TH1F("good_bcid_diffchip_dif_"+dif,"good_bcid_diffchip_dif_"+dif,8001,-4000.5,4000.5);
 
   // -----------------------------------------------------------------------------------------------------   
   // SCA analysis
@@ -2044,19 +2048,32 @@ void singleSlabAnalysis::BcidCorrelations(TString dif)
 
 		for(int ichn2=0; ichn2<64; ichn2++) {
 
-		  bool selection2=false;
-		  if(gain_hit_high[ichip2][isca2][ichn2]==1 && charge_hiGain[ichip2][isca2][ichn2]>10 && corrected_bcid[ichip2][isca2]>1247 && corrected_bcid[ichip2][isca2]<2900 && masked[ichip2][ichn2] == 0)  selection2=true;
+		  bool selection_bad=false;
+		  bool selection_good=false;
+		  bool selection_tmp;
+		  if(gain_hit_high[ichip2][isca2][ichn2]==1 && charge_hiGain[ichip2][isca2][ichn2]>10 && corrected_bcid[ichip2][isca2]>1247 && corrected_bcid[ichip2][isca2]<2900 && masked[ichip2][ichn2] == 0)  selection_tmp=true;
 
-		  if( badbcid[ichip2][isca2]>1 || (badbcid[ichip2][isca2]>-1 && nhits[ichip2][isca2]>maxnhit ) ) selection2=selection2*true;
-	  
-		  if(selection2==true && ichip2==ichip && ichn2!=ichn && isca2!=isca) {
+		  if( selection_tmp==true && ( badbcid[ichip2][isca2]>1 || (badbcid[ichip2][isca2]>-1 && nhits[ichip2][isca2]>maxnhit) ) ) selection_bad=true;
+		  if( selection_tmp==true &&  badbcid[ichip2][isca2]<2 && nhits[ichip2][isca2]<(maxnhit+1) ) selection_good=true;
+
+		  if(selection_bad==true && ichip2==ichip && ichn2!=ichn && isca2!=isca) {
 		    h_bcid_dif_total_samechip->Fill(corrected_bcid[ichip][isca]-corrected_bcid[ichip2][isca2]);//ichn2);
 		    h_badevents_samechip->Fill(map_pointX[ichip2][ichn2],map_pointY[ichip2][ichn2]);
 		  }
 
-		  if(selection2==true && ichip2!=ichip && ichn2!=ichn && isca2!=isca ) {
+		  if(selection_bad==true && ichip2!=ichip && ichn2!=ichn && isca2!=isca ) {
 		    h_bcid_dif_total_diffchip->Fill(bcid[ichip][isca]-bcid[ichip2][isca2]);
 		    h_badevents_diffchip->Fill(map_pointX[ichip2][ichn2],map_pointY[ichip2][ichn2]);
+		  }
+
+		  if(selection_good==true && ichip2==ichip && ichn2!=ichn && isca2!=isca) {
+		    h_bcid_good_dif_total_samechip->Fill(corrected_bcid[ichip][isca]-corrected_bcid[ichip2][isca2]);//ichn2);
+		    h_goodevents_samechip->Fill(map_pointX[ichip2][ichn2],map_pointY[ichip2][ichn2]);
+		  }
+
+		  if(selection_good==true && ichip2!=ichip && ichn2!=ichn && isca2!=isca ) {
+		    h_bcid_good_dif_total_diffchip->Fill(bcid[ichip][isca]-bcid[ichip2][isca2]);
+		    h_goodevents_diffchip->Fill(map_pointX[ichip2][ichn2],map_pointY[ichip2][ichn2]);
 		  }
 
 		}
@@ -2096,6 +2113,30 @@ void singleSlabAnalysis::BcidCorrelations(TString dif)
   h_bcid_dif_total_diffchip->Draw("h");
 
   canvas->Print("results_pedestal/bcid_correlations_"+dif+".root");
+
+  TCanvas *canvas_good= new TCanvas("good_bcid_correl_"+dif, "good_bcid_correl_"+dif,1600,1000);
+  canvas_good->Divide(2,2);
+  canvas_good->cd(1);
+  h_goodevents_samechip->GetXaxis()->SetTitle("x");
+  h_goodevents_samechip->GetYaxis()->SetTitle("y");   
+  h_goodevents_samechip->Draw("colz");
+
+  canvas_good->cd(2);
+  h_bcid_good_dif_total_samechip->GetXaxis()->SetTitle("bcid_hits-bcid_hits2 (chip_hit==chip_hit2)");
+  h_bcid_good_dif_total_samechip->GetXaxis()->SetRangeUser(-40,40);
+  h_bcid_good_dif_total_samechip->Draw("h");
+
+  canvas_good->cd(3);
+  h_goodevents_diffchip->GetXaxis()->SetTitle("x");
+  h_goodevents_diffchip->GetYaxis()->SetTitle("y");   
+  h_goodevents_diffchip->Draw("colz");
+  
+  canvas_good->cd(4);
+  h_bcid_good_dif_total_diffchip->GetXaxis()->SetTitle("bcid_hits-bcid_hits2 (chip_hit!=chip_hit2)");
+  h_bcid_good_dif_total_diffchip->GetXaxis()->SetRangeUser(-40,40);
+  h_bcid_good_dif_total_diffchip->Draw("h");
+
+  canvas_good->Print("results_pedestal/good_bcid_correlations_"+dif+".root");
 
 
   
