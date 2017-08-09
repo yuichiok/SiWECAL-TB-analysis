@@ -28,10 +28,15 @@ public:
     }
     ~mergeRootFiles(){}
 
-    void Merge(TString rootname, bool filterEvents = false){
-        TString outfilename = rootname;
-        if(filterEvents) outfilename += "_filtered";
-        outfilename += "_merge.root";
+    void Merge(TString rootname, TString outfilename = "default", bool filterEvents = false){
+
+	if ( outfilename == "default"){
+	    //TString outfilename = rootname;
+	    outfilename = rootname;
+	    if(filterEvents) outfilename += "_filtered";
+	    outfilename += "_merge.root";
+	}
+	cout << "Merging into output file: " << outfilename << endl;
 
         TFile *f[NSLABS];
         TTree *tree[NSLABS] ;
