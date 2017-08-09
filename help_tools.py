@@ -125,6 +125,7 @@ def read_pedestals(indir_prefix = "./pedestals/"):
                 peds_err = items[3::3]
                 peds_width = items[4::3]
                 pedestal_map[slab][chip][chan] = peds
+                
     ped_map = pedestal_map
     return pedestal_map
 

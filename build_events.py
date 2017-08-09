@@ -6,59 +6,72 @@ from array import array
 from help_tools import *
 
 def get_corr_bcid(bcid):
-    return bcid if bcid > BCID_VALEVT else bcid + 4096
-    #return bcid
+    if bcid < 0: return bcid
+    if bcid > BCID_VALEVT: return bcid
+    else: return bcid + 4096
 
-def merge_bcids(bcids):
+def merge_bcids(bcid_cnts):
     ## Set of BCIDs present in this entry
-    #entry_bcids = [bcid for bcid in entry.bcid if bcid > -1]
+    bcids_unique = set(bcid_cnts.keys())
 
-    entry_bcids = bcids
-
-    entry_bcids_unique = set(entry_bcids)
-    #entry_bcids_cnt = [entry_bcids.count(bcid) for bcid in entry_bcids_unique]
-    entry_bcids_cnts = {bcid:entry_bcids.count(bcid) for bcid in entry_bcids_unique}
+    #bcids_cnts = bcids
+    ## format: bcid: (counts,corresponding bcid)
+    ## initialize corresponding with itself
+    new_bcid_cnts = bcid_cnts#{bcid:(bcid_cnts[bcid],bcid) for bcid in bcid_cnts}
+    bcid_map = {bcid:bcid for bcid in bcid_cnts}
 
     ## Do BCID matching
-    for i,bcid in enumerate(entry_bcids):
-        #if bcid < 0: continue
+    for i,bcid in enumerate(bcids_unique):
 
         for bcid_close in [bcid-1,bcid+1,bcid-2,bcid+2]:
-            if bcid_close in entry_bcids_cnts:
+            if bcid_close in new_bcid_cnts:
                 #print "Found nearby", bcid, bcid_close
-                #if entry_bcids_cnts[bcid_close] < 1: continue
+                #if bcids_cnts[bcid_close] < 1: continue
 
                 # found bcid nearby
                 # merge bcids based on "occupancy" counter
-                if entry_bcids_cnts[bcid_close] >= entry_bcids_cnts[bcid]:
+                if new_bcid_cnts[bcid_close] >= new_bcid_cnts[bcid]:
                     # nearby bcid has more counts
                     # -> assign this bcid to nearby bcid
-                    entry_bcids_cnts[bcid_close] += 1
-                    entry_bcids_cnts[bcid] -= 1
+                    new_bcid_cnts[bcid_close] += new_bcid_cnts[bcid]
+                    new_bcid_cnts[bcid] -= new_bcid_cnts[bcid]
+
+                    bcid_map[bcid] = bcid_close
                 break
 
-    return entry_bcids_cnts
+    return bcid_map
 
 def get_good_bcids(entry):
 
-    bcids = []
+    all_bcids = {}
     entry_badbcid = entry.badbcid
     entry_nhits = entry.nhits
 
     for i,bcid in enumerate(entry.bcid):
-
         if bcid < 0: continue
-        if entry_badbcid[i] > 1 or entry_badbcid[i] < 0: continue
-        if entry_nhits[i] > 20: continue
 
-        bcids.append(get_corr_bcid(bcid))
+        bcid_flag = 0 #0 is OK!
 
-    return bcids
+        if entry_badbcid[i] > 1 or entry_badbcid[i] < 0: bcid_flag = 1
+        if entry_nhits[i] > 20: bcid_flag = 1
 
-def get_hits(entry,bcids):
+        bcid = get_corr_bcid(bcid)
+
+        if bcid in all_bcids: all_bcids[bcid].append(bcid_flag)
+        else: all_bcids[bcid] = [bcid_flag]
+
+    ## make counter
+    good_bcids = {}
+    for bcid,flags in all_bcids.iteritems():
+        if sum(flags) == 0:
+            good_bcids[bcid] = len(flags)
+
+    return good_bcids
+
+def get_hits(entry,bcid_map):
     ## Collect hits in bcid containe
 
-    event = {bcid:[] for bcid in bcids if bcids[bcid] > 0} # bcid : hits
+    event = {bcid:[] for bcid in bcid_map if bcid_map[bcid] > 0} # bcid : hits
     entry_bcids = entry.bcid
     gain_hit_low = entry.gain_hit_low
     charge_hiGain = entry.charge_hiGain
@@ -72,17 +85,13 @@ def get_hits(entry,bcids):
                 bcid = get_corr_bcid(entry_bcids[sca_indx])
                 
                 # filter bad bcids
-                if bcid not in bcids: continue
-                # filter merged bcids
-                #if bcids[bcid] == 0: continue
-                
-                ## if merged bcid, find closeby bcid
-                if bcids[bcid] == 0:
-                    for bcid_close in [bcid-1,bcid+1,bcid-2,bcid+2]:
-                        if bcid_close in bcids:
-                            if bcids[bcid_close] > 0: bcid = bcid_close
-                            
-                            ## energies
+                if bcid not in bcid_map: continue
+                # get assigned bcid
+                bcid = bcid_map[bcid]
+
+                if bcid not in event: continue
+
+                ## energies
                 for chan in xrange(NCHAN):
                     chan_indx = sca_indx * NCHAN + chan
                     
@@ -175,29 +184,24 @@ def build_events(filename, maxEntries = -1, w_config = -1):
 
         ## BCID
         bcids = get_good_bcids(entry)
-        bcid_cnts = merge_bcids(bcids)
-
-        ## reset counters
-        #nhit_slab[0] = nhit_chip[0] = nhit_chan[0] = nhit_sca[0] = 0
+        bcid_map = merge_bcids(bcids)
 
         spill[0] = spill_cnt
         spill_cnt += 1
 
         ## Collect hits in bcid container
-        #ev_hits = get_hits(entry,bcid_cnts)
-        ev_hits = get_hits(entry,bcid_cnts)
+        ev_hits = get_hits(entry,bcid_map)
 
         #for bcid,hits in ev_hits.iteritems():
         for ibc,bcid in enumerate(sorted(ev_hits)):
+
             hits = ev_hits[bcid]
 
-            if bcid_cnts[bcid] < 1:
-                print "Hits with empty bcid! %i ! This should not happen." %bcid
-                continue #skip emptied bcids
+            if len(hits) == 0: continue
 
             ## each bcid -- single event
             corr_bcid = get_corr_bcid(bcid)
-            event[0] = int(spill[0]*5000 + corr_bcid)
+            event[0] = int(spill[0]*10000 + corr_bcid)
             bcid_b[0] = corr_bcid
 
             ## store distance to previous bcid
