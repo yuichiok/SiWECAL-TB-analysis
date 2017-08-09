@@ -70,18 +70,534 @@ Double_t langaufun(Double_t *x, Double_t *par) {
 
 
 
-void protoAnalysis::SimpleMIPAnalysis(TString outputname="", TString map_filename="../fev10_chip_channel_x_y_mapping.txt")
+void protoAnalysis::ShowerDistributions(TString folder="", TString configuration="conf1", TString energy_string="3GeV", TString gridpoint ="grid20", double mipcut=0.5)
 {
 
-  int maxnhit=5; // plane event threshold
+  // --------------
+  if (fChain == 0) return;
+  Long64_t nentries = fChain->GetEntriesFast();
+  //-----------------
 
-  //Read the channel/chip -- x/y mapping
-  ReadMap(map_filename);
+  Float_t w[10];
+  Float_t thickness[7];
+  thickness[0]=2.;
+  thickness[1]=2.;
+  thickness[2]=2.;
+  thickness[3]=2.;
+  thickness[4]=4.;
+  thickness[5]=4.;
+  thickness[6]=6.;
+
+  if(configuration=="conf2") {
+    thickness[0]=4.;
+    thickness[1]=2.;
+    thickness[2]=2.;
+    thickness[3]=4.;
+    thickness[4]=4.;
+    thickness[5]=6.;
+    thickness[6]=6.;
+  }
+
+  if(configuration=="conf3") {
+    thickness[0]=6.;
+    thickness[1]=2.;
+    thickness[2]=4.;
+    thickness[3]=4.;
+    thickness[4]=6.;
+    thickness[5]=6.;
+    thickness[6]=6.;
+  }
+
+  w[0]=0.56*thickness[0];
+  w[1]=0.56*thickness[1];
+  w[2]=0.56*thickness[2];
+  w[3]=0.56*thickness[3];
+  w[4]=0.56*thickness[4];
+  w[5]=0.56*thickness[5];
+  w[6]=0.56*0;
+  w[7]=0.56*0;
+  w[8]=0.56*0;
+  w[9]=0.56*thickness[6];
+
+  Float_t edge =0.0001;
+
+  Float_t bins[] = { 0, w[0]+edge, w[0]+edge+w[1], w[0]+edge+w[1]+w[2], w[0]+edge+w[1]+w[2]+w[3], w[0]+edge+w[1]+w[2]+w[3]+w[4],  w[0]+edge+w[1]+w[2]+w[3]+w[4]+w[5],  w[0]+edge+w[1]+w[2]+w[3]+w[4]+w[5]+w[9] };
+  Int_t  binnum = sizeof(bins)/sizeof(Float_t) - 1; 
+
+  Float_t binsx[33];
+  binsx[0]=-86.;
+  for(int ibins=1;ibins<33;ibins++) binsx[ibins]=binsx[ibins-1]+5.5;
+  Int_t  binnumx = 32; 
+
+  Float_t binsz[11];
+  binsz[0]=-0.5;
+  for(int ibins=1;ibins<11;ibins++) binsz[ibins]=binsz[ibins-1]+1;
+  Int_t  binnumz = 10; 
+
+  // energy histograms
+  //TH1 histograms
+  TH1F* energy = new TH1F("energy","energy",500,1,1001);
+  TH1F* energy_center = new TH1F("energy_center","energy_center",500,1,1001);
+  TH1F* energy_profile_z = new TH1F("energy_profile_z","energy_profile_z",binnumz,binsz);
+
+  // x,y,z histograms
+  TH2F* energy_xy = new TH2F("energy_xy","energy_xy",binnumx,binsx,binnumx,binsx);
+  TH2F* energy_xz = new TH2F("energy_xz","energy_xz",binnumx,binsx,binnumz,binsz);
+  TH2F* energy_yz = new TH2F("energy_yz","energy_yz",binnumx,binsx,binnumz,binsz);
+
+
+  /// Xo thickness 2d plots
+
+  TH1F* energy_profile_X0 = new TH1F("energy_profile_X0","energy_profile_X0",binnum,bins);
+  TH2F* energy_xX0 = new TH2F("energy_xX0","energy_xX0",binnumx,binsx,binnum,bins);
+  TH2F* energy_yX0 = new TH2F("energy_yX0","energy_yX0",binnumx,binsx,binnum,bins);
+
+  TH1F *xbarycenter = new TH1F("x-barycenter","x-barycenter",binnumx,binsx);
+  TH1F *ybarycenter = new TH1F("y-barycenter","y-barycenter",binnumx,binsx);
+  TH1F *zbarycenter = new TH1F("z-barycenter","z-barycenter",binnumz,binsz);
+
+  TH2F* xybarycenter = new TH2F("Energy xy-barycenter","Energy xy-barycenter",binnumx,binsx,binnumx,binsx);
+  TH2F* xzbarycenter = new TH2F("Energy xz-barycenter","Energy xz-barycenter",binnumx,binsx,binnumz,binsz);
+  TH2F* yzbarycenter = new TH2F("Energy yz-barycenter","Energy yz-barycenter",binnumx,binsx,binnumz,binsz);
+
+  TH1F* n_x= new TH1F("n_x","n_x",binnumx,binsx);
+  TH1F* n_y= new TH1F("n_y","n_y",binnumx,binsx);
+  TH1F* n_z= new TH1F("n_z","n_z",binnumz,binsz);
+
+  TH1F* nhitstotal= new TH1F("nhitstotal","nhitstotal",501,-0.5,500.5);
+  TH2F* nhits_vs_energy= new TH2F("nhits_vs_energy","nhits_vs_energy",51,-2.5,252.5,101,-5,1005);
+  TH2F* min_dist_vs_energy= new TH2F("min_dist_vs_energy","min_dist_vs_energy",250,0,250,100,-5,995);
+
+  int number_hits=0;
+  // -----------------------------------------------------------------------------------------------------   
+  // Signal readout
+  Long64_t nbytes = 0, nb = 0;
+  for (Long64_t jentry=0; jentry<nentries;jentry++) {
+    Long64_t ientry = LoadTree(jentry);
+    if (ientry < 0) break;
+    nb = fChain->GetEntry(jentry);   nbytes += nb;
+
+    if(bcid<1300) continue;
+    if(nhit_slab!=7) continue;
+
+
+    bool bool_hit_slab[7];
+    bool_hit_slab[0] = false;
+    bool_hit_slab[1] = false;
+    bool_hit_slab[2] = false;
+    bool_hit_slab[3] = false;
+    bool_hit_slab[4] = false;
+    bool_hit_slab[5] = false;
+    bool_hit_slab[6] = false;
+
+    int n_hitstotal =0;  
+
+    for(int ihit=0; ihit< nhit_chan; ihit ++) {
+      int z=hit_z[ihit];
+      if(z==9) z=6;
+      if(hit_energy[ihit]>mipcut && hit_isMasked[ihit]==0 ) {
+	bool_hit_slab[z]=true;
+	n_hitstotal++;
+      }
+    }
+
+    nhitstotal->Fill(n_hitstotal);
+    
+
+    int nslabhitted =0;
+
+    for(int i=0; i<7; i++ ){
+      if( bool_hit_slab[i]==true) nslabhitted++;
+    }
+
+    if( nslabhitted<7) continue;
+
+    // ---------------------------------------------
+    //   the energy and other variables,
+    double energy_sum_tmp=0;
+    double weight_X0_sum_tmp=0;
+    double energy_X0_sum_tmp=0;
+    double xm=0, ym=0., zm=0.;
+
+    for(int ihit=0; ihit< nhit_chan; ihit ++) {
+      
+      if(hit_energy[ihit]>mipcut && hit_isMasked[ihit]==0 ) {
+    	  energy_sum_tmp += hit_energy[ihit];
+    	  energy_X0_sum_tmp += w[int(hit_z[ihit])] * hit_energy[ihit];
+	  weight_X0_sum_tmp += w[int(hit_z[ihit])];
+
+	  xm +=  - hit_x[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
+	  ym +=  - hit_y[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
+	  zm +=  hit_z[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
+      }
+    }
+
+    //-------------------------------------------
+    //calcualte min distance with other hits 
+    for(int ihit=0; ihit< nhit_chan; ihit ++) {
+      if(hit_energy[ihit]>mipcut && hit_isMasked[ihit]==0 ) {
+	double xi=hit_x[ihit];
+	double yi=hit_y[ihit];
+	double zi=hit_z[ihit];
+	
+	double mindist=1000000000.;
+	double dist=-10;
+	for(int jhit=0; jhit< nhit_chan; jhit ++) {
+	  if(hit_energy[jhit]>mipcut && hit_isMasked[jhit]==0 && ihit!=jhit) {
+	    double xj=hit_x[jhit];
+	    double yj=hit_y[jhit];
+	    double zj=hit_z[jhit];
+	    dist= sqrt( (xi-xj)*(xi-xj) + (yi-yj)*(yi-yj) + 150*150*(zi-zj)*(zi-zj) );
+	    if(dist < mindist) mindist = dist;
+	  }
+	}
+	min_dist_vs_energy->Fill(mindist,energy_X0_sum_tmp);
+      }
+    }
+    // ---------------------------------------------
+    //  recalculate the energy and other variables, with a cut in the distance (avoid isolated cells)
+    energy_sum_tmp=0;
+    weight_X0_sum_tmp=0;
+    energy_X0_sum_tmp=0;
+    xm=0, ym=0., zm=0.;
+
+    for(int ihit=0; ihit< nhit_chan; ihit ++) {
+      
+      if(hit_energy[ihit]>mipcut && hit_isMasked[ihit]==0 ) {
+    	double xi=hit_x[ihit];
+    	double yi=hit_y[ihit];
+    	double zi=hit_z[ihit];
+	
+    	double mindist=1000000000.;
+    	double dist=-10;
+    	for(int jhit=0; jhit< nhit_chan; jhit ++) {
+    	  if(hit_energy[jhit]>mipcut && hit_isMasked[jhit]==0 && ihit!=jhit) {
+    	    double xj=hit_x[jhit];
+    	    double yj=hit_y[jhit];
+    	    double zj=hit_z[jhit];
+    	    dist= sqrt( (xi-xj)*(xi-xj) + (yi-yj)*(yi-yj) + 150*150*(zi-zj)*(zi-zj) );
+    	    if(dist < mindist) mindist = dist;
+    	  }
+    	}
+	if(mindist<8.) {
+    	  energy_sum_tmp += hit_energy[ihit];
+    	  energy_X0_sum_tmp += w[int(hit_z[ihit])] * hit_energy[ihit];
+	  weight_X0_sum_tmp += w[int(hit_z[ihit])];
+
+    	  xm +=  - hit_x[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
+    	  ym +=  - hit_y[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
+    	  zm +=  hit_z[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
+	}
+      }
+    }
+
+    if(energy_sum_tmp<0.5) continue;
+    number_hits++;
+
+    nhits_vs_energy->Fill(n_hitstotal,energy_X0_sum_tmp);
+
+
+    xm = xm / energy_X0_sum_tmp;
+    ym = ym / energy_X0_sum_tmp;
+    zm = zm / energy_X0_sum_tmp;
+
+    for(int ihit=0; ihit< nhit_chan; ihit ++) {
+
+      if(hit_energy[ihit]>mipcut && hit_isMasked[ihit]==0 ) {
+
+	energy_profile_z->Fill(hit_z[ihit],hit_energy[ihit]/energy_sum_tmp );
+	energy_profile_X0->Fill(hit_x0[ihit],hit_energy[ihit]/energy_sum_tmp );
+	
+	energy_xy->Fill(-hit_x[ihit],-hit_y[ihit],hit_energy[ihit]/energy_sum_tmp );
+	energy_xz->Fill(-hit_x[ihit],hit_z[ihit],hit_energy[ihit]/energy_sum_tmp );
+	energy_yz->Fill(-hit_y[ihit],hit_z[ihit],hit_energy[ihit]/energy_sum_tmp );     
+	
+	energy_xX0->Fill(-hit_x[ihit],hit_x0[ihit],hit_energy[ihit]/energy_sum_tmp);
+	energy_yX0->Fill(-hit_y[ihit],hit_x0[ihit],hit_energy[ihit]/energy_sum_tmp);
+      }
+
+    }
+    
+    energy->Fill(energy_X0_sum_tmp);
+
+    xbarycenter->Fill(xm, energy_X0_sum_tmp);
+    ybarycenter->Fill(ym, energy_X0_sum_tmp);
+    zbarycenter->Fill(zm,energy_X0_sum_tmp);
+
+    xybarycenter->Fill(xm,ym,energy_X0_sum_tmp);
+    xzbarycenter->Fill(xm,zm,energy_X0_sum_tmp);
+    yzbarycenter->Fill(ym,zm,energy_X0_sum_tmp);
+
+    n_x->Fill(xm);
+    n_y->Fill(ym);
+    n_z->Fill(zm);
+
+
+  }
+
+
+  // First analysis, normalization and barycenter graph filling
+  double rawE_x[binnumx];
+  double rawE_y[binnumx];
+  double rawE_z[binnumz];
+
+  double erawE_x[binnumx];
+  double erawE_y[binnumx];
+  double erawE_z[binnumz];
+
+  double x[binnumx];
+  double y[binnumx];
+  double z[binnumz];
+
+  for(int i=0; i<binnumx; i++) {
+    rawE_x[i]=0.; rawE_y[i]=0.;
+    x[i]=n_x->GetBinCenter(i+1);
+    y[i]=n_y->GetBinCenter(i+1);
+
+    if(  n_x->GetBinContent(i+1) >50 ) rawE_x[i]=xbarycenter->GetBinContent(i+1)/n_x->GetBinContent(i+1);
+    if(  n_y->GetBinContent(i+1) >50 ) rawE_y[i]=ybarycenter->GetBinContent(i+1)/n_y->GetBinContent(i+1);
+
+
+    if(  n_x->GetBinContent(i+1) >50 ) erawE_x[i]=rawE_x[i]/sqrt(n_x->GetBinContent(i+1));
+    if(  n_y->GetBinContent(i+1) >50 ) erawE_y[i]=rawE_y[i]/sqrt(n_y->GetBinContent(i+1));
+
+  }
+
+  for(int i=0; i<binnumz; i++) {
+    rawE_z[i]=0.;
+    z[i]=n_z->GetBinCenter(i+1);
+
+    if(  n_z->GetBinContent(i+1) >50 ) rawE_z[i]=zbarycenter->GetBinContent(i+1)/n_z->GetBinContent(i+1);
+    if(  n_y->GetBinContent(i+1) >50 ) erawE_z[i]=rawE_z[i]/sqrt(n_z->GetBinContent(i+1));
+
+
+  }
+
+  TGraphErrors * E_xbarycenter = new TGraphErrors(32,x,rawE_x,0,erawE_x);
+  TGraphErrors * E_ybarycenter = new TGraphErrors(32,y,rawE_y,0,erawE_y);
+  TGraphErrors * E_zbarycenter = new TGraphErrors(10,z,rawE_z,0,erawE_z);
+
+  energy_profile_z->Scale(1./number_hits);
+  energy_profile_X0->Scale(1./number_hits);
+
+  energy_xy->Scale(1./number_hits);
+  energy_xz->Scale(1./number_hits);
+  energy_yz->Scale(1./number_hits);
+
+  energy_xX0->Scale(1./number_hits);
+  energy_yX0->Scale(1./number_hits);
+
+  xbarycenter->Scale(1./number_hits);
+  ybarycenter->Scale(1./number_hits);
+  zbarycenter->Scale(1./number_hits);
   
-  //Read Masked channels list
-  ReadMasked();
+  xybarycenter->Scale(1./number_hits);
+  xzbarycenter->Scale(1./number_hits);
+  yzbarycenter->Scale(1./number_hits);
 
-  //Read the list of pedestals (this information contains, implicitily, the masked channels information )
+  E_xbarycenter->SetName("mean_Eraw_vs_xm");
+  E_ybarycenter->SetName("mean_Eraw_vs_ym");
+  E_zbarycenter->SetName("mean_Eraw_vs_zm");
+
+
+
+  // #########################################################################################################
+  // -----------------------------------------------------
+  // SECOND ANALYSIS, using barycenter of the shower as input for selection
+  TF1 *fit_xbarycenter = new TF1("fit_xbarycenter","gaus");
+  xbarycenter->Fit(fit_xbarycenter,"M");
+  
+  double xm_max=fit_xbarycenter->GetParameter(1)+2.5*fit_xbarycenter->GetParameter(2);
+  double xm_min=fit_xbarycenter->GetParameter(1)-2.5*fit_xbarycenter->GetParameter(2);
+
+   TF1 *fit_ybarycenter = new TF1("fit_ybarycenter","gaus");
+  ybarycenter->Fit(fit_ybarycenter,"M");
+  
+  double ym_max=fit_ybarycenter->GetParameter(1)+2.5*fit_ybarycenter->GetParameter(2);
+  double ym_min=fit_ybarycenter->GetParameter(1)-2.5*fit_ybarycenter->GetParameter(2);
+
+  TF1 *fit_zbarycenter = new TF1("fit_zbarycenter","gaus");
+  zbarycenter->Fit(fit_zbarycenter,"M");
+  
+  double zm_max=fit_zbarycenter->GetParameter(1)+2.5*fit_zbarycenter->GetParameter(2);
+  double zm_min=fit_zbarycenter->GetParameter(1)-2.5*fit_zbarycenter->GetParameter(2);
+
+  // -----------------------------------------------------------------------------------------------------   
+
+  // Signal readout
+  nbytes = 0; nb = 0;
+  for (Long64_t jentry=0; jentry<nentries;jentry++) {
+    Long64_t ientry = LoadTree(jentry);
+    if (ientry < 0) break;
+    nb = fChain->GetEntry(jentry);   nbytes += nb;
+
+    if(bcid<1300) continue;
+    if(nhit_slab!=7) continue;
+
+
+    bool bool_hit_slab[7];
+    bool_hit_slab[0] = false;
+    bool_hit_slab[1] = false;
+    bool_hit_slab[2] = false;
+    bool_hit_slab[3] = false;
+    bool_hit_slab[4] = false;
+    bool_hit_slab[5] = false;
+    bool_hit_slab[6] = false;
+
+    int n_hitstotal =0;  
+
+    for(int ihit=0; ihit< nhit_chan; ihit ++) {
+      int z=hit_z[ihit];
+      if(z==9) z=6;
+      if(hit_energy[ihit]>mipcut && hit_isMasked[ihit]==0 ) {
+	bool_hit_slab[z]=true;
+	n_hitstotal++;
+      }
+    }
+
+  
+
+    int nslabhitted =0;
+
+    for(int i=0; i<7; i++ ){
+      if( bool_hit_slab[i]==true) nslabhitted++;
+    }
+
+    if( nslabhitted<7) continue;
+
+    // ---------------------------------------------
+    //   the energy and other variables,
+    double energy_sum_tmp=0;
+    double weight_X0_sum_tmp=0;
+    double energy_X0_sum_tmp=0;
+    double xm=0, ym=0., zm=0.;
+
+    for(int ihit=0; ihit< nhit_chan; ihit ++) {
+      
+      if(hit_energy[ihit]>mipcut && hit_isMasked[ihit]==0 ) {
+    	  energy_sum_tmp += hit_energy[ihit];
+    	  energy_X0_sum_tmp += w[int(hit_z[ihit])] * hit_energy[ihit];
+	  weight_X0_sum_tmp += w[int(hit_z[ihit])];
+
+	  xm +=  - hit_x[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
+	  ym +=  - hit_y[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
+	  zm +=  hit_z[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
+      }
+    }
+
+    //-------------------------------------------
+    //calcualte min distance with other hits 
+    for(int ihit=0; ihit< nhit_chan; ihit ++) {
+      if(hit_energy[ihit]>mipcut && hit_isMasked[ihit]==0 ) {
+	double xi=hit_x[ihit];
+	double yi=hit_y[ihit];
+	double zi=hit_z[ihit];
+	
+	double mindist=1000000000.;
+	double dist=-10;
+	for(int jhit=0; jhit< nhit_chan; jhit ++) {
+	  if(hit_energy[jhit]>mipcut && hit_isMasked[jhit]==0 && ihit!=jhit) {
+	    double xj=hit_x[jhit];
+	    double yj=hit_y[jhit];
+	    double zj=hit_z[jhit];
+	    dist= sqrt( (xi-xj)*(xi-xj) + (yi-yj)*(yi-yj) + 150*150*(zi-zj)*(zi-zj) );
+	    if(dist < mindist) mindist = dist;
+	  }
+	}
+	min_dist_vs_energy->Fill(mindist,energy_X0_sum_tmp);
+      }
+    }
+    // ---------------------------------------------
+    //  recalculate the energy and other variables, with a cut in the distance (avoid isolated cells)
+    energy_sum_tmp=0;
+    weight_X0_sum_tmp=0;
+    energy_X0_sum_tmp=0;
+    xm=0, ym=0., zm=0.;
+
+    for(int ihit=0; ihit< nhit_chan; ihit ++) {
+      
+      if(hit_energy[ihit]>mipcut && hit_isMasked[ihit]==0 ) {
+    	double xi=hit_x[ihit];
+    	double yi=hit_y[ihit];
+    	double zi=hit_z[ihit];
+	
+    	double mindist=1000000000.;
+    	double dist=-10;
+    	for(int jhit=0; jhit< nhit_chan; jhit ++) {
+    	  if(hit_energy[jhit]>mipcut && hit_isMasked[jhit]==0 && ihit!=jhit) {
+    	    double xj=hit_x[jhit];
+    	    double yj=hit_y[jhit];
+    	    double zj=hit_z[jhit];
+    	    dist= sqrt( (xi-xj)*(xi-xj) + (yi-yj)*(yi-yj) + 150*150*(zi-zj)*(zi-zj) );
+    	    if(dist < mindist) mindist = dist;
+    	  }
+    	}
+	if(mindist<8.) {
+    	  energy_sum_tmp += hit_energy[ihit];
+    	  energy_X0_sum_tmp += w[int(hit_z[ihit])] * hit_energy[ihit];
+	  weight_X0_sum_tmp += w[int(hit_z[ihit])];
+
+    	  xm +=  - hit_x[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
+    	  ym +=  - hit_y[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
+    	  zm +=  hit_z[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
+	}
+      }
+    }
+
+    if(energy_sum_tmp<0.5) continue;
+
+    xm = xm / energy_X0_sum_tmp;
+    ym = ym / energy_X0_sum_tmp;
+    zm = zm / energy_X0_sum_tmp;
+
+
+    if( xm > xm_min && xm < xm_max && ym > ym_min && ym < ym_max && zm > zm_min && zm < zm_max ) 
+      energy_center->Fill(energy_X0_sum_tmp);
+
+  }
+
+
+  // Signal analysis
+  TFile *file = new TFile(TString::Format("%s%s_%s_%s_mipcut%0.1f_showers.root",folder.Data(),configuration.Data(),gridpoint.Data(),energy_string.Data(),mipcut) , "RECREATE");
+  file->cd();
+
+  energy->Write();
+  energy_center->Write();
+
+  energy_profile_z->Write();
+  energy_profile_X0->Write();
+
+  energy_xy->Write();
+  energy_xz->Write();
+  energy_yz->Write();
+
+  energy_xX0->Write();
+  energy_yX0->Write();
+
+  xbarycenter->Write();
+  ybarycenter->Write();
+  zbarycenter->Write();
+  
+  xybarycenter->Write();
+  xzbarycenter->Write();
+  yzbarycenter->Write();
+
+  E_xbarycenter->Write();
+  E_ybarycenter->Write();
+  E_zbarycenter->Write();
+
+  n_x->Write();
+  n_y->Write();
+  n_z->Write();
+  nhitstotal->Write();
+  nhits_vs_energy->Write();
+  min_dist_vs_energy->Write();
+  file->Close();
+  
+}
+
+void protoAnalysis::SimpleMIPAnalysis(TString outputname="")
+{
 
   ofstream fout_mip("results_mipcalibration/MIP"+outputname+".txt",ios::out);
   fout_mip<<"#mip results, all channels together SimpleMIPAnalysis using tracks"<<endl;
@@ -340,250 +856,12 @@ void protoAnalysis::SimpleMIPAnalysis(TString outputname="", TString map_filenam
   first_iteration_peak2->Write();
   first_iteration_peak3->Write();
 
-  /*
-
-  // -----------------------------------------------------------------------------------
-  // iteration 2
-  // ***********************************************************************************
-
-  //-----------------------------------
-  // Peak 1
-  //------------------------------------
-  TH1F *hist_peak1_iter2 = (TH1F*)mip_histo_all->Clone();
-  //hist_peak1_iter2->Add(fpeak2_iter1,-1);
-  //hist_peak1_iter2->Add(fpeak3_iter1,-1);
-
-  pllo[0]=fpeak1_iter1->GetParameter(0)-10*fpeak1_iter1->GetParameter(0); 
-  pllo[1]=fpeak1_iter1->GetParameter(1)-10*fpeak1_iter1->GetParameter(1); 
-  pllo[2]=fpeak1_iter1->GetParameter(2)-10*fpeak1_iter1->GetParameter(2); 
-  pllo[3]=fpeak1_iter1->GetParameter(3)-10*fpeak1_iter1->GetParameter(3);
-
-  plhi[0]=fpeak1_iter1->GetParameter(0)+10*fpeak1_iter1->GetParameter(0); 
-  plhi[1]=fpeak1_iter1->GetParameter(1)+10*fpeak1_iter1->GetParameter(1); 
-  plhi[2]=fpeak1_iter1->GetParameter(2)+10*fpeak1_iter1->GetParameter(2); 
-  plhi[3]=fpeak1_iter1->GetParameter(3)+10*fpeak1_iter1->GetParameter(3);
-
-
-  fr[0]=fpeak1_iter1->GetParameter(1)-1.5*fpeak1_iter1->GetParameter(0);
-  fr[1]=fpeak1_iter1->GetParameter(1)+3*fpeak1_iter1->GetParameter(0);
-  sv[0]=fpeak1_iter1->GetParameter(0);
-  sv[1]=fpeak1_iter1->GetParameter(1);
-  sv[2]=fpeak1_iter1->GetParameter(2);
-  sv[3]=fpeak1_iter1->GetParameter(3);
-  
-  TF1 *fit_2nd_iter_temp=langaufit(hist_peak1_iter2,fr,sv,pllo,plhi,fp,fpe,&chisqr,&ndf);
-  
-  hist_peak1_iter2->GetXaxis()->SetTitle("Energy [MIP]");
-  hist_peak1_iter2->GetYaxis()->SetTitle("# entries");
-  hist_peak1_iter2->SetTitle("First MIP");
-  hist_peak1_iter2->Write();
-
-  mpv=fit_2nd_iter_temp->GetParameter(1);
-  empv=fit_2nd_iter_temp->GetParError(1);
-  wmpv=fit_2nd_iter_temp->GetParameter(0);
-  wg=fit_2nd_iter_temp->GetParameter(3);
-  chi2ndf=0;
-  if(ndf>0) chi2ndf=chisqr/ndf;
-  mipentries=mip_histo_all->GetEntries();
-
-  TF1 *fpeak1_iter2 = new TF1("fpeak1_iter2",langaufun,0,5,4);
-  fpeak1_iter2->SetParameter(0,fit_2nd_iter_temp->GetParameter(0));
-  fpeak1_iter2->SetParameter(1,fit_2nd_iter_temp->GetParameter(1));
-  fpeak1_iter2->SetParameter(2,fit_2nd_iter_temp->GetParameter(2));
-  fpeak1_iter2->SetParameter(3,fit_2nd_iter_temp->GetParameter(3));
- 
-  fout_mip<<" "<<mpv<<" "<<empv<<" "<<wmpv<<" "<<wg<<" "<<chi2ndf<<" "<<mipentries<<endl;
-  cout<<" "<<mpv<<" "<<empv<<" "<<wmpv<<" "<<wg<<" "<<chi2ndf<<" "<<mipentries<<endl;
-
-  
-  // ------------------------------------------------------
-  // Peak 2
-  // -----------------------------------------------------
-  TH1F *hist_peak2_iter2 = (TH1F*)mip_histo_all->Clone();
-  hist_peak2_iter2->Add(fpeak1_iter2,-1);
-
-  TSpectrum *s1 = new TSpectrum(1);
-  int npeaks_iter2_1 = s1->Search(hist_peak2_iter2,0.5,"",0.8); 
-  Double_t *mean_peak_iter2_1=s1->GetPositionX();
-  fr[0]=mean_peak_iter2_1[0]-0.2*mip_histo_all->GetRMS();//-0.65*mip_histo_all->GetRMS();
-  fr[1]=mean_peak_iter2_1[0]+0.3*mip_histo_all->GetRMS();//mip_histo_all->GetMean();
-  sv[0]=wmpv;
-  sv[1]=2*mpv;
-  sv[2]=hist_peak2_iter2->Integral("width");
-  sv[3]=hist_peak2_iter2->GetRMS()/10.;
-
-  pllo[1]=2*mpv - 15*wmpv;
-  plhi[1]=2*mpv + 15*wmpv;
-
-  TF1 *fit_2nd_iter_temp2=langaufit(hist_peak2_iter2,fr,sv,pllo,plhi,fp,fpe,&chisqr,&ndf);
-  mpv=fit_2nd_iter_temp2->GetParameter(1);
-  empv=fit_2nd_iter_temp2->GetParError(1);
-  wmpv=fit_2nd_iter_temp2->GetParameter(0);
-  wg=fit_2nd_iter_temp2->GetParameter(3);
-  chi2ndf=0;
-  if(ndf>0) chi2ndf=chisqr/ndf;
-
-  fout_mip<<" "<<mpv<<" "<<empv<<" "<<wmpv<<" "<<wg<<" "<<chi2ndf<<" "<<mipentries<<endl;
-  cout<<npeaks_iter2_1<<" "<<mean_peak_iter2_1[0]<<endl;
-  cout<<" "<<mpv<<" "<<empv<<" "<<wmpv<<" "<<wg<<" "<<chi2ndf<<" "<<mipentries<<endl;
-
-  hist_peak2_iter2->GetXaxis()->SetTitle("Energy [MIP]");
-  hist_peak2_iter2->GetYaxis()->SetTitle("# entries");
-  hist_peak2_iter2->SetTitle("Second MIP (first subtracted)");
-  hist_peak2_iter2->Write();
-
-  TF1 *fpeak2_iter2 = new TF1("fpeak2_iter2",langaufun,0,5,4);
-  fpeak2_iter2->SetParameter(0,fit_2nd_iter_temp2->GetParameter(0));
-  fpeak2_iter2->SetParameter(1,fit_2nd_iter_temp2->GetParameter(1));
-  fpeak2_iter2->SetParameter(2,fit_2nd_iter_temp2->GetParameter(2));
-  fpeak2_iter2->SetParameter(3,fit_2nd_iter_temp2->GetParameter(3));
-
-
-  // ------------------------------------------------------
-  // Peak 2
-  // -----------------------------------------------------
-  TH1F *hist_peak3_iter2 = (TH1F*)mip_histo_all->Clone();
-  hist_peak3_iter2->Add(fpeak1_iter2,-1);
-  hist_peak3_iter2->Add(fpeak2_iter2,-1);
-
-  TSpectrum *s2 = new TSpectrum(1);
-  int npeaks_iter2_2 = s2->Search(hist_peak3_iter2,0.5,"",0.8); 
-  Double_t *mean_peak_iter2_2=s2->GetPositionX();
-  fr[0]=mean_peak_iter2_2[0]-0.4*mip_histo_all->GetRMS();//-0.65*mip_histo_all->GetRMS();
-  fr[1]=mean_peak_iter2_2[0]+0.4*mip_histo_all->GetRMS();//mip_histo_all->GetMean();
-  sv[0]=wmpv;
-  sv[1]=3/2*mpv;
-  sv[2]=hist_peak3_iter2->Integral("width");
-  sv[3]=hist_peak3_iter2->GetRMS()/10.;
-
-  pllo[1]=3/2*mpv - 5*wmpv;
-  plhi[1]=3/2*mpv + 5*wmpv;
-
-  TF1 *fit_2nd_iter_temp3=langaufit(hist_peak3_iter2,fr,sv,pllo,plhi,fp,fpe,&chisqr,&ndf);
-  mpv=fit_2nd_iter_temp3->GetParameter(1);
-  empv=fit_2nd_iter_temp3->GetParError(1);
-  wmpv=fit_2nd_iter_temp3->GetParameter(0);
-  wg=fit_2nd_iter_temp3->GetParameter(3);
-  chi2ndf=0;
-  if(ndf>0) chi2ndf=chisqr/ndf;
-
-  fout_mip<<" "<<mpv<<" "<<empv<<" "<<wmpv<<" "<<wg<<" "<<chi2ndf<<" "<<mipentries<<endl;
-  cout<<npeaks_iter2_2<<" "<<mean_peak_iter2_2[0]<<endl;
-  cout<<" "<<mpv<<" "<<empv<<" "<<wmpv<<" "<<wg<<" "<<chi2ndf<<" "<<mipentries<<endl;
-
-  hist_peak3_iter2->GetXaxis()->SetTitle("Energy [MIP]");
-  hist_peak3_iter2->GetYaxis()->SetTitle("# entries");
-  hist_peak3_iter2->SetTitle("Third MIP (first+second subtracted)");
-  hist_peak3_iter2->Write();
-
-  TF1 *fpeak3_iter2 = new TF1("fpeak3_iter2",langaufun,0,5,4);
-  fpeak3_iter2->SetParameter(0,fit_2nd_iter_temp3->GetParameter(0));
-  fpeak3_iter2->SetParameter(1,fit_2nd_iter_temp3->GetParameter(1));
-  fpeak3_iter2->SetParameter(2,fit_2nd_iter_temp3->GetParameter(2));
-  fpeak3_iter2->SetParameter(3,fit_2nd_iter_temp3->GetParameter(3));
-
-  // ------------------------------------------------------
-  //write TF1s
-  fpeak1_iter2->SetName("FirstPeak_iter2");
-  fpeak1_iter2->Write();
-
-  fpeak2_iter2->SetName("SecondPeak_iter2");
-  fpeak2_iter2->Write();
-
-  fpeak3_iter2->SetName("ThirdPeak_iter2");
-  fpeak3_iter2->Write();
-
-
-  TH1F* second_iteration_peak1 = new TH1F("second_iteration_peak1","second_iteration_peak1",925,0.005,1.855);
-  TH1F* second_iteration_peak2 = new TH1F("second_iteration_peak2","second_iteration_peak2",500,1.855,2.855);
-  TH1F* second_iteration_peak3 = new TH1F("second_iteration_peak3","second_iteration_peak3",500,2.855,3.855);
-  second_iteration_peak1->Add(fpeak1_iter2);
-  second_iteration_peak1->Add(fpeak2_iter2);
-  second_iteration_peak1->Add(fpeak3_iter2);
-
-  second_iteration_peak2->Add(fpeak1_iter2);
-  second_iteration_peak2->Add(fpeak2_iter2);
-  second_iteration_peak2->Add(fpeak3_iter2);
-
-  second_iteration_peak3->Add(fpeak1_iter2);
-  second_iteration_peak3->Add(fpeak2_iter2);
-  second_iteration_peak3->Add(fpeak3_iter2);
-
-  second_iteration_peak1->Write();
-  second_iteration_peak2->Write();
-  second_iteration_peak3->Write();
-  */
-
   signalfile_summary->cd();
 
   signalfile_summary->Close();
 
 }
 
-void protoAnalysis::ReadMap(TString filename) 
-{
-
-  std::ifstream reading_file(filename);
-  if(!reading_file){
-    cout<<" dameyo - damedame"<<endl;
-  }
-  for(int i=0; i<16; i++) {
-    for(int j=0; j<64; j++) {
-      map_pointX[i][j] = -1000.;
-      map_pointY[i][j] = -1000.;
-    }
-  }
-
-  Int_t tmp_chip = 0,tmp_channel = 0;
-  Float_t tmp_x0 = 0 ,tmp_y0 = 0 , tmp_x = 0 , tmp_y = 0 ;
-  TString tmpst;
-  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
-  while(reading_file){
-    reading_file >> tmp_chip >> tmp_x0 >> tmp_y0 >> tmp_channel >> tmp_x >> tmp_y ;
-    map_pointX[tmp_chip][tmp_channel] = -tmp_x ;
-    map_pointY[tmp_chip][tmp_channel] = -tmp_y ;
-  }
-
-}
-
-void protoAnalysis::ReadMasked() 
-{
-
-  for(int islab=0; islab<7; islab++) {
-    
-    TString filename = "../masked/masked_dif_1_1_1.txt";
-    if(islab==1) filename = "../masked/masked_dif_1_1_2.txt";
-    if(islab==2) filename = "../masked/masked_dif_1_1_3.txt";
-    if(islab==3) filename = "../masked/masked_dif_1_1_4.txt";
-    if(islab==4) filename = "../masked/masked_dif_1_1_5.txt";
-    if(islab==5) filename = "../masked/masked_dif_1_2_1.txt";
-    if(islab==6) filename = "../masked/masked_dif_1_2_2.txt";
-
-    std::ifstream reading_file(filename);
-    if(!reading_file){
-      cout<<" dameyo - damedame"<<endl;
-    }
-    
-    for(int i=0; i<16; i++) {
-      for(int j=0; j<64; j++) {
-	masked[islab][i][j] = 0;
-      }
-    }
-    
-    Int_t tmp_chip = 0,tmp_channel = 0;
-    Int_t tmp_masked = 0;
-    TString tmpst;
-    reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
-    reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst  ;
-    
-    cout<<"Read Masked: "<<filename<<endl;
-    while(reading_file){
-      reading_file >> tmp_chip >> tmp_channel >> tmp_masked ;
-      masked[islab][tmp_chip][tmp_channel] = tmp_masked ;
-    }
-  }
-
-}
 
 
 // LANDAU STUFF

@@ -13,6 +13,7 @@
 #include <TFile.h>
 #include "TH1.h"
 #include "TF1.h"
+#include "TGraphErrors.h"
 #include "TROOT.h"
 #include "TStyle.h"
 #include "TMath.h"
@@ -88,20 +89,14 @@ public :
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
    virtual void     Init(TTree *tree);
-   //  maps, masked channels
-   virtual void     ReadMap(TString filename);
-   virtual void     ReadMasked();
    //signal analysis: MIP fitt and signal/noise 
-   virtual void     SimpleMIPAnalysis(TString outputname, TString map_filename);
+   virtual void     SimpleMIPAnalysis(TString outputname);
+   virtual void     ShowerDistributions(TString folder, TString configuration, TString energy, TString gridpoint, double mipcut);
    virtual TF1 *langaufit(TH1F *his, Double_t *fitrange, Double_t *startvalues, Double_t *parlimitslo, Double_t *parlimitshi, Double_t *fitparams, Double_t *fiterrors, Double_t *ChiSqr, Int_t *NDF);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
 
 private :
-
-  Float_t map_pointX[16][64];
-  Float_t map_pointY[16][64];
-  Int_t masked[7][16][64];
 
 
 };
