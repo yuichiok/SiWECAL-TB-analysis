@@ -1,3 +1,11 @@
+#temporary files
+.*
+*~
+*~*
+
+#cernbox conflict files
+*conflict*
+
 # Prerequisites
 *.d
 
