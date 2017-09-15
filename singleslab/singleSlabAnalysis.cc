@@ -25,7 +25,7 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
   //Read the channel/chip -- x/y mapping
   ReadMap(map_filename);
   //Read the list of pedestals (this information contains, implicitily, the masked channels information )
-  if(readpedestal==true) ReadPedestals("../pedestals/Pedestal_"+dif+".txt");
+  if(readpedestal==true) ReadPedestals("results_pedestal/gridpoints/Pedestal_"+dif+"_merged.txt");
 
   ofstream fout_mip("results_mipcalibration/MIP_"+dif+outputname+".txt",ios::out);
   fout_mip<<"#mip results "<<dif<<endl;
@@ -141,7 +141,7 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
   for(int ichip=0; ichip<16; ichip++) {
     for(int ichn=0; ichn<64; ichn++) {
             
-      if(mip_histo.at(ichip).at(ichn)->GetEntries()> 1000 && mip_histo.at(ichip).at(ichn)->GetMean()>20){
+      if(mip_histo.at(ichip).at(ichn)->GetEntries()> 500 && mip_histo.at(ichip).at(ichn)->GetMean()>20){
 
 	fr[0]=mip_histo.at(ichip).at(ichn)->GetMean()-0.8*mip_histo.at(ichip).at(ichn)->GetRMS();
 	fr[1]=mip_histo.at(ichip).at(ichn)->GetMean();//+0.1*mip_histo.at(ichip).at(ichn)->GetRMS();
@@ -385,7 +385,7 @@ void singleSlabAnalysis::FindMasked(TString dif)
   //function that reads a root file and check which channels have or not signal (hit bit ==1).
   //should be used for root files that contain a full position scan, in order to provide meaninful list of masked channels.
 
-  ofstream fout_masked("../masked/masked_"+dif+".txt",ios::out);
+  ofstream fout_masked("maskedchannels/masked_"+dif+".txt",ios::out);
 
   fout_masked<<"#list of masked channels, per dif: "<<dif<<endl;
   fout_masked<<"#chip channel mask (0=not masked, 1=masked)"<<endl;
@@ -534,9 +534,21 @@ void singleSlabAnalysis::ReadMasked(TString filename)
   cout<<"Read Masked: "<<filename<<endl;
   while(reading_file){
     reading_file >> tmp_chip >> tmp_channel >> tmp_masked ;
-    masked[tmp_chip][tmp_channel] = tmp_masked ;
+    //    int masked_=0;
+    //if(tmp_masked==0) masked_=1;
+    //if(tmp_masked==1) masked_=0;
+    masked[tmp_chip][tmp_channel] = tmp_masked;
   }
 
+  double nmasked=0.;
+  for(int i=0; i<16; i++) {
+    for(int j=0; j<64; j++) {
+      if(masked[i][j]==1) nmasked++;
+    }
+  }
+  nmasked=100.*nmasked/1024;
+  cout<< "In file " <<filename << " we read that "<<nmasked<<"% of channels are masked"<<endl;
+  
 }
 
 
@@ -604,7 +616,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
   //Read the channel/chip -- x/y mapping
   ReadMap(map_filename);
   //Read the list of masked channels
-  //  ReadMasked("maskedchannels/masked_"+dif+".txt");
+  ReadMasked("maskedchannels/masked_"+dif+".txt");
 
   if(grid!="") dif=dif+"_"+grid;
 
@@ -1181,14 +1193,14 @@ void singleSlabAnalysis::PedestalAnalysis_gridpoints(TString dif,TString grid=""
 
   if(grid!="") dif=dif+"_"+grid;
 
-  ofstream fout_ped("results_pedestal/gridpoints/Pedestal_"+dif+".txt",ios::out);
+  ofstream fout_ped("results_pedestal/tests/Pedestal_"+dif+".txt",ios::out);
 
   //fout_ped<<"#pedestal results (fit to a gaussian) remove channels/sca with two pedestals peaks from the analysis : "<<dif<<endl;
   //fout_ped<<"#chip channel ped0 eped0 widthped0 ped1 eped1 widthped1... ped14 eped14 widhtped14 (all SCA)"<<endl;
 
   
   bool global = true;
-  int maxnhit=5;
+  int maxnhit=30;
 
   if (fChain == 0) return;
 
@@ -1322,7 +1334,7 @@ void singleSlabAnalysis::PedestalAnalysis_gridpoints(TString dif,TString grid=""
   }  // end first loop analysis to fill pedestal historgrams
 
 
-  TFile *pedfile = new TFile("results_pedestal/gridpoints/Pedestal_"+dif+".root" , "RECREATE");
+  TFile *pedfile = new TFile("results_pedestal/tests/Pedestal_"+dif+".root" , "RECREATE");
   pedfile->cd();
 
 
@@ -1350,7 +1362,7 @@ void singleSlabAnalysis::PedestalAnalysis_gridpoints(TString dif,TString grid=""
 	}
 
       }
-      if(ngoodscas>13) savepedestal[ichip][ichn]=1;
+      if(ngoodscas>12) savepedestal[ichip][ichn]=1;
     }
   }
 
@@ -1485,7 +1497,7 @@ void singleSlabAnalysis::PedestalAnalysis_gridpoints(TString dif,TString grid=""
 
   pedfile->Close();
 
-  TFile *pedfile_summary = new TFile("results_pedestal/gridpoints/Pedestal_summary_"+dif+".root" , "RECREATE");
+  TFile *pedfile_summary = new TFile("results_pedestal/tests/Pedestal_summary_"+dif+".root" , "RECREATE");
   pedfile_summary->cd();
   
   // good pedestal events (not tagged events)
@@ -1782,13 +1794,13 @@ void singleSlabAnalysis::PedestalAnalysis_bcid(TString dif, TString grid="",TStr
   // }
   
   Float_t val_evt=1245;
-  Float_t bcidrange[] = {0,10,20,30,60,120,240,480,960,1920,3480};
-  Float_t timerange[] = {0,10,20,30,60,120,240,480,960,1920,3480};
-  for(int ibcid=0; ibcid<11; ibcid++) timerange[ibcid]=0.4*bcidrange[ibcid];
+  Float_t bcidrange[] = {0,50,100,200,400,800,1600,3200,6400};
+  Float_t timerange[] = {0,50,100,200,400,800,1600,3200,6400};
+  for(int ibcid=0; ibcid<9; ibcid++) timerange[ibcid]=0.4*timerange[ibcid];
   Int_t  binnum = sizeof(bcidrange)/sizeof(Float_t) - 1; // or just = 9
 
   Float_t bindev[102];
-  for(int ibcid=0; ibcid<102; ibcid++) bindev[ibcid]=100*(-0.0505+(0.1/101)*ibcid);
+  for(int ibcid=0; ibcid<102; ibcid++) bindev[ibcid]=100*(-0.105+(0.2/101)*ibcid);
 
   TH2F* pedestal_deviation[16];
 
@@ -1815,7 +1827,7 @@ void singleSlabAnalysis::PedestalAnalysis_bcid(TString dif, TString grid="",TStr
       std::vector<std::vector<TH1F*> >pedtemp_sca2;
       for(int isca=0; isca<15; isca++) {
 	std::vector<TH1F*> pedtemp_bcid;
-	for(int ibcid=0; ibcid<10; ibcid++) {
+	for(int ibcid=0; ibcid<8; ibcid++) {
 	  TH1F *ped_bcid2 = new TH1F(TString::Format("ped_chip%i_chn%i_sca%i_bcidrange%i",ichip,ichn,isca,ibcid),TString::Format("ped_chip%i_chn%i_sca%i_bcidrange%i",ichip,ichn,isca,ibcid),1000,0.5,1000.5);
 	  pedtemp_bcid.push_back(ped_bcid2);
 	}
@@ -1852,9 +1864,9 @@ void singleSlabAnalysis::PedestalAnalysis_bcid(TString dif, TString grid="",TStr
 	for(int ichn=0; ichn<64; ichn++) {
 
 	  //good events
-	  for( int ibcid=0; ibcid<10; ibcid++) {
+	  for( int ibcid=0; ibcid<8; ibcid++) {
 	    bool selection=false;
-
+	    
 	    if(charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 && corrected_bcid[ichip][isca]>(val_evt+bcidrange[ibcid]) && corrected_bcid[ichip][isca]<(val_evt+bcidrange[ibcid+1]) ) selection=true;
 	    if(masked[ichip][ichn]==1) selection=false;
 	    if(gain_hit_high[ichip][isca][ichn]==0 && selection==true && gooddata==true) {
@@ -1880,45 +1892,71 @@ void singleSlabAnalysis::PedestalAnalysis_bcid(TString dif, TString grid="",TStr
 	double mean=0;
 	double error=0;
 
-	for(int ibcid=0; ibcid<10; ibcid++) {
-	    
-	  if(ped_sca_bcid.at(ichip).at(ichn).at(isca).at(ibcid)->GetEntries()> 300 ){ 
+	TH1F *temp = new TH1F(TString::Format("temp_ped_chip%i_chn%i_sca%i",ichip,ichn,isca),TString::Format("temp_ped_chip%i_chn%i_sca%i",ichip,ichn,isca),1000,0.5,1000.5);
+
+	for(int ibcid=0; ibcid<8; ibcid++) {
+	
+	  if(ped_sca_bcid.at(ichip).at(ichn).at(isca).at(ibcid)->GetEntries()> 1 )	    
+	    temp->Add(ped_sca_bcid.at(ichip).at(ichn).at(isca).at(ibcid));
+
+	}
+
+	TSpectrum *s = new TSpectrum();
+	int npeaks = s->Search(temp,2,"",0.05);
+	
+	
+	if(npeaks == 1) {
+	  Double_t *mean_peak=s->GetPositionX();
+	  
+	  TF1 *f0 = new TF1("f0","gaus",temp->GetMean()-3*temp->GetRMS(),temp->GetMean()+3*temp->GetRMS());
+	  temp->Fit("f0","RQME");
+	  
+	  TF1 *f1 = new TF1("f1","gaus",f0->GetParameter(1)-2.*f0->GetParameter(2),f0->GetParameter(1)+2.*f0->GetParameter(2));
+	  temp->Fit("f1","RQME");
+	  
+	  mean = f1->GetParameter(1);
+	  error = f1->GetParError(1);
+	}
+	  
+	
+	if(mean<10) continue;
+	
+	for(int ibcid=0; ibcid<8; ibcid++) { 
+	  
+	  if(ped_sca_bcid.at(ichip).at(ichn).at(isca).at(ibcid)->GetEntries()> 400 ){ 
 	    TSpectrum *s = new TSpectrum();
-	    int npeaks = s->Search(ped_sca_bcid.at(ichip).at(ichn).at(isca).at(ibcid),2,"",0.3); 
+	    int npeaks = s->Search(ped_sca_bcid.at(ichip).at(ichn).at(isca).at(ibcid),2,"",0.05);
+	    
+	    
 	    if(npeaks == 1) {
 	      Double_t *mean_peak=s->GetPositionX();
 	      
-	      TF1 *f0 = new TF1("f0","gaus",mean_peak[0]-2*ped_sca_bcid.at(ichip).at(ichn).at(isca).at(ibcid)->GetRMS(),mean_peak[0]+2*ped_sca_bcid.at(ichip).at(ichn).at(isca).at(ibcid)->GetRMS());
-	      ped_sca_bcid.at(ichip).at(ichn).at(isca).at(ibcid)->Fit("f0","RQNOC");
+	      TF1 *f0 = new TF1("f0","gaus",ped_sca_bcid.at(ichip).at(ichn).at(isca).at(ibcid)->GetMean()-3*ped_sca_bcid.at(ichip).at(ichn).at(isca).at(ibcid)->GetRMS(),ped_sca_bcid.at(ichip).at(ichn).at(isca).at(ibcid)->GetMean()+3*ped_sca_bcid.at(ichip).at(ichn).at(isca).at(ibcid)->GetRMS());
+	      ped_sca_bcid.at(ichip).at(ichn).at(isca).at(ibcid)->Fit("f0","RQME");
 	      
 	      TF1 *f1 = new TF1("f1","gaus",f0->GetParameter(1)-2.*f0->GetParameter(2),f0->GetParameter(1)+2.*f0->GetParameter(2));
 	      ped_sca_bcid.at(ichip).at(ichn).at(isca).at(ibcid)->Fit("f1","RQME");
-	      if(ibcid==0) {
-		mean = f1->GetParameter(1);
-		error = f1->GetParError(1);
-	      } else {
-		if(mean >0 && error >0 ) {
-		  double deviation = 100*(f1->GetParameter(1) - mean) / 70.;
-		  pedestal_deviation[ichip]->Fill( timerange[ibcid]+1. , deviation );
-                  pedestal_deviation_slab->Fill( timerange[ibcid]+1. , deviation );
-		  if(fabs(deviation)>1) {
-		    badpedestal_chip_channel->Fill(ichn,ichip,fabs(deviation));
-		    badpedestal_chip_sca->Fill(isca,ichip,fabs(deviation));
-		    badpedestal_sca_channel->Fill(ichn,isca,fabs(deviation));
-		  }
+
+	      if(mean >0 && error >0) {
+		double deviation = 100*(f1->GetParameter(1) - mean) / 70.;
+		pedestal_deviation[ichip]->Fill( timerange[ibcid]+1. , deviation );
+		pedestal_deviation_slab->Fill( timerange[ibcid]+1. , deviation );
+		if(fabs(deviation)>2.) {
+		  badpedestal_chip_channel->Fill(ichn,ichip,fabs(deviation));
+		  badpedestal_chip_sca->Fill(isca,ichip,fabs(deviation));
+		  badpedestal_sca_channel->Fill(ichn,isca,fabs(deviation));
 		}
 	      }
-	      
 	    }
 	  }
+
 	}
-	
       }
     }
   }
   
   
-  TFile *pedfile_bcid = new TFile("results_pedestal/Pedestal_bcid_"+dif+".root" , "RECREATE");
+  TFile *pedfile_bcid = new TFile("results_pedestal/tests/Pedestal_bcid_"+dif+".root" , "RECREATE");
   pedfile_bcid->cd();
 
   // good pedestal events (not tagged events)
@@ -1929,7 +1967,7 @@ void singleSlabAnalysis::PedestalAnalysis_bcid(TString dif, TString grid="",TStr
     pedestal_deviation[ichip]->SetTitle(TString::Format("pedestal_deviation_chip%i",ichip));
     pedestal_deviation[ichip]->GetXaxis()->SetTitle("time after val_evt (us)");
     pedestal_deviation[ichip]->GetYaxis()->SetTitle(" % deviation [MIP]");
-    pedestal_deviation[ichip]->Draw("cont0");
+    pedestal_deviation[ichip]->Draw("colz");
   }
   canvas_pedestal_bcid->Write();
 
@@ -1940,7 +1978,7 @@ void singleSlabAnalysis::PedestalAnalysis_bcid(TString dif, TString grid="",TStr
   pedestal_deviation_slab->SetTitle(TString::Format("pedestal_deviation_%s",dif.Data()));
   pedestal_deviation_slab->GetXaxis()->SetTitle("time after val_evt (us)");
   pedestal_deviation_slab->GetYaxis()->SetTitle(" % deviation [MIP]");
-  pedestal_deviation_slab->Draw("cont0");
+  pedestal_deviation_slab->Draw("colz");
 
   canvas_pedestal_bcid2->cd(2);
   badpedestal_chip_channel->SetStats(kFALSE);
@@ -1992,14 +2030,10 @@ void singleSlabAnalysis::BcidCorrelations(TString dif)
   // all sca
   //  std::vector<TCanvas*> chip;
   TH2F* h_badevents_samechip = new TH2F("badevents_ifhit_samechip_dif_"+dif,"badevents_ifhit_samechip_dif_"+dif,32,-90,90,32,-90,90);
-  TH1F* h_bcid_dif_total_samechip = new TH1F("bcid_samechip_dif_"+dif,"bcid_samechip_dif_"+dif,8001,-4000.5,4000.5);
+  TH1F* h_bcid_dif_total_samechip = new TH1F("bcid_samechip_dif_"+dif,"bcid_samechip_dif_"+dif,16002,-4000,4000);
   TH2F* h_badevents_diffchip = new TH2F("badevents_ifhit_diffchip_dif_"+dif,"badevents_ifhit_diffchip__dif_"+dif,32,-90,90,32,-90,90);
-  TH1F* h_bcid_dif_total_diffchip = new TH1F("bcid_diffchip_dif_"+dif,"bcid_diffchip_dif_"+dif,8001,-4000.5,4000.5);
+  TH1F* h_bcid_dif_total_diffchip = new TH1F("bcid_diffchip_dif_"+dif,"bcid_diffchip_dif_"+dif,8002,-4000,4000);
 
-  TH2F* h_goodevents_samechip = new TH2F("goodevents_ifhit_samechip_dif_"+dif,"goodevents_ifhit_samechip_dif_"+dif,32,-90,90,32,-90,90);
-  TH1F* h_bcid_good_dif_total_samechip = new TH1F("good_bcid_samechip_dif_"+dif,"good_bcid_samechip_dif_"+dif,8001,-4000.5,4000.5);
-  TH2F* h_goodevents_diffchip = new TH2F("goodevents_ifhit_diffchip_dif_"+dif,"goodevents_ifhit_diffchip__dif_"+dif,32,-90,90,32,-90,90);
-  TH1F* h_bcid_good_dif_total_diffchip = new TH1F("good_bcid_diffchip_dif_"+dif,"good_bcid_diffchip_dif_"+dif,8001,-4000.5,4000.5);
 
   // -----------------------------------------------------------------------------------------------------   
   // SCA analysis
@@ -2048,32 +2082,19 @@ void singleSlabAnalysis::BcidCorrelations(TString dif)
 
 		for(int ichn2=0; ichn2<64; ichn2++) {
 
-		  bool selection_bad=false;
-		  bool selection_good=false;
-		  bool selection_tmp;
-		  if(gain_hit_high[ichip2][isca2][ichn2]==1 && charge_hiGain[ichip2][isca2][ichn2]>10 && corrected_bcid[ichip2][isca2]>1247 && corrected_bcid[ichip2][isca2]<2900 && masked[ichip2][ichn2] == 0)  selection_tmp=true;
+		  bool selection2=false;
+		  if(gain_hit_high[ichip2][isca2][ichn2]==1 && charge_hiGain[ichip2][isca2][ichn2]>10 && corrected_bcid[ichip2][isca2]>1247 && corrected_bcid[ichip2][isca2]<2900 && masked[ichip2][ichn2] == 0)  selection2=true;
 
-		  if( selection_tmp==true && ( badbcid[ichip2][isca2]>1 || (badbcid[ichip2][isca2]>-1 && nhits[ichip2][isca2]>maxnhit) ) ) selection_bad=true;
-		  if( selection_tmp==true &&  badbcid[ichip2][isca2]<2 && nhits[ichip2][isca2]<(maxnhit+1) ) selection_good=true;
-
-		  if(selection_bad==true && ichip2==ichip && ichn2!=ichn && isca2!=isca) {
+		  if( badbcid[ichip2][isca2]>1 || (badbcid[ichip2][isca2]>-1 && nhits[ichip2][isca2]>maxnhit ) ) selection2=selection2*true;
+	  
+		  if(selection2==true && ichip2==ichip && ichn2!=ichn && isca2!=isca) {
 		    h_bcid_dif_total_samechip->Fill(corrected_bcid[ichip][isca]-corrected_bcid[ichip2][isca2]);//ichn2);
 		    h_badevents_samechip->Fill(map_pointX[ichip2][ichn2],map_pointY[ichip2][ichn2]);
 		  }
 
-		  if(selection_bad==true && ichip2!=ichip && ichn2!=ichn && isca2!=isca ) {
+		  if(selection2==true && ichip2!=ichip && ichn2!=ichn && isca2!=isca ) {
 		    h_bcid_dif_total_diffchip->Fill(bcid[ichip][isca]-bcid[ichip2][isca2]);
 		    h_badevents_diffchip->Fill(map_pointX[ichip2][ichn2],map_pointY[ichip2][ichn2]);
-		  }
-
-		  if(selection_good==true && ichip2==ichip && ichn2!=ichn && isca2!=isca) {
-		    h_bcid_good_dif_total_samechip->Fill(corrected_bcid[ichip][isca]-corrected_bcid[ichip2][isca2]);//ichn2);
-		    h_goodevents_samechip->Fill(map_pointX[ichip2][ichn2],map_pointY[ichip2][ichn2]);
-		  }
-
-		  if(selection_good==true && ichip2!=ichip && ichn2!=ichn && isca2!=isca ) {
-		    h_bcid_good_dif_total_diffchip->Fill(bcid[ichip][isca]-bcid[ichip2][isca2]);
-		    h_goodevents_diffchip->Fill(map_pointX[ichip2][ichn2],map_pointY[ichip2][ichn2]);
 		  }
 
 		}
@@ -2112,31 +2133,7 @@ void singleSlabAnalysis::BcidCorrelations(TString dif)
   h_bcid_dif_total_diffchip->GetXaxis()->SetRangeUser(-40,40);
   h_bcid_dif_total_diffchip->Draw("h");
 
-  canvas->Print("results_pedestal/bcid_correlations_"+dif+".root");
-
-  TCanvas *canvas_good= new TCanvas("good_bcid_correl_"+dif, "good_bcid_correl_"+dif,1600,1000);
-  canvas_good->Divide(2,2);
-  canvas_good->cd(1);
-  h_goodevents_samechip->GetXaxis()->SetTitle("x");
-  h_goodevents_samechip->GetYaxis()->SetTitle("y");   
-  h_goodevents_samechip->Draw("colz");
-
-  canvas_good->cd(2);
-  h_bcid_good_dif_total_samechip->GetXaxis()->SetTitle("bcid_hits-bcid_hits2 (chip_hit==chip_hit2)");
-  h_bcid_good_dif_total_samechip->GetXaxis()->SetRangeUser(-40,40);
-  h_bcid_good_dif_total_samechip->Draw("h");
-
-  canvas_good->cd(3);
-  h_goodevents_diffchip->GetXaxis()->SetTitle("x");
-  h_goodevents_diffchip->GetYaxis()->SetTitle("y");   
-  h_goodevents_diffchip->Draw("colz");
-  
-  canvas_good->cd(4);
-  h_bcid_good_dif_total_diffchip->GetXaxis()->SetTitle("bcid_hits-bcid_hits2 (chip_hit!=chip_hit2)");
-  h_bcid_good_dif_total_diffchip->GetXaxis()->SetRangeUser(-40,40);
-  h_bcid_good_dif_total_diffchip->Draw("h");
-
-  canvas_good->Print("results_pedestal/good_bcid_correlations_"+dif+".root");
+  canvas->Print("results_pedestal/tests/bcid_correlations_"+dif+".root");
 
 
   

@@ -69,6 +69,132 @@ Double_t langaufun(Double_t *x, Double_t *par) {
 }
 
 
+void protoAnalysis::SimpleDistributionsShower(TString outputname="")
+{
+
+  TH1F* SCA_shower = new TH1F("SCA_shower","SCA_shower",15,-0.5,14.5);
+  TH1F* BCID_shower = new TH1F("BCID_shower","BCID_shower",60,25,3025);
+  TH2F* SCA_BCID_shower = new TH2F("SCA_BCID_shower","SCA_BCID_shower",15,-0.5,14.5,60,25,3025);
+  TH2F* BCID_PREV_shower = new TH2F("BCID_PREV_shower","BCID_PREV_shower",1200,2.5,6002.5,200,2.5,1002.5);
+
+  // --------------
+  if (fChain == 0) return;
+  Long64_t nentries = fChain->GetEntriesFast();
+  //-----------------
+
+  double mipcut=0.5;
+ // Signal readout
+  Long64_t nbytes = 0, nb = 0;
+  for (Long64_t jentry=0; jentry<nentries;jentry++) {
+    Long64_t ientry = LoadTree(jentry);
+    if (ientry < 0) break;
+    nb = fChain->GetEntry(jentry);   nbytes += nb;
+
+    if(bcid<1300) continue;
+    if(bcid>2900) continue;
+
+    if(nhit_slab<6) continue;
+
+
+    bool bool_hit_slab[7];
+    bool_hit_slab[0] = false;
+    bool_hit_slab[1] = false;
+    bool_hit_slab[2] = false;
+    bool_hit_slab[3] = false;
+    bool_hit_slab[4] = false;
+    bool_hit_slab[5] = false;
+    bool_hit_slab[6] = false;
+
+    int n_hitstotal =0;  
+
+    for(int ihit=0; ihit< nhit_chan; ihit ++) {
+      int z=hit_z[ihit];
+      if(z==9) z=6;
+      if(hit_energy[ihit]>mipcut && hit_isMasked[ihit]==0 ) {
+	bool_hit_slab[z]=true;
+      }
+    }
+ 
+
+    int nslabhitted =0;
+
+    for(int i=0; i<7; i++ ){
+      if( bool_hit_slab[i]==true) nslabhitted++;
+    }
+
+    if( nslabhitted<6) continue;
+
+    bool fill=false;
+    for(int ihit=0; ihit< nhit_chan; ihit ++) {
+      
+      if(hit_energy[ihit]>mipcut && hit_isMasked[ihit]==0 ) {
+    	double xi=hit_x[ihit];
+    	double yi=hit_y[ihit];
+    	double zi=hit_z[ihit];
+	
+    	double mindist=1000000000.;
+    	double dist=-10;
+    	for(int jhit=0; jhit< nhit_chan; jhit ++) {
+    	  if(hit_energy[jhit]>mipcut && hit_isMasked[jhit]==0 && ihit!=jhit) {
+    	    double xj=hit_x[jhit];
+    	    double yj=hit_y[jhit];
+    	    double zj=hit_z[jhit];
+    	    dist= sqrt( (xi-xj)*(xi-xj) + (yi-yj)*(yi-yj) + 150*150*(zi-zj)*(zi-zj) );
+	    if(dist < mindist) mindist = dist;
+    	  }
+    	}
+
+	if(mindist<8.) {
+	  fill=true;
+	  SCA_shower->Fill(hit_sca[ihit]);
+	  SCA_BCID_shower->Fill(hit_sca[ihit],bcid);
+	}
+      }
+
+    }
+
+    if(fill==true) {
+    
+      BCID_PREV_shower->Fill(bcid,bcid-prev_bcid);
+      BCID_shower->Fill(bcid);
+    }
+
+   
+
+  }
+  // -----------------------------------------------------------------------------------------------------   
+  // Signal analysis
+  TFile *signalfile_summary = new TFile("results_showers/SimpleDist"+outputname+".root" , "RECREATE");
+  signalfile_summary->cd();
+
+  SCA_shower->GetXaxis()->SetTitle("SCA");
+  SCA_shower->GetYaxis()->SetTitle("# entries");
+  SCA_shower->SetTitle("SCA distribution for shower-like events");
+  SCA_shower->SetName("SCA_shower");
+  SCA_shower->Write();
+
+  BCID_shower->GetXaxis()->SetTitle("bcid");
+  BCID_shower->GetYaxis()->SetTitle("# entries");
+  BCID_shower->SetTitle("bcid distribution for shower-like events");
+  BCID_shower->SetName("BCID_shower");
+  BCID_shower->Write();
+
+  SCA_BCID_shower->GetXaxis()->SetTitle("SCA");
+  SCA_BCID_shower->GetYaxis()->SetTitle("bcid");
+  SCA_BCID_shower->SetTitle("SCA vs bcid distribution for shower-like events");
+  SCA_BCID_shower->SetName("SCA_BCID_shower");
+  SCA_BCID_shower->Write();
+  
+  BCID_PREV_shower->GetXaxis()->SetTitle("bcid");
+  BCID_PREV_shower->GetYaxis()->SetTitle("bcid-prev_bcid");
+  BCID_PREV_shower->SetTitle("bcid vs bcid-prev_bcid distribution for shower-like events");
+  BCID_PREV_shower->SetName("BCID_PREV_shower");
+  BCID_PREV_shower->Write();
+
+  signalfile_summary->Close();
+
+}
+
 
 void protoAnalysis::ShowerDistributions(TString folder="", TString configuration="conf1", TString energy_string="3GeV", TString gridpoint ="grid20", double mipcut=0.5)
 {
@@ -138,7 +264,8 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString configuration
   //TH1 histograms
   TH1F* energy = new TH1F("energy","energy",500,1,1001);
   TH1F* energy_center = new TH1F("energy_center","energy_center",500,1,1001);
-  TH1F* energy_profile_z = new TH1F("energy_profile_z","energy_profile_z",binnumz,binsz);
+  TH1F* energy_profile_z = new TH1F("energy_profile_z","energy_profile_z",7,-0.5,6.5);//binnumz,binsz);
+  energy_profile_z->Sumw2();
 
   // x,y,z histograms
   TH2F* energy_xy = new TH2F("energy_xy","energy_xy",binnumx,binsx,binnumx,binsx);
@@ -304,9 +431,10 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString configuration
     for(int ihit=0; ihit< nhit_chan; ihit ++) {
 
       if(hit_energy[ihit]>mipcut && hit_isMasked[ihit]==0 ) {
-
-	energy_profile_z->Fill(hit_z[ihit],hit_energy[ihit]/energy_sum_tmp );
-	energy_profile_X0->Fill(hit_x0[ihit],hit_energy[ihit]/energy_sum_tmp );
+	double zlayer=hit_z[ihit];
+	if(hit_z[ihit]>8) zlayer=6;
+	energy_profile_z->Fill(zlayer,hit_energy[ihit]/energy_sum_tmp);
+	energy_profile_X0->Fill(hit_x0[ihit],hit_energy[ihit]/energy_sum_tmp);
 	
 	energy_xy->Fill(-hit_x[ihit],-hit_y[ihit],hit_energy[ihit]/energy_sum_tmp );
 	energy_xz->Fill(-hit_x[ihit],hit_z[ihit],hit_energy[ihit]/energy_sum_tmp );
@@ -407,20 +535,20 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString configuration
   TF1 *fit_xbarycenter = new TF1("fit_xbarycenter","gaus");
   xbarycenter->Fit(fit_xbarycenter,"M");
   
-  double xm_max=fit_xbarycenter->GetParameter(1)+2.5*fit_xbarycenter->GetParameter(2);
-  double xm_min=fit_xbarycenter->GetParameter(1)-2.5*fit_xbarycenter->GetParameter(2);
+  double xm_max=fit_xbarycenter->GetParameter(1)+2.*fit_xbarycenter->GetParameter(2);
+  double xm_min=fit_xbarycenter->GetParameter(1)-2.*fit_xbarycenter->GetParameter(2);
 
    TF1 *fit_ybarycenter = new TF1("fit_ybarycenter","gaus");
   ybarycenter->Fit(fit_ybarycenter,"M");
   
-  double ym_max=fit_ybarycenter->GetParameter(1)+2.5*fit_ybarycenter->GetParameter(2);
-  double ym_min=fit_ybarycenter->GetParameter(1)-2.5*fit_ybarycenter->GetParameter(2);
+  double ym_max=fit_ybarycenter->GetParameter(1)+2.*fit_ybarycenter->GetParameter(2);
+  double ym_min=fit_ybarycenter->GetParameter(1)-2.*fit_ybarycenter->GetParameter(2);
 
   TF1 *fit_zbarycenter = new TF1("fit_zbarycenter","gaus");
   zbarycenter->Fit(fit_zbarycenter,"M");
   
-  double zm_max=fit_zbarycenter->GetParameter(1)+2.5*fit_zbarycenter->GetParameter(2);
-  double zm_min=fit_zbarycenter->GetParameter(1)-2.5*fit_zbarycenter->GetParameter(2);
+  double zm_max=fit_zbarycenter->GetParameter(1)+1.0*fit_zbarycenter->GetParameter(2);
+  double zm_min=fit_zbarycenter->GetParameter(1)-1.0*fit_zbarycenter->GetParameter(2);
 
   // -----------------------------------------------------------------------------------------------------   
 
@@ -551,7 +679,10 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString configuration
     zm = zm / energy_X0_sum_tmp;
 
 
-    if( xm > xm_min && xm < xm_max && ym > ym_min && ym < ym_max && zm > zm_min && zm < zm_max ) 
+    //    if( xm > xm_min && xm < xm_max && ym > ym_min && ym < ym_max && zm > zm_min && zm < zm_max ) 
+    //  energy_center->Fill(energy_X0_sum_tmp);
+   
+    if( zm > zm_min && zm < zm_max ) 
       energy_center->Fill(energy_X0_sum_tmp);
 
   }
@@ -561,8 +692,14 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString configuration
   TFile *file = new TFile(TString::Format("%s%s_%s_%s_mipcut%0.1f_showers.root",folder.Data(),configuration.Data(),gridpoint.Data(),energy_string.Data(),mipcut) , "RECREATE");
   file->cd();
 
+  // energy->GetXaxis()->SetTitle(TString::Format("E^{raw}/MIP = #sum_{i=layers} #omega_{i} #(#sum_{j=cells (E_{j}/MIP>%0.1f)} E_{j}/MIP)#)",mipcut));
+  // energy->GetYaxis()->SetTitle("# entries");
   energy->Write();
+  
+  //energy_center->GetYaxis()->SetTitle("# entries");
+  //energy_center->GetXaxis()->SetTitle(TString::Format("E^{raw}/MIP = #sum_{i=layers} #omega_{i} #(){#sum_{j=cells (E_{j}/MIP>%0.1f)} E_{j}/MIP)}",mipcut));
   energy_center->Write();
+
 
   energy_profile_z->Write();
   energy_profile_X0->Write();
@@ -595,6 +732,91 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString configuration
   file->Close();
   
 }
+
+void protoAnalysis::SimpleDistributionsTrack(TString outputname="")
+{
+
+  TH1F* SCA_track = new TH1F("SCA_track","SCA_track",15,-0.5,14.5);
+  TH1F* BCID_track = new TH1F("BCID_track","BCID_track",60,25,3025);
+  TH2F* SCA_BCID_track = new TH2F("SCA_BCID_track","SCA_BCID_track",15,-0.5,14.5,60,25,3025);
+  TH2F* BCID_PREV_track = new TH2F("BCID_PREV_track","BCID_PREV_track",1200,2.5,6002.5,200,2.5,1002.5);
+
+  // --------------
+  if (fChain == 0) return;
+  Long64_t nentries = fChain->GetEntriesFast();
+  //-----------------
+
+
+ 
+  // -----------------------------------------------------------------------------------------------------   
+  // Signal readout
+  Long64_t nbytes = 0, nb = 0;
+  for (Long64_t jentry=0; jentry<nentries;jentry++) {
+    Long64_t ientry = LoadTree(jentry);
+    if (ientry < 0) break;
+    nb = fChain->GetEntry(jentry);   nbytes += nb;
+     
+    // for(int minhit=5;minhit<8; minhit++) {
+    int minhit=7;
+    if( nhit_slab == minhit ) {
+	bool track=true;
+	
+	int nout=0;
+	for(int ihit=0; ihit< nhit_chan; ihit ++) {
+	  if( fabs(hit_x[ihit]-hit_x[0]) > 0 || fabs(hit_y[ihit]-hit_y[0]) > 0) nout++;
+	}
+
+	if(nout > 0 ) track=false;
+	
+	if(track==true && bcid>1260 && bcid<2850) {
+	  BCID_PREV_track->Fill(bcid,bcid-prev_bcid);
+	  BCID_track->Fill(bcid);
+	  for(int ihit=0; ihit< nhit_chan; ihit ++) {
+	    SCA_track->Fill(hit_sca[ihit]);
+	    SCA_BCID_track->Fill(hit_sca[ihit],bcid);
+	  }
+	}
+
+
+
+    }
+  //
+    
+  }
+
+  // -----------------------------------------------------------------------------------------------------   
+  // Signal analysis
+  TFile *signalfile_summary = new TFile("results_mipcalibration/SimpleDist"+outputname+".root" , "RECREATE");
+  signalfile_summary->cd();
+
+  SCA_track->GetXaxis()->SetTitle("SCA");
+  SCA_track->GetYaxis()->SetTitle("# entries");
+  SCA_track->SetTitle("SCA distribution for track-like events");
+  SCA_track->SetName("SCA_track");
+  SCA_track->Write();
+
+  BCID_track->GetXaxis()->SetTitle("bcid");
+  BCID_track->GetYaxis()->SetTitle("# entries");
+  BCID_track->SetTitle("bcid distribution for track-like events");
+  BCID_track->SetName("BCID_track");
+  BCID_track->Write();
+
+  SCA_BCID_track->GetXaxis()->SetTitle("SCA");
+  SCA_BCID_track->GetYaxis()->SetTitle("bcid");
+  SCA_BCID_track->SetTitle("SCA vs bcid distribution for track-like events");
+  SCA_BCID_track->SetName("SCA_BCID_track");
+  SCA_BCID_track->Write();
+  
+  BCID_PREV_track->GetXaxis()->SetTitle("bcid");
+  BCID_PREV_track->GetYaxis()->SetTitle("bcid-prev_bcid");
+  BCID_PREV_track->SetTitle("bcid vs bcid-prev_bcid distribution for track-like events");
+  BCID_PREV_track->SetName("BCID_PREV_track");
+  BCID_PREV_track->Write();
+
+  signalfile_summary->Close();
+
+}
+
 
 void protoAnalysis::SimpleMIPAnalysis(TString outputname="")
 {
@@ -656,7 +878,7 @@ void protoAnalysis::SimpleMIPAnalysis(TString outputname="")
 
 	if(nout> (nhit_chan-nhit_slab) ) track=false;
 	
-	  if(track==true && bcid>1260 && bcid<2850) {
+	  if(track==true && bcid>1250 && bcid<2850) {
 	    for(int ihit=0; ihit< nhit_chan; ihit ++) {
 	      mip_histo_all->Fill(hit_energy[ihit]);
 	      //	      mip_histo_all2->Fill(hit_energy[ihit]);
