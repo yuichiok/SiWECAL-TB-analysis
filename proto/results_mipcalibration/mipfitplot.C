@@ -21,7 +21,7 @@ void mipfitplot(){
   //gStyle->SetTitleStyle(0);
 
 
-  TFile *_file0 = TFile::Open("Signal_summarytest_old.root");
+  TFile *_file0 = TFile::Open("Signal_summaryfullscan.root");
 
   TH1F * energy_distribution = (TH1F*)_file0->Get("energy_distribution"); 
 
