@@ -93,7 +93,7 @@ void protoAnalysis::SimpleDistributionsShower(TString outputname="")
     if(bcid<1300) continue;
     if(bcid>2900) continue;
 
-    if(nhit_slab<6) continue;
+    if(nhit_slab<7) continue;
 
 
     bool bool_hit_slab[7];
@@ -122,7 +122,7 @@ void protoAnalysis::SimpleDistributionsShower(TString outputname="")
       if( bool_hit_slab[i]==true) nslabhitted++;
     }
 
-    if( nslabhitted<6) continue;
+    if( nslabhitted<7) continue;
 
     bool fill=false;
     for(int ihit=0; ihit< nhit_chan; ihit ++) {
@@ -144,7 +144,7 @@ void protoAnalysis::SimpleDistributionsShower(TString outputname="")
     	  }
     	}
 
-	if(mindist<8.) {
+	if(mindist<7.) {
 	  fill=true;
 	  SCA_shower->Fill(hit_sca[ihit]);
 	  SCA_BCID_shower->Fill(hit_sca[ihit],bcid);
@@ -406,7 +406,7 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString configuration
     	    if(dist < mindist) mindist = dist;
     	  }
     	}
-	if(mindist<8.) {
+	if(mindist<7.) {
     	  energy_sum_tmp += hit_energy[ihit];
     	  energy_X0_sum_tmp += w[int(hit_z[ihit])] * hit_energy[ihit];
 	  weight_X0_sum_tmp += w[int(hit_z[ihit])];
@@ -660,7 +660,7 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString configuration
     	    if(dist < mindist) mindist = dist;
     	  }
     	}
-	if(mindist<8.) {
+	if(mindist<7.) {
     	  energy_sum_tmp += hit_energy[ihit];
     	  energy_X0_sum_tmp += w[int(hit_z[ihit])] * hit_energy[ihit];
 	  weight_X0_sum_tmp += w[int(hit_z[ihit])];
@@ -762,11 +762,15 @@ void protoAnalysis::SimpleDistributionsTrack(TString outputname="")
 	bool track=true;
 	
 	int nout=0;
+	int ngoodhit=0;
+
 	for(int ihit=0; ihit< nhit_chan; ihit ++) {
 	  if( fabs(hit_x[ihit]-hit_x[0]) > 0 || fabs(hit_y[ihit]-hit_y[0]) > 0) nout++;
+	  if( hit_energy[ihit]> 0.5 > 0) ngoodhit++;
+
 	}
 
-	if(nout > 0 ) track=false;
+	if(nout > 0 && ngoodhit!=7 ) track=false;
 	
 	if(track==true && bcid>1260 && bcid<2850) {
 	  BCID_PREV_track->Fill(bcid,bcid-prev_bcid);
