@@ -25,7 +25,7 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
   //Read the channel/chip -- x/y mapping
   ReadMap(map_filename);
   //Read the list of pedestals (this information contains, implicitily, the masked channels information )
-  if(readpedestal==true) ReadPedestals("../pedestals/Pedestal_"+dif+".txt");
+  if(readpedestal==true) ReadPedestals("results_pedestal/Pedestal_"+dif+outputname+".txt");
 
   ofstream fout_mip("results_mipcalibration/MIP_"+dif+outputname+".txt",ios::out);
   fout_mip<<"#mip results "<<dif<<endl;
@@ -141,7 +141,7 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
   for(int ichip=0; ichip<16; ichip++) {
     for(int ichn=0; ichn<64; ichn++) {
             
-      if(mip_histo.at(ichip).at(ichn)->GetEntries()> 1000 && mip_histo.at(ichip).at(ichn)->GetMean()>20){
+      if(mip_histo.at(ichip).at(ichn)->GetEntries()> 50 && mip_histo.at(ichip).at(ichn)->GetMean()>20){
 
 	fr[0]=mip_histo.at(ichip).at(ichn)->GetMean()-0.8*mip_histo.at(ichip).at(ichn)->GetRMS();
 	fr[1]=mip_histo.at(ichip).at(ichn)->GetMean();//+0.1*mip_histo.at(ichip).at(ichn)->GetRMS();
@@ -606,7 +606,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
   //Read the list of masked channels
   //  ReadMasked("maskedchannels/masked_"+dif+".txt");
 
-  if(grid!="") dif=dif+"_"+grid;
+  if(grid!="") dif=dif+grid;
 
   ofstream fout_ped("results_pedestal/Pedestal_"+dif+".txt",ios::out);
 
