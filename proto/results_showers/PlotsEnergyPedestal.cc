@@ -1,7 +1,7 @@
 #include "TROOT.h"
 #include "TFile.h"
-#include "Style.C"
-#include "Labels.C"
+#include "../../style/Style.C"
+#include "../../style/Labels.C"
 #include "TGraphErrors.h"
 #include "TMath.h"
 
