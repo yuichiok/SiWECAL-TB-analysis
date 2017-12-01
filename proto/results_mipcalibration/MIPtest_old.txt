@@ -1,5 +1,0 @@
-#mip results, all channels together SimpleMIPAnalysis using tracks
-#mpv empv widthmpv widthgauss chi2ndf nentries
- 0.990883 0.000859308 0.0767211 0.093585 1.09655 312647
- 2.17857 0.0101278 0.205274 0.00100012 1.36766 312647
- 3.20494 0.00213925 0.158718 0.240449 2.01464 312647
