@@ -15,7 +15,7 @@ void IRLESLabel(Double_t x,Double_t y,char* text,Color_t color)
 
   double delx = 0.115*696*gPad->GetWh()/(472*gPad->GetWw());
 
-  l.DrawLatex(x,y,"CALICE");
+  l.DrawLatex(x,y,"CALICE work in progress");
   if (text) {
     TLatex p;
     p.SetNDC();
