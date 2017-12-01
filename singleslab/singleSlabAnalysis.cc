@@ -17,7 +17,7 @@
 using namespace std;
 
 
-void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputname="", bool readpedestal=true, TString map_filename="../fev10_chip_channel_x_y_mapping.txt")
+void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputname="", bool readpedestal=false, TString map_filename="/home/calice/SiWECAL-TB-analysis/fev10_chip_channel_x_y_mapping.txt")
 {
 
   int maxnhit=2; // plane event threshold
@@ -304,7 +304,7 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
   S_N_slab->GetYaxis()->SetTitle("fitted channels");
   S_N_slab->Draw("h");
   S_N_slab->Write();
-
+  canvas_summary->Print("results_mipcalibration/Signal_summary_"+dif+outputname+".png");
 
 
   //Correlations 
@@ -637,7 +637,7 @@ void singleSlabAnalysis::ReadPedestals(TString filename)
 
 }
 
-void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString map_filename="../fev10_chip_channel_x_y_mapping.txt")
+void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString map_filename="/home/calice/SiWECAL-TB-analysis/fev10_chip_channel_x_y_mapping.txt")
 {
 
   //Read the channel/chip -- x/y mapping
@@ -645,7 +645,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
   //Read the list of masked channels
   ReadMasked("maskedchannels/masked_"+dif+".txt");
 
-  if(grid!="") dif=dif+"_"+grid;
+  if(grid!="") dif=dif+grid;
 
   ofstream fout_ped("results_pedestal/Pedestal_"+dif+".txt",ios::out);
 
