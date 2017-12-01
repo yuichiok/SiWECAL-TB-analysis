@@ -10,6 +10,7 @@ NCHAN = 64
 BCID_VALEVT = 1245
 
 ## global storages
+event_counter = 0
 chan_map = {}
 ped_map = {}
 mip_map = {}
@@ -47,12 +48,36 @@ class EcalHit:
         (self.x,self.y) = chan_map[(chip,chan)]
 
         # do pedestal subtraction
-        self.hg -= ped_map[self.slab][self.chip][self.chan][self.sca]
+        # first calculate the average per sca and use it if there is no information about pedestal for this sca
+        ped_average=0.
+        ped_norm=0
+        for isca in range(0,NSCA):
+            if ped_map[self.slab][self.chip][self.chan][isca] > 10:
+                ped_average+=ped_map[self.slab][self.chip][self.chan][isca]
+                ped_norm+=1
+        if ped_norm > 0:
+            ped_average=ped_average/ped_norm
+        else:
+            if self.isMasked == 0:
+                print("ERROR: channel without pedestal info but not tagged as masked, ASSIGN MASKED TAG -->")
+                print("slab=%i chip=%i chan=%i"%(self.slab,self.chip,self.chan))
+            self.isMasked = 1
+
+        # if pedestal info is there, use it for subtraction, if not, use the average of the other SCAs
+        if ped_map[self.slab][self.chip][self.chan][self.sca] > 10:
+            self.hg -= ped_map[self.slab][self.chip][self.chan][self.sca]
+        else:
+            #if self.isMasked==0:
+                #print("Warning: SCA without pedestal info, use ped_aver instead --> ")
+                #print("slab=%i chip=%i chan=%i sca=%i ped_aver=%f n=%i"%(self.slab,self.chip,self.chan,self.sca,ped_average,ped_norm))
+            self.hg -= ped_average
+            
         # MIP calibration
-        if mip_map[self.slab][self.chip][self.chan] > 10:
+        if mip_map[self.slab][self.chip][self.chan] > 20:
             self.energy = self.hg / mip_map[self.slab][self.chip][self.chan]
         else:
             self.energy = 0
+            self.isMaked = 1
 
 def build_w_config(config = 1):
 
@@ -63,19 +88,19 @@ def build_w_config(config = 1):
     ## Tungsten / W configuration
     if config == 1:
         # Config 1
-        abs_thick = [2,2,2,2,4,4,6]
+        abs_thick = [2.1,2.1,2.1,2.1,4.2,4.2,6.3]
     elif config == 2:
         # Config 2
-        abs_thick = [4,2,2,4,4,6,6]
+        abs_thick = [4.2,2.1,2.1,4.2,4.2,6.3,6.3]
     elif config == 3:
         # Config 3
-        abs_thick = [6,2,4,4,6,6,6]
+        abs_thick = [6.3,2.1,4.2,4.2,6.3,6.3,6.3]
     elif config == 0:
         # No absorber runs, use 0
         abs_thick = [0,0,0,0,0,0,0]
 
     ## sum up thickness
-    w_xzero = 0.56#Xo per mm of W
+    w_xzero = 1/3.5#0.56#Xo per mm of W
     pos_xzero = [sum(abs_thick[:i+1])*w_xzero for i in range(len(abs_thick))]
     ## Print
     print("W config %i used:" %config )
@@ -125,6 +150,8 @@ def read_pedestals(indir_prefix = "./pedestals/"):
                 peds_err = items[3::3]
                 peds_width = items[4::3]
                 pedestal_map[slab][chip][chan] = peds
+                #print("slab=%i chip=%i chn=%i"%(slab,chip,chan))
+                #print(peds)
                 
     ped_map = pedestal_map
     return pedestal_map
@@ -154,7 +181,6 @@ def read_mip_values(indir_prefix = "./mip_calib/"):
                 mpv = items[2]
                 mpv_err = items[3]
                 mip_map[slab][chip][chan] = mpv
-
     #mip_map = mpv_map
     return mip_map
 
