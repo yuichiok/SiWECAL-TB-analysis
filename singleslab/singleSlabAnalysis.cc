@@ -20,12 +20,12 @@ using namespace std;
 void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputname="", bool readpedestal=true, TString map_filename="../fev10_chip_channel_x_y_mapping.txt")
 {
 
-  int maxnhit=5; // plane event threshold
+  int maxnhit=2; // plane event threshold
 
   //Read the channel/chip -- x/y mapping
   ReadMap(map_filename);
   //Read the list of pedestals (this information contains, implicitily, the masked channels information )
-  if(readpedestal==true) ReadPedestals("results_pedestal/gridpoints/Pedestal_"+dif+"_merged.txt");
+  if(readpedestal==true) ReadPedestals("results_pedestal/pedestals/Pedestal_"+dif+".txt");
 
   ofstream fout_mip("results_mipcalibration/MIP_"+dif+outputname+".txt",ios::out);
   fout_mip<<"#mip results "<<dif<<endl;
@@ -100,7 +100,7 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
 	  if( ped_mean.at(ichip).at(ichn).at(isca)>50 &&  ped_width.at(ichip).at(ichn).at(isca)>0 ) {
 
 	    bool selection=false;
-	    if(charge_hiGain[ichip][isca][ichn]>0 && gain_hit_high[ichip][isca][ichn]==1 && (badbcid[ichip][isca]==0 || badbcid[ichip][isca]==1) && nhits[ichip][isca]<maxnhit+1) selection=true;
+	    if(charge_hiGain[ichip][isca][ichn]>0 && gain_hit_high[ichip][isca][ichn]==1 && badbcid[ichip][isca]==0  && nhits[ichip][isca]<maxnhit+1) selection=true;
 	      
 	    if(selection==true) {
 	      mip_histo.at(ichip).at(ichn)->Fill(charge_hiGain[ichip][isca][ichn]-ped_mean.at(ichip).at(ichn).at(isca));
@@ -558,6 +558,8 @@ void singleSlabAnalysis::ReadPedestals(TString filename)
   std::ifstream reading_file(filename);
   if(!reading_file){
     cout<<" ERROR  ----------------------------------- No pedestal file: "<<filename<<endl;
+  } else {
+        cout<<" Pedestal input file: "<<filename<<endl;
   }
 
   for(int i=0; i<16; i++) {
@@ -590,23 +592,48 @@ void singleSlabAnalysis::ReadPedestals(TString filename)
 
   Int_t tmp_chip = 0,tmp_channel = 0;
   Double_t tmp_ped[15], tmp_error[15], tmp_width[15];
-  TString tmpst;
-  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >>  tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
-  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >>  tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst;
-
+  for(int isca=0; isca<15; isca++) {
+    tmp_ped[isca]=0.;
+    tmp_error[isca]=0.;
+    tmp_width[isca]=0.;
+  }
   
+  TString tmpst;
+  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >>  tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
+  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >>  tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
+
   while(reading_file){
     reading_file >> tmp_chip >> tmp_channel >> tmp_ped[0] >> tmp_error[0] >> tmp_width[0] >> tmp_ped[1] >> tmp_error[1] >> tmp_width[1] >> tmp_ped[2] >> tmp_error[2] >> tmp_width[2] >> tmp_ped[3] >> tmp_error[3] >> tmp_width[3] >> tmp_ped[4] >> tmp_error[4] >> tmp_width[4] >> tmp_ped[5] >> tmp_error[5] >> tmp_width[5] >> tmp_ped[6] >> tmp_error[6] >> tmp_width[6] >> tmp_ped[7] >> tmp_error[7] >> tmp_width[7] >> tmp_ped[8] >> tmp_error[8] >> tmp_width[8] >> tmp_ped[9] >> tmp_error[9] >> tmp_width[9] >> tmp_ped[10] >> tmp_error[10] >> tmp_width[10] >> tmp_ped[11] >> tmp_error[11] >> tmp_width[11] >> tmp_ped[12] >> tmp_error[12] >> tmp_width[12] >> tmp_ped[13] >> tmp_error[13] >> tmp_width[13] >> tmp_ped[14] >> tmp_error[14] >> tmp_width[14];
 
     for(int isca=0; isca<15; isca++) {
-      if(tmp_ped[isca]>0. && ( tmp_error[isca]<ped_error.at(tmp_chip).at(tmp_channel).at(isca) || ped_error.at(tmp_chip).at(tmp_channel).at(isca)==0 ) ){
+      if(tmp_ped[isca]>0. ){//&& (tmp_error[isca]<ped_error.at(tmp_chip).at(tmp_channel).at(isca) || ped_error.at(tmp_chip).at(tmp_channel).at(isca)==0) ){
 	ped_mean.at(tmp_chip).at(tmp_channel).at(isca)=tmp_ped[isca];
 	ped_error.at(tmp_chip).at(tmp_channel).at(isca)=tmp_error[isca];
 	ped_width.at(tmp_chip).at(tmp_channel).at(isca)=tmp_width[isca];
-      }
+	}
     }
     
   }
+
+  /*
+  TString filename2=filename+"new";
+  ofstream fout_ped(filename2,ios::out);
+  fout_ped<<"#pedestal results (fit to a gaussian) remove channels/sca with two pedestals peaks from the analysis "<<filename2<<endl;
+  fout_ped<<"#chip channel ped0 eped0 widthped0 ped1 eped1 widthped1... ped14 eped14 widhtped14 (all SCA)"<<endl;
+  for(int ichip=0; ichip<16; ichip++) {
+    for(int ichn=0; ichn<64; ichn++) {
+      fout_ped << ichip <<" " <<ichn<< " ";
+      cout << ichip <<" " <<ichn<< " ";
+      for(int isca=0; isca<15; isca++) {
+    	fout_ped <<ped_mean.at(ichip).at(ichn).at(isca)<< " "<< " "<<ped_error.at(ichip).at(ichn).at(isca)<< " "<<ped_width.at(ichip).at(ichn).at(isca)<<" ";
+	cout <<ped_mean.at(ichip).at(ichn).at(isca)<< " "<< " "<<ped_error.at(ichip).at(ichn).at(isca)<< " "<<ped_width.at(ichip).at(ichn).at(isca)<<" ";
+
+      }
+      fout_ped<<endl;
+      cout<<endl;
+    }
+    }*/
+  
 
 }
 
@@ -1193,14 +1220,14 @@ void singleSlabAnalysis::PedestalAnalysis_gridpoints(TString dif,TString grid=""
 
   if(grid!="") dif=dif+"_"+grid;
 
-  ofstream fout_ped("results_pedestal/tests/Pedestal_"+dif+".txt",ios::out);
+  ofstream fout_ped("results_pedestal/gridpoints/Pedestal_"+dif+".txt",ios::out);
 
   //fout_ped<<"#pedestal results (fit to a gaussian) remove channels/sca with two pedestals peaks from the analysis : "<<dif<<endl;
   //fout_ped<<"#chip channel ped0 eped0 widthped0 ped1 eped1 widthped1... ped14 eped14 widhtped14 (all SCA)"<<endl;
 
   
   bool global = true;
-  int maxnhit=30;
+  int maxnhit=10;
 
   if (fChain == 0) return;
 
@@ -1313,14 +1340,14 @@ void singleSlabAnalysis::PedestalAnalysis_gridpoints(TString dif,TString grid=""
 
 	  //good events
 	  bool selection=false;
-	  if(charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 && corrected_bcid[ichip][isca]>1247 && corrected_bcid[ichip][isca]<2900 ) selection=true;
+	  if(charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 && corrected_bcid[ichip][isca]>1250 && corrected_bcid[ichip][isca]<2850 ) selection=true;
 	  if(masked[ichip][ichn]==1) selection=false;
  	  if(gain_hit_high[ichip][isca][ichn]==0 && selection==true && gooddata==true)
 	    ped_sca.at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[ichip][isca][ichn]);
 
 	  //bad events
 	  selection=false;
-	  if( ( badbcid[ichip][isca]>0 || nhits[ichip][isca]>maxnhit || gooddata==false) && (corrected_bcid[ichip][isca]>1247 && corrected_bcid[ichip][isca]<2900)  ) selection=true;
+	  if( ( badbcid[ichip][isca]>0 || nhits[ichip][isca]>maxnhit || gooddata==false) && (corrected_bcid[ichip][isca]>1250 && corrected_bcid[ichip][isca]<2850)  ) selection=true;
 	  if(masked[ichip][ichn]==1) selection=false;
  	  if(gain_hit_high[ichip][isca][ichn]==0 && selection==true )
 	    ped_sca_tagged.at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[ichip][isca][ichn]);
@@ -1334,7 +1361,7 @@ void singleSlabAnalysis::PedestalAnalysis_gridpoints(TString dif,TString grid=""
   }  // end first loop analysis to fill pedestal historgrams
 
 
-  TFile *pedfile = new TFile("results_pedestal/tests/Pedestal_"+dif+".root" , "RECREATE");
+  TFile *pedfile = new TFile("results_pedestal/gridpoints/Pedestal_"+dif+".root" , "RECREATE");
   pedfile->cd();
 
 
@@ -1497,7 +1524,7 @@ void singleSlabAnalysis::PedestalAnalysis_gridpoints(TString dif,TString grid=""
 
   pedfile->Close();
 
-  TFile *pedfile_summary = new TFile("results_pedestal/tests/Pedestal_summary_"+dif+".root" , "RECREATE");
+  TFile *pedfile_summary = new TFile("results_pedestal/gridpoints/Pedestal_summary_"+dif+".root" , "RECREATE");
   pedfile_summary->cd();
   
   // good pedestal events (not tagged events)
