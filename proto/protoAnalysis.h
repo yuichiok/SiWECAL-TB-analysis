@@ -36,24 +36,25 @@ public :
    Int_t           spill;
    Int_t           bcid;
    Int_t           prev_bcid;
+   Int_t           next_bcid;
    Int_t           nhit_slab;
    Int_t           nhit_chip;
    Int_t           nhit_chan;
    Float_t         sum_hg;
    Float_t         sum_energy;
-   Int_t           hit_slab[256];   //[nhit_chan]
-   Int_t           hit_chip[256];   //[nhit_chan]
-   Int_t           hit_chan[256];   //[nhit_chan]
-   Int_t           hit_sca[256];   //[nhit_chan]
-   Float_t         hit_x[256];   //[nhit_chan]
-   Float_t         hit_y[256];   //[nhit_chan]
-   Float_t         hit_z[256];   //[nhit_chan]
-   Float_t         hit_x0[256];   //[nhit_chan]
-   Float_t         hit_hg[256];   //[nhit_chan]
-   Float_t         hit_lg[256];   //[nhit_chan]
-   Float_t         hit_energy[256];   //[nhit_chan]
-   Int_t           hit_isHit[256];   //[nhit_chan]
-   Int_t           hit_isMasked[256];   //[nhit_chan]
+   Int_t           hit_slab[8000];   //[nhit_chan]
+   Int_t           hit_chip[8000];   //[nhit_chan]
+   Int_t           hit_chan[8000];   //[nhit_chan]
+   Int_t           hit_sca[8000];   //[nhit_chan]
+   Float_t         hit_x[8000];   //[nhit_chan]
+   Float_t         hit_y[8000];   //[nhit_chan]
+   Float_t         hit_z[8000];   //[nhit_chan]
+   Float_t         hit_x0[8000];   //[nhit_chan]
+   Float_t         hit_hg[8000];   //[nhit_chan]
+   Float_t         hit_lg[8000];   //[nhit_chan]
+   Float_t         hit_energy[8000];   //[nhit_chan]
+   Int_t           hit_isHit[8000];   //[nhit_chan]
+   Int_t           hit_isMasked[8000];   //[nhit_chan]
 
    // List of branches
    TBranch        *b_event;   //!
@@ -89,18 +90,37 @@ public :
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
    virtual void     Init(TTree *tree);
-   //signal analysis: MIP fitt and signal/noise 
-   virtual void     SimpleMIPAnalysis(TString outputname);
-   virtual void     SimpleDistributionsTrack(TString outputname);
 
-   virtual void     SimpleDistributionsShower(TString outputname);
-   virtual void     ShowerDistributions(TString folder, TString configuration, TString energy, TString gridpoint, double mipcut);
+   //Service functions
+   virtual void     ReadMap(TString filename);
+   virtual void     ReadCalibrated(TString filename);
+   virtual bool     IsHit(int ihit);
+   virtual bool     IsPedestal(int ihit);
+   virtual bool     ShowerBasicSelection(double mipcut, int bcid_max, int nslabs_selection);
+   virtual bool     ShowerAntiSelection(double mipcut, int bcid_max, int nslabs_selection);
+
+   virtual double   MinDistCalc(int ihit, double mipcut);  
    virtual TF1 *langaufit(TH1F *his, Double_t *fitrange, Double_t *startvalues, Double_t *parlimitslo, Double_t *parlimitshi, Double_t *fitparams, Double_t *fiterrors, Double_t *ChiSqr, Int_t *NDF);
+   
+   //TrackAnalysisFunctions
+   virtual void     SimpleMIPAnalysis(TString outputname, int nin, int nout, int bcid_max);
+   virtual void     SimpleDistributionsTrack(TString outputname);
+   
+   //ShowerAnalysisFunctions
+   virtual void     SimpleDistributionsShower(TString outputname);
+   virtual void     ShowerDistributions(TString folder, TString configuration, TString energy, TString gridpoint, double mipcut, int bcid_max, int nslabs_selection, bool RMIsolatedHits);
+   virtual void     ShowerNoiseDistributions(TString folder, TString configuration, double mipcut, int bcid_max, int nslabs_selection, bool RMIsolatedHits);
+   virtual void     ShowerDistributions_pedestal(TString folder, TString configuration, TString energy, TString gridpoint, double mipcut, int bcid_max, int nslabs_selection, bool RMIsolatedHits);
+
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
 
 private :
 
+   Float_t map_pointX[16][64];
+   Float_t map_pointY[16][64];
+   Int_t calibrated[7][16][64];
+   
 
 };
 
