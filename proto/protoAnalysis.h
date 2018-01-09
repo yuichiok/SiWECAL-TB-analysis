@@ -61,6 +61,7 @@ public :
    TBranch        *b_spill;   //!
    TBranch        *b_bcid;   //!
    TBranch        *b_prev_bcid;   //!
+   TBranch        *b_next_bcid;   //!
    TBranch        *b_nhit_slab;   //!
    TBranch        *b_nhit_chip;   //!
    TBranch        *b_nhit_chan;   //!
@@ -111,6 +112,7 @@ public :
    virtual void     ShowerDistributions(TString folder, TString configuration, TString energy, TString gridpoint, double mipcut, int bcid_max, int nslabs_selection, bool RMIsolatedHits);
    virtual void     ShowerNoiseDistributions(TString folder, TString configuration, double mipcut, int bcid_max, int nslabs_selection, bool RMIsolatedHits);
    virtual void     ShowerDistributions_pedestal(TString folder, TString configuration, TString energy, TString gridpoint, double mipcut, int bcid_max, int nslabs_selection, bool RMIsolatedHits);
+   virtual void     PedestalAnalysis_showers(TString folder, TString configuration, TString energy, TString gridpoint, double mipcut, int bcid_max, int nslabs_selection, bool RMIsolatedHits, int analyze_chip, int analyze_layer);
 
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
@@ -206,6 +208,7 @@ void protoAnalysis::Init(TTree *tree)
    fChain->SetBranchAddress("spill", &spill, &b_spill);
    fChain->SetBranchAddress("bcid", &bcid, &b_bcid);
    fChain->SetBranchAddress("prev_bcid", &prev_bcid, &b_prev_bcid);
+   fChain->SetBranchAddress("next_bcid", &next_bcid, &b_next_bcid);
    fChain->SetBranchAddress("nhit_slab", &nhit_slab, &b_nhit_slab);
    fChain->SetBranchAddress("nhit_chip", &nhit_chip, &b_nhit_chip);
    fChain->SetBranchAddress("nhit_chan", &nhit_chan, &b_nhit_chan);
