@@ -28,8 +28,8 @@ void PlotsEnergy(){
   TString grid="grid24";
   TString conf="conf1";
 
-  for(int islabs=4;islabs<8; islabs++) {
-    TString nslabs=TString::Format("pedestal_nslabs%i",islabs);
+  for(int islabs=6;islabs<7; islabs++) {
+    TString nslabs=TString::Format("nslabs%i",islabs);
       
     for(int ibcid=0; ibcid<2; ibcid++) {
       TString bcid="bcidmax2850";

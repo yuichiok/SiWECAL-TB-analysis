@@ -28,45 +28,53 @@ void PlotsPedestal(){
 
   TString grid="grid20";
   TString conf="conf2";
-
+  bool bcidplot=true;
+  
   int islabs=6;
   TString nslabs_pedestal=TString::Format("pedestal_nslabs%i",islabs);
 
   TString bcid="bcidmax2850";
-        
-  TString energy_string[6];
-  energy_string[0]="1GeV";
-  energy_string[1]="2GeV";
-  energy_string[2]="3GeV";
-  energy_string[3]="4GeV";
-  energy_string[4]="5GeV";
-  energy_string[5]="5.8GeV";
 
-  TGraph *pedestal_mean[6];
-  
-  for(int ienergy=0; ienergy<6; ienergy++) {
-
-    double x[15];
-    double y[15];
-    TString s_file=nslabs_pedestal+"_"+bcid+"/"+conf+"_"+grid+"_"+energy_string[ienergy]+"_mipcut0.5_showers.root";
-    std::cout<<"Opening file: "<<s_file<<std::endl;
-    TFile *file = new TFile(s_file);
-
-    for(int isca=0;isca<15; isca++) {
-      TH1F *temp= (TH1F*)file->Get(TString::Format("bs_pedestal_mean_distribution_isca%i",isca));
-      x[isca]=isca;
-      y[isca]=temp->GetMean();
+  for(int ilayer=0; ilayer<7; ilayer++) {
+    TString energy_string[6];
+    energy_string[0]="1GeV";
+    energy_string[1]="2GeV";
+    energy_string[2]="3GeV";
+    energy_string[3]="4GeV";
+    energy_string[4]="5GeV";
+    energy_string[5]="5.8GeV";
+    //energy_string[0]="2GeV";
+    // energy_string[1]="4GeV";
+    
+    TGraph *pedestal_mean[6];
+    
+    for(int ienergy=0; ienergy<6; ienergy++) {
+      
+      double x[15];
+      double y[15];
+      TString s_file=nslabs_pedestal+"_"+bcid+"/"+conf+"_"+grid+"_"+energy_string[ienergy]+"_mipcut0.5_showers.root";
+      std::cout<<"Opening file: "<<s_file<<std::endl;
+      TFile *file = new TFile(s_file);
+      
+      for(int isca=0;isca<15; isca++) {
+	TString histostring = TString::Format("bs_pedestal_mean_distribution_isca%i_ilayer%i",isca,ilayer);
+	if(bcidplot==true) histostring = TString::Format("bs_pedestal_mean_distribution_ibcid%i_ilayer%i",isca,ilayer);
+	TH1F *temp= (TH1F*)file->Get(histostring);
+	x[isca]=isca;
+	if(bcidplot==true) x[isca]=isca*100.+1200;
+	y[isca]=100*temp->GetMean();
+      }
+      
+      pedestal_mean[ienergy] = new TGraph(15,x,y);
     }
-
-    pedestal_mean[ienergy] = new TGraph(15,x,y);
-  }
-  
-  TCanvas *c_energy = new TCanvas("c_energy","c_energy",800,600);
+    
+    TCanvas *c_energy = new TCanvas(TString::Format("c_energy_ilayer%i",ilayer),TString::Format("c_energy_ilayer%i",ilayer),800,600);
   //c_energy->Divide(2,1);
   c_energy->cd(1);
   pedestal_mean[0]->GetXaxis()->SetTitle("SCA");
-  pedestal_mean[0]->GetYaxis()->SetTitle("average pedestal deviation [MIP]");
-  pedestal_mean[0]->GetYaxis()->SetRangeUser(-0.2,0.1);
+  if(bcidplot==true)  pedestal_mean[0]->GetXaxis()->SetTitle("BCID");
+  pedestal_mean[0]->GetYaxis()->SetTitle("average pedestal deviation [%MIP]");
+  pedestal_mean[0]->GetYaxis()->SetRangeUser(-20,20);
   pedestal_mean[0]->SetLineWidth(1);
   pedestal_mean[0]->SetLineColor(1);
   pedestal_mean[0]->SetMarkerStyle(4);
@@ -82,7 +90,7 @@ void PlotsPedestal(){
   }
     
   TLegend *l_1 = new TLegend(0.45,0.2,0.9,0.4);
-  l_1->SetHeader("SiW-ECAL: wafer 3, W-configuration 2");
+  l_1->SetHeader(TString::Format("SiW-ECAL: wafer 3, W-configuration 2, layer %i",ilayer));
   
   l_1->AddEntry(pedestal_mean[0],"e^{+} 1 GeV","lp");
   l_1->AddEntry(pedestal_mean[1],"e^{+} 2 GeV","lp");
@@ -97,8 +105,9 @@ void PlotsPedestal(){
   l_1->Draw();
   IRLESLabel(0.2,0.88,"",kGray+2);
 
-    // c_energy->Print("pedestal_plots/energy_"+nslabs+"_"+bcid+"_"+conf+"_"+grid+"_"+"_mipcut0.5.eps");
+ if(bcidplot==false) c_energy->Print("pedestal_plots/pedestal_deviation_energy_nslabs6_"+bcid+"_"+conf+"_"+grid+"_mipcut0.5_layer"+TString::Format("%i.eps",ilayer));
+ else c_energy->Print("pedestal_plots/pedestal_deviation_bcid_energy_nslabs6_"+bcid+"_"+conf+"_"+grid+"_mipcut0.5_layer"+TString::Format("%i.eps",ilayer));
 
-
+  }
          
 }

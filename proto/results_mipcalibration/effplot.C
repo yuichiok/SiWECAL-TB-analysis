@@ -22,7 +22,7 @@ void effplot(){
   gStyle->SetOptTitle(1);
  
   gStyle->SetTitleBorderSize(0);
-  gStyle->SetTitleX(0.1);
+  gStyle->SetTitleX(0.2);
   gStyle->SetTitleY(1.0);
   gStyle->SetTitleStyle(0);
   gStyle->SetTitleFontSize(0.03);
@@ -229,6 +229,37 @@ void effplot(){
 	
 	canvas->Print(TString::Format("eff_files/MIPefficiency_hitsintrack%i_hitouttrack%i_bcidcut%i.eps",nhits,nout,bcid_max));
 
+	TCanvas *canvas_chip = new TCanvas(TString::Format("efficiency_nhits%i_chips",nhits),TString::Format("efficiency_nhits%i_chips",nhits),1000,800);
+	canvas_chip->cd(3);
+	TLegend *leg3bis=new TLegend(0.75,0.35,0.9,0.6);
+
+	for(int ilayer=0; ilayer<7; ilayer++) {
+	  g_eff_full_mean[ilayer]->SetMarkerStyle(20+ilayer);
+	  g_eff_full_mean[ilayer]->SetMarkerColor(ilayer+2);
+	  g_eff_full_mean[ilayer]->SetLineColor(ilayer+2);
+	  if(ilayer==0) {
+	    g_eff_full_mean[ilayer]->SetTitle(TString::Format("Average hit detection efficiency for tracks with at least %i hits",nhits));
+	    // g_eff_full_mean[ilayer]->GetYaxis()->SetRangeUser(-0.1,1);
+	    g_eff_full_mean[ilayer]->GetYaxis()->SetRangeUser(96.4,100.3);
+	    g_eff_full_mean[ilayer]->GetYaxis()->SetTitle("%");
+	    g_eff_full_mean[ilayer]->GetXaxis()->SetTitle("ASIC number");
+	    g_eff_full_mean[ilayer]->Draw("ap");
+	  }
+	  else g_eff_full_mean[ilayer]->Draw("p");
+
+	  leg3bis->AddEntry(g_eff[ilayer],TString::Format("Layer %i",ilayer),"p");
+
+	}
+
+	leg3bis->SetFillColor(0);
+	leg3bis->SetLineColor(0);
+	leg3bis->SetShadowColor(0);
+	leg3bis->Draw();
+	
+	IRLESLabel(0.2,0.2,"",kGray+2);
+	canvas_chip->Print(TString::Format("eff_files/MIPefficiency_hitsintrack%i_hitouttrack%i_bcidcut%i_chip.eps",nhits,nout,bcid_max));
+
+	
       }//nout
     }//bcid
   }//nhits
