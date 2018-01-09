@@ -402,6 +402,580 @@ void protoAnalysis::SimpleDistributionsShower(TString outputname="")
 
 }
 
+
+void protoAnalysis::PedestalAnalysis_showers(TString folder="y", TString configuration="conf1", TString energy_string="3GeV", TString gridpoint ="grid20", double mipcut=0.5, int bcid_max=2900, int nslabs_selection=6, bool RMIsolatedHits=true, int analyze_chip=12, int analyze_layer=3)
+{
+
+  ReadMap("../fev10_chip_channel_x_y_mapping.txt");
+  ReadCalibrated("../mip_calib/MIP_");
+
+  // --------------
+  if (fChain == 0) return;
+  Long64_t nentries = fChain->GetEntriesFast();
+  //-----------------
+
+  int number_hits=0;
+  // -----------------------------------------------------------------------------------------------------
+
+  // -----------------------------------------------------------------------------------------------------
+  //#******************************************************************************************************
+  // PEDESTAL PART:
+  // th1f, i,j,k,sca
+  TH2F* totalcharge_vs_pedcharge[15];
+  TH2F* averagecharge_vs_pedcharge[15];
+  TH2F* nhits_vs_pedcharge[15];
+  TH2F* nchannelsElarger5_vs_pedcharge[15];
+  TH2F* nchannelsElarger2_vs_pedcharge[15];
+  TH2F* nchannelsElarger1_vs_pedcharge[15];
+  TH2F* nchannelsElarger05_vs_pedcharge[15];
+
+  TH2F* totalcharge_vs_pedcharge_prevsca[15];
+  TH2F* averagecharge_vs_pedcharge_prevsca[15];
+  TH2F* nhits_vs_pedcharge_prevsca[15];
+  TH2F* nchannelsElarger5_vs_pedcharge_prevsca[15];
+  TH2F* nchannelsElarger2_vs_pedcharge_prevsca[15];
+  TH2F* nchannelsElarger1_vs_pedcharge_prevsca[15];
+  TH2F* nchannelsElarger05_vs_pedcharge_prevsca[15];
+
+  for(int isca=0; isca<15; isca++) {
+    totalcharge_vs_pedcharge[isca] = new TH2F(TString::Format("totalcharge_vs_pedcharge_sca%i",isca),TString::Format("totalcharge_vs_pedcharge_sca%i",isca),101,-0.5,100.5,80,-1,1);
+    averagecharge_vs_pedcharge[isca] = new TH2F(TString::Format("averagecharge_vs_pedcharge_sca%i",isca),TString::Format("averagecharge_vs_pedcharge_sca%i",isca),20,0,10,80,-1,1);
+    nhits_vs_pedcharge[isca] = new TH2F(TString::Format("nhits_vs_pedcharge_sca%i",isca),TString::Format("nhits_vs_pedcharge_sca%i",isca),20,0.5,20.5,80,-1,1);
+
+    nchannelsElarger5_vs_pedcharge[isca] = new TH2F(TString::Format("nchannelsElarger5_vs_pedcharge_sca%i",isca),TString::Format("nchannelsElarger5_vs_pedcharge_sca%i",isca),65,-0.5,64.5,80,-1,1);
+    nchannelsElarger2_vs_pedcharge[isca] = new TH2F(TString::Format("nchannelsElarger2_vs_pedcharge_sca%i",isca),TString::Format("nchannelsElarger2_vs_pedcharge_sca%i",isca),65,-0.5,64.5,80,-1,1);
+    nchannelsElarger1_vs_pedcharge[isca] = new TH2F(TString::Format("nchannelsElarger1_vs_pedcharge_sca%i",isca),TString::Format("nchannelsElarger1_vs_pedcharge_sca%i",isca),65,-0.5,64.5,80,-1,1);
+    nchannelsElarger05_vs_pedcharge[isca] = new TH2F(TString::Format("nchannelsElarger05_vs_pedcharge_sca%i",isca),TString::Format("nchannelsElarger05_vs_pedcharge_sca%i",isca),65,-0.5,64.5,80,-1,1);
+
+  }
+
+  for(int isca=0; isca<15; isca++) {
+    totalcharge_vs_pedcharge_prevsca[isca] = new TH2F(TString::Format("totalcharge_vs_pedcharge_prevsca_sca%i",isca),TString::Format("totalcharge_vs_pedcharge_prevsca_sca%i",isca),101,-0.5,100.5,80,-1,1);
+    averagecharge_vs_pedcharge_prevsca[isca] = new TH2F(TString::Format("averagecharge_vs_pedcharge_prevsca_sca%i",isca),TString::Format("averagecharge_vs_pedcharge_prevsca_sca%i",isca),20,0,10,80,-1,1);
+    nhits_vs_pedcharge_prevsca[isca] = new TH2F(TString::Format("nhits_vs_pedcharge_prevsca_sca%i",isca),TString::Format("nhits_vs_pedcharge_prevsca_sca%i",isca),20,0.5,20.5,80,-1,1);
+
+    nchannelsElarger5_vs_pedcharge_prevsca[isca] = new TH2F(TString::Format("nchannelsElarger5_vs_pedcharge_prevsca_sca%i",isca),TString::Format("nchannelsElarger5_vs_pedcharge_prevsca_sca%i",isca),65,-0.5,64.5,80,-1,1);
+    nchannelsElarger2_vs_pedcharge_prevsca[isca] = new TH2F(TString::Format("nchannelsElarger2_vs_pedcharge_prevsca_sca%i",isca),TString::Format("nchannelsElarger2_vs_pedcharge_prevsca_sca%i",isca),65,-0.5,64.5,80,-1,1);
+    nchannelsElarger1_vs_pedcharge_prevsca[isca] = new TH2F(TString::Format("nchannelsElarger1_vs_pedcharge_prevsca_sca%i",isca),TString::Format("nchannelsElarger1_vs_pedcharge_prevsca_sca%i",isca),65,-0.5,64.5,80,-1,1);
+    nchannelsElarger05_vs_pedcharge_prevsca[isca] = new TH2F(TString::Format("nchannelsElarger05_vs_pedcharge_prevsca_sca%i",isca),TString::Format("nchannelsElarger05_vs_pedcharge_prevsca_sca%i",isca),65,-0.5,64.5,80,-1,1);
+
+    
+  }
+  
+  
+  TH1F *pull_beamspot[15][7];
+  TH1F *stdev_beamspot[15][7];
+  TH1F *mean_beamspot[15][7];
+  TH1F *mean_bcid_beamspot[15][7];
+
+  for(int isca=0; isca<15; isca++) {
+    for(int ilayer=0; ilayer<7; ilayer++) {
+      pull_beamspot[isca][ilayer] = new TH1F(TString::Format("pull_sca%i_layer%i_bs",isca,ilayer),TString::Format("pull_sca%i_layer%i_bs",isca,ilayer),21,-1.05,1.05);
+      stdev_beamspot[isca][ilayer] = new TH1F(TString::Format("stdev_sca%i_layer%i_bs",isca,ilayer),TString::Format("stdev_sca%i_layer%i_bs",isca,ilayer),21,-1.05,1.05);
+      mean_beamspot[isca][ilayer] = new TH1F(TString::Format("mean_sca%i_layer%i_bs",isca,ilayer),TString::Format("mean_sca%i_layer%i_bs",isca,ilayer),21,-1.05,1.05);
+      mean_bcid_beamspot[isca][ilayer] = new TH1F(TString::Format("mean_bcid%i_layer%i_bs",isca,ilayer),TString::Format("mean_bcid%i_layer%i_bs",isca,ilayer),21,-1.05,1.05);
+    }
+  }
+
+  TH1F *pull_outbeamspot[15][7];
+  TH1F *stdev_outbeamspot[15][7];
+  TH1F *mean_outbeamspot[15][7];
+  TH1F *mean_bcid_outbeamspot[15][7];
+
+  for(int isca=0; isca<15; isca++) {
+    for(int ilayer=0; ilayer<7; ilayer++) {
+      pull_outbeamspot[isca][ilayer] = new TH1F(TString::Format("pull_sca%i_layer%i",isca,ilayer),TString::Format("pull_sca%i_layer%i",isca,ilayer),21,-1.05,1.05);
+      stdev_outbeamspot[isca][ilayer] = new TH1F(TString::Format("stdev_sca%i_layer%i",isca,ilayer),TString::Format("stdev_sca%i_layer%i",isca,ilayer),21,-1.05,1.05);
+      mean_outbeamspot[isca][ilayer] = new TH1F(TString::Format("mean_sca%i_layer%i",isca,ilayer),TString::Format("mean_sca%i_layer%i",isca,ilayer),21,-1.05,1.05);
+      mean_bcid_outbeamspot[isca][ilayer] = new TH1F(TString::Format("mean_bcid_sca%i_layer%i",isca,ilayer),TString::Format("mean_bcid_sca%i_layer%i",isca,ilayer),21,-1.05,1.05);
+    }
+  }
+
+  
+  TH1F* pedestal_closefromhit[15];
+  TH1F* pedestal_farfromhit[15];
+  for(int isca=0; isca<15; isca++) {
+    pedestal_closefromhit[isca]   = new TH1F(TString::Format("pedestal_closefromhit_sca%i",isca),TString::Format("pedestal_closefromhit_sca%i",isca),80,-1,1);
+    pedestal_farfromhit[isca]   = new TH1F(TString::Format("pedestal_farfromhit_sca%i",isca),TString::Format("pedestal_farfromhit_sca%i",isca),80,-1,1);
+  }
+  TH2F* mean_vs_entries = new TH2F("pedestal_mean_vs_entries","pedestal_mean_vs_entries",2001,-10.005,10.005,500,5,5005);
+  TH2F* rms_vs_entries = new TH2F("pedestal_rms_vs_entries","pedestal_rms_vs_entries",2001,-10.005,10.005,500,5,5005);
+  TH2F* mean_vs_rms = new TH2F("pedestal_mean_vs_rms","pedestal_mean_vs_rms",2001,-10.005,10.005,2001,-10.005,10.005);
+
+  TH2F* pull_map_xy = new TH2F("pedestal_pull_map_xy","pedestal_pull_map_xy",32,-90,90,32,-90,90);
+  TH2F* pull_map_xz = new TH2F("pedestal_pull_map_xz","pedestal_pull_map_xz",32,-90,90,14,-7.5,6.5);
+
+  TH2F* pull_map_bad_xy = new TH2F("pedestal_pull_map_bad_xy","pedestal_pull_map_bad_xy",32,-90,90,32,-90,90);
+  TH2F* pull_map_bad_xz = new TH2F("pedestal_pull_map_bad_xz","pedestal_pull_map_bad_xz",32,-90,90,14,-7.5,6.5);
+  
+  TH1F *wrongsca[16];
+  TH1F *goodsca[16]; 
+  TH1F *not_recalculated_sca[16];
+  for(int ichip=0; ichip<16; ichip++) {
+    wrongsca[ichip] = new TH1F(TString::Format("pedestal_wrong_sca_chip%i",ichip),TString::Format("pedestal_wrong_sca_chip%i",ichip),15,-0.5,14.5);
+    goodsca[ichip] = new TH1F(TString::Format("pedestal_good_sca_chip%i",ichip),TString::Format("pedestal_good_sca_chip%i",ichip),15,-0.5,14.5);
+    not_recalculated_sca[ichip] = new TH1F(TString::Format("pedestal_not_recalculated_sca_chip%i",ichip),TString::Format("pedestal_not_recalculated_sca_chip%i",ichip),15,-0.5,14.5);
+  }
+  
+  TH1F* pedestal_histo[7][16][64][15];
+  TH1F* charge_histo[7][16][64][15];
+  TH1F* pedestal_histo_bcid[7][16][64][15];
+
+  Double_t pedestal[7][16][64][15];
+  Double_t pedestal_bcid[7][16][64][15];
+
+  for(int iz=0; iz<7; iz++) {
+    for(int ichip=0; ichip<16; ichip++) {
+      for(int ichan=0; ichan<64; ichan++) {
+  	for(int isca=0; isca<15;isca++) {
+  	  pedestal_histo[iz][ichip][ichan][isca] = new TH1F(TString::Format("pedestal_z%i_chip%i_chan%i_sca%i",iz,ichip,ichan,isca), TString::Format("pedestal_z%i_chip%i_chan%i_sca%i",iz,ichip,ichan,isca),2000,-10,10);
+	  charge_histo[iz][ichip][ichan][isca] = new TH1F(TString::Format("charge_z%i_chip%i_chan%i_sca%i",iz,ichip,ichan,isca), TString::Format("charge_z%i_chip%i_chan%i_sca%i",iz,ichip,ichan,isca),2000,-10,10);
+  	  pedestal[iz][ichip][ichan][isca] = 0.;
+
+	  pedestal_histo_bcid[iz][ichip][ichan][isca] = new TH1F(TString::Format("pedestal_z%i_chip%i_chan%i_bcid%i",iz,ichip,ichan,isca), TString::Format("pedestal_z%i_chip%i_chan%i_bcid%i",iz,ichip,ichan,isca),2000,-10,10);
+  	  pedestal_bcid[iz][ichip][ichan][isca] = 0.;
+  	}
+      }
+    }
+  }
+
+  TH2F* pedestal_vs_prevbcid[7][16][15];
+    TH2F* pedestal_vs_nextbcid[7][16][15];
+
+  for(int iz=0; iz<7; iz++) {
+    for(int ichip=0; ichip<16; ichip++) {
+      for(int isca=0; isca<15;isca++) {
+	pedestal_vs_prevbcid[iz][ichip][isca] = new TH2F(TString::Format("pedestal_vs_prevbcid_z%i_chip%i_sca%i",iz,ichip,isca),TString::Format("pedestal_vs_prevbcid_z%i_chip%i_sca%i",iz,ichip,isca),210,-1.05,1.05,50,-10,990);
+
+	pedestal_vs_nextbcid[iz][ichip][isca] = new TH2F(TString::Format("pedestal_vs_nextbcid_z%i_chip%i_sca%i",iz,ichip,isca),TString::Format("pedestal_vs_nextbcid_z%i_chip%i_sca%i",iz,ichip,isca),210,-1.05,1.05,50,-10,990);
+
+      }
+    }
+  }
+
+  double prev_spill=-1;
+
+  Long64_t nbytes = 0, nb = 0;
+  for (Long64_t jentry=0; jentry<nentries;jentry++) {
+    Long64_t ientry = LoadTree(jentry);
+    if (ientry < 0) break;
+    nb = fChain->GetEntry(jentry); nbytes += nb;
+
+    if(ShowerBasicSelection(mipcut,bcid_max,nslabs_selection) == false) continue;
+
+    for(int ihit=0; ihit< nhit_chan; ihit ++) {
+      int z=hit_z[ihit];
+      if(z==9) z=6;
+      if( IsPedestal(ihit)==true)  {
+	pedestal_histo[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]->Fill(hit_energy[ihit]);
+	int bcid_range=(bcid-1200)/100;
+	if(bcid_range<15 && bcid>1200) pedestal_histo_bcid[z][hit_chip[ihit]][hit_chan[ihit]][bcid_range]->Fill(hit_energy[ihit]);
+	
+	if(prev_spill==spill ) {
+	  pedestal_vs_prevbcid[z][hit_chip[ihit]][hit_sca[ihit]]->Fill(hit_energy[ihit],bcid-prev_bcid);
+	  pedestal_vs_nextbcid[z][hit_chip[ihit]][hit_sca[ihit]]->Fill(hit_energy[ihit],next_bcid-bcid);
+	}
+      }
+    }
+
+    //  prev_bcid=bcid;
+    prev_spill=spill;
+
+
+  }
+
+  cout<<"save file: "<<TString::Format("%s/Pedestals_%s_%s_%s_mipcut%0.1f_showers.txt",folder.Data(),configuration.Data(),gridpoint.Data(),energy_string.Data(),mipcut)<<endl;
+
+  
+  ofstream fout_ped(TString::Format("%s/Pedestals_%s_%s_%s_mipcut%0.1f_showers.txt",folder.Data(),configuration.Data(),gridpoint.Data(),energy_string.Data(),mipcut),ios::out);
+  fout_ped<<"#pedestal results (fit to a gaussian) remove channels/sca with two pedestals peaks from the analysis"<<endl;
+  fout_ped<<"#z chip channel ped0 eped0 widthped0 ped1 eped1 widthped1... ped14 eped14 widhtped14 (all SCA)"<<endl;
+
+  /// Calculate pedestals
+  // do pedestal (chip/channel/sca based) analysis
+  for(int iz=0; iz<7; iz++) {
+    for(int ichip=0; ichip<16; ichip++) {
+      for(int ichn=0; ichn<64; ichn++) {
+      	fout_ped << iz <<" "<< ichip <<" " <<ichn<< " ";
+  	//	cout<< iz <<" "<< ichip <<" " <<ichn<< " "; 
+
+  	for(int isca=0; isca<15; isca++) {
+	  double entries_v = pedestal_histo[iz][ichip][ichn][isca]->GetEntries();
+  	  if( entries_v> 50 ){ 
+	    // pedestal_histo[iz][ichip][ichn][isca]->GetXaxis()->SetRangeUser(-1,1);
+	    pedestal[iz][ichip][ichn][isca]=pedestal_histo[iz][ichip][ichn][isca]->GetMean();
+	    double mean_v = pedestal_histo[iz][ichip][ichn][isca]->GetMean();
+	    double rms_v = pedestal_histo[iz][ichip][ichn][isca]->GetRMS();
+	    double error_v = rms_v/sqrt(entries_v);
+	    double pull_v=mean_v/rms_v;
+
+	    if(  (map_pointX[ichip][ichn]<-20 & map_pointX[ichip][ichn]>-50 ) && (map_pointY[ichip][ichn]<-30 && map_pointY[ichip][ichn]>-60 ) ) {
+	      pull_beamspot[isca][iz]->Fill(pull_v);
+	      stdev_beamspot[isca][iz]->Fill(rms_v);
+	      mean_beamspot[isca][iz]->Fill(pedestal_histo[iz][ichip][ichn][isca]->GetMean());
+	      mean_vs_entries->Fill(mean_v,entries_v);
+	      rms_vs_entries->Fill(rms_v,entries_v);
+	      mean_vs_rms->Fill(mean_v,rms_v);
+	    } else {
+	      pull_outbeamspot[isca][iz]->Fill(pull_v);
+	      stdev_outbeamspot[isca][iz]->Fill(rms_v);
+	      mean_outbeamspot[isca][iz]->Fill(pedestal_histo[iz][ichip][ichn][isca]->GetMean());
+	    }
+	    
+	    // pedestal_histo[iz][ichip][ichn][isca]->GetXaxis()->SetRangeUser(-10,10);
+
+	    if(fabs(mean_v)<0.05) {
+	      goodsca[ichip]->Fill(isca); 
+	      pull_map_xy->Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn]);
+	      pull_map_xz->Fill(map_pointX[ichip][ichn],iz);
+	    }
+	    
+	    if(fabs(mean_v)>0.05) {
+	      wrongsca[ichip]->Fill(isca);
+	      pull_map_bad_xy->Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn]);
+	      pull_map_bad_xz->Fill(map_pointX[ichip][ichn],iz);
+	      if(fabs(mean_v)>1.0)cout<<iz<<" "<<ichip<< " " <<ichn<<" " <<isca <<endl;
+	    }
+
+	    fout_ped<<mean_v<< " " << error_v<<" "<<rms_v<<" ";
+
+  	  } else {
+	    not_recalculated_sca[ichip]->Fill(isca); 
+	    fout_ped<<-200<< " " << -200<<" "<<-200<<" ";
+  	  }
+	  fout_ped<<endl;
+
+  	}//end for sca
+	
+	for(int ibcid=0; ibcid<15; ibcid++) {
+	  double entries_v = pedestal_histo_bcid[iz][ichip][ichn][ibcid]->GetEntries();
+	  
+	  if( entries_v> 50 ){ 
+	    // pedestal_histo[iz][ichip][ichn][ibcid]->GetXaxis()->SetRangeUser(-1,1);
+	    pedestal_bcid[iz][ichip][ichn][ibcid]=pedestal_histo[iz][ichip][ichn][ibcid]->GetMean();
+	    
+	    if(  (map_pointX[ichip][ichn]<-20 & map_pointX[ichip][ichn]>-50 ) && (map_pointY[ichip][ichn]<-30 && map_pointY[ichip][ichn]>-60 ) ) {
+	      mean_bcid_beamspot[ibcid][iz]->Fill(pedestal_histo_bcid[iz][ichip][ichn][ibcid]->GetMean());
+	    } else {
+	      mean_bcid_outbeamspot[ibcid][iz]->Fill(pedestal_histo[iz][ichip][ichn][ibcid]->GetMean());
+	    }
+	  }//end for bcid range
+	}
+      }// end if savepedestal
+    }
+  }
+
+  
+  // -----------------------------------------------------------------------------------------------------
+  //#******************************************************************************************************
+  
+  // Signal readout
+  nbytes = 0, nb = 0;
+  for (Long64_t jentry=0; jentry<nentries;jentry++) {
+    Long64_t ientry = LoadTree(jentry);
+    if (ientry < 0) break;
+    nb = fChain->GetEntry(jentry);   nbytes += nb;
+
+    //if(ShowerBasicSelection_pedestal(mipcut,nslabs_selection,bcid_max, pedestal) == false)  continue;
+
+    //-------------------------------------------------
+    //basic selection
+    if(bcid<1250)  continue;
+    if(bcid>bcid_max) continue;
+    
+    
+    bool bool_hit_slab[7];
+    bool_hit_slab[0] = false;
+    bool_hit_slab[1] = false;
+    bool_hit_slab[2] = false;
+    bool_hit_slab[3] = false;
+    bool_hit_slab[4] = false;
+    bool_hit_slab[5] = false;
+    bool_hit_slab[6] = false;
+    
+    for(int ihit=0; ihit< nhit_chan; ihit ++) {
+      int z=hit_z[ihit];
+      if(z==9) z=6;
+      if((hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]])>mipcut && IsHit(ihit)==true ) {
+	bool_hit_slab[z]=true;
+      }
+    }
+    
+    
+    int nslabhitted =0;
+    
+    for(int i=0; i<7; i++ ){
+      if( bool_hit_slab[i]==true) nslabhitted++;
+    }
+    
+    if( nslabhitted < nslabs_selection) continue;
+  
+   
+    //    if(energy_sum_tmp<0.5) continue;
+    //  number_hits++;
+
+    int nchannelswithhits_sca[15];
+    int nchannelswithElarger5_sca[15];
+    int nchannelswithElarger2_sca[15];
+    int nchannelswithElarger1_sca[15];
+    int nchannelswithElarger05_sca[15];
+    double totalcharge_sca[15];
+    
+    for(int isca=0; isca< 15; isca ++) {
+      nchannelswithhits_sca[isca]=0;
+      totalcharge_sca[isca]=0;
+      nchannelswithElarger5_sca[isca]=0;
+      nchannelswithElarger2_sca[isca]=0;
+      nchannelswithElarger1_sca[isca]=0;
+      nchannelswithElarger05_sca[isca]=0;
+    }
+
+
+    int spill0=spill;
+    int bcid0=bcid;
+    int sca0=-1;
+
+    double x_hit[64];
+    double y_hit[64];
+    int nhitsread=0;
+    
+    for(int ihit=0; ihit< nhit_chan; ihit ++) {
+      if(IsHit(ihit)==true && hit_chip[ihit]==analyze_chip && hit_z[ihit]==analyze_layer) {
+	nchannelswithhits_sca[hit_sca[ihit]]++;
+	totalcharge_sca[hit_sca[ihit]]+=hit_energy[ihit];
+	if(hit_energy[ihit]>0.5) nchannelswithElarger05_sca[hit_sca[ihit]]++;
+	if(hit_energy[ihit]>5) nchannelswithElarger5_sca[hit_sca[ihit]]++;
+	if(hit_energy[ihit]>2) nchannelswithElarger2_sca[hit_sca[ihit]]++;
+	if(hit_energy[ihit]>1) nchannelswithElarger1_sca[hit_sca[ihit]]++;
+	sca0=hit_sca[ihit];
+	x_hit[nhitsread]=hit_x[ihit];
+	y_hit[nhitsread]=hit_y[ihit];
+	nhitsread++;
+      }
+    }
+
+
+    double x_pedestal[64];
+    double y_pedestal[64];
+    double energy_pedestal[64];
+    int sca_pedestal[64];
+    int npedestalsread=0;
+    
+    for(int ihit=0; ihit< nhit_chan; ihit ++) {
+      if(IsPedestal(ihit)==true && nchannelswithhits_sca[hit_sca[ihit]]>0 && hit_chip[ihit]==analyze_chip && hit_z[ihit]==analyze_layer && sca0==hit_sca[ihit]) {
+	totalcharge_vs_pedcharge[hit_sca[ihit]]->Fill(totalcharge_sca[hit_sca[ihit]],hit_energy[ihit]);
+	averagecharge_vs_pedcharge[hit_sca[ihit]]->Fill(totalcharge_sca[hit_sca[ihit]]/nchannelswithhits_sca[hit_sca[ihit]],hit_energy[ihit]);
+	nhits_vs_pedcharge[hit_sca[ihit]]->Fill(nchannelswithhits_sca[hit_sca[ihit]],hit_energy[ihit]);
+
+	nchannelsElarger5_vs_pedcharge[hit_sca[ihit]]->Fill(nchannelswithElarger5_sca[hit_sca[ihit]],hit_energy[ihit]);
+	nchannelsElarger2_vs_pedcharge[hit_sca[ihit]]->Fill(nchannelswithElarger2_sca[hit_sca[ihit]],hit_energy[ihit]);
+	nchannelsElarger1_vs_pedcharge[hit_sca[ihit]]->Fill(nchannelswithElarger1_sca[hit_sca[ihit]],hit_energy[ihit]);
+	nchannelsElarger05_vs_pedcharge[hit_sca[ihit]]->Fill(nchannelswithElarger05_sca[hit_sca[ihit]],hit_energy[ihit]);
+	x_pedestal[npedestalsread]=hit_x[ihit];
+	y_pedestal[npedestalsread]=hit_y[ihit];
+	energy_pedestal[npedestalsread]=hit_energy[ihit];
+	sca_pedestal[npedestalsread]=hit_sca[ihit];
+	npedestalsread++;
+      }
+    }
+
+    for(int iped=0; iped< npedestalsread; iped ++) {
+      double mindist=1000;
+      
+      for(int ihit=0; ihit< nhitsread; ihit ++) {
+	double dist=sqrt(TMath::Power(x_pedestal[iped]-x_hit[ihit],2) + TMath::Power(y_pedestal[iped]-y_hit[ihit],2));
+	if(dist<mindist) mindist=dist;
+      }
+      if(mindist <= 2*sqrt(50) ) pedestal_closefromhit[sca_pedestal[iped]]->Fill(energy_pedestal[iped]);
+      if(mindist > 5*sqrt(50) ) pedestal_farfromhit[sca_pedestal[iped]]->Fill(energy_pedestal[iped]);
+    }
+	    
+
+    
+    
+    int nchannelswithhits_prevsca=0;
+    int nchannelswithElarger5_prevsca=0;
+    int nchannelswithElarger2_prevsca=0;
+    int nchannelswithElarger1_prevsca=0;
+    int nchannelswithElarger05_prevsca=0;
+    double totalcharge_prevsca=0;
+
+    bool exitloop=false;
+
+    if(sca0>0 && jentry>101 && nchannelswithhits_sca[sca0]>0) {
+      for (Long64_t jentry2=jentry-1; jentry2>jentry-100;jentry2--) {
+	Long64_t ientry2 = LoadTree(jentry2);
+	if (ientry2 < 0) break;
+	Long64_t nbytes2 = 0, nb2 = 0;
+	nb2 = fChain->GetEntry(jentry2);   nbytes2 += nb2;
+	if(spill<spill0) continue;
+	if(exitloop==true) continue;
+	if(bcid<bcid0) {
+	  bool exitloop0=false;
+	  for(int ihit2=0; ihit2< nhit_chan; ihit2 ++) {
+	    if(IsHit(ihit2)==true && hit_chip[ihit2]==analyze_chip && hit_z[ihit2]==analyze_layer && (sca0-hit_sca[ihit2])==1) {
+	      nchannelswithhits_prevsca++;
+	      totalcharge_prevsca+=hit_energy[ihit2];
+	      
+	      if(hit_energy[ihit2]>0.5) nchannelswithElarger05_prevsca++;
+	      if(hit_energy[ihit2]>5) nchannelswithElarger5_prevsca++;
+	      if(hit_energy[ihit2]>2) nchannelswithElarger2_prevsca++;
+	      if(hit_energy[ihit2]>1) nchannelswithElarger1_prevsca++;
+	      exitloop0=true;
+	    }
+	  }
+	  if(exitloop0==true) exitloop=true;
+	}
+      }
+    }
+
+    nb = fChain->GetEntry(jentry);   nbytes += nb;
+
+    if(sca0>0 && jentry>101 && nchannelswithhits_prevsca>0) {
+
+      for(int ihit=0; ihit< nhit_chan; ihit ++) {
+	if(IsPedestal(ihit)==true && hit_chip[ihit]==analyze_chip && hit_z[ihit]==analyze_layer && sca0==hit_sca[ihit]) {
+	  totalcharge_vs_pedcharge_prevsca[hit_sca[ihit]]->Fill(totalcharge_prevsca,hit_energy[ihit]);
+	  averagecharge_vs_pedcharge_prevsca[hit_sca[ihit]]->Fill(totalcharge_prevsca/nchannelswithhits_prevsca,hit_energy[ihit]);
+	  nhits_vs_pedcharge_prevsca[hit_sca[ihit]]->Fill(nchannelswithhits_prevsca,hit_energy[ihit]);
+	  
+	  nchannelsElarger5_vs_pedcharge_prevsca[hit_sca[ihit]]->Fill(nchannelswithElarger5_prevsca,hit_energy[ihit]);
+	  nchannelsElarger2_vs_pedcharge_prevsca[hit_sca[ihit]]->Fill(nchannelswithElarger2_prevsca,hit_energy[ihit]);
+	  nchannelsElarger1_vs_pedcharge_prevsca[hit_sca[ihit]]->Fill(nchannelswithElarger1_prevsca,hit_energy[ihit]);
+	  nchannelsElarger05_vs_pedcharge_prevsca[hit_sca[ihit]]->Fill(nchannelswithElarger05_prevsca,hit_energy[ihit]);
+	}
+      }
+    }
+    
+    
+  }//if jentry
+
+  
+  // Signal analysis
+  TFile *file = new TFile(TString::Format("%s%s_%s_%s_mipcut%0.1f_showers.root",folder.Data(),configuration.Data(),gridpoint.Data(),energy_string.Data(),mipcut) , "RECREATE");
+  file->cd();
+
+  for(int iz=0; iz<7; iz++) {
+    for(int ichip=0; ichip<16; ichip++) {
+      for(int isca=0; isca<15; isca++){
+	pedestal_vs_prevbcid[iz][ichip][isca]->Write();
+	pedestal_vs_nextbcid[iz][ichip][isca]->Write();
+      }
+    }
+  }
+
+  for(int isca=0; isca<15; isca++) {
+    for(int iz=0; iz<7; iz++) {
+      pull_beamspot[isca][iz]->SetName(TString::Format("bs_pedestal_pull_distribution_isca%i_ilayer%i",isca,iz));
+      pull_beamspot[isca][iz]->Write();
+      stdev_beamspot[isca][iz]->SetName(TString::Format("bs_pedestal_stdev_distribution_isca%i_ilayer%i",isca,iz));
+      stdev_beamspot[isca][iz]->Write();
+      mean_beamspot[isca][iz]->SetName(TString::Format("bs_pedestal_mean_distribution_isca%i_ilayer%i",isca,iz));
+      mean_beamspot[isca][iz]->Write();
+      mean_bcid_beamspot[isca][iz]->SetName(TString::Format("bs_pedestal_mean_distribution_ibcid%i_ilayer%i",isca,iz));
+      mean_bcid_beamspot[isca][iz]->Write();
+      
+      pull_outbeamspot[isca][iz]->SetName(TString::Format("pedestal_pull_distribution_isca%i_ilayer%i",isca,iz));
+      pull_outbeamspot[isca][iz]->Write();
+      stdev_outbeamspot[isca][iz]->SetName(TString::Format("pedestal_stdev_distribution_isca%i_ilayer%i",isca,iz));
+      stdev_outbeamspot[isca][iz]->Write();
+      mean_outbeamspot[isca][iz]->SetName(TString::Format("pedestal_mean_distribution_isca%i_ilayer%i",isca,iz));
+      mean_outbeamspot[isca][iz]->Write();
+      mean_bcid_outbeamspot[isca][iz]->SetName(TString::Format("pedestal_mean_distribution_ibcid%i_ilayer%i",isca,iz));
+      mean_bcid_outbeamspot[isca][iz]->Write();
+    }
+  }
+
+  for(int isca=0; isca<15; isca++) {
+    pedestal_closefromhit[isca]->Write();
+    pedestal_farfromhit[isca]->Write();
+  }
+  mean_vs_entries->Write();
+  rms_vs_entries->Write();
+  mean_vs_rms->Write();
+
+
+  pull_map_xy->Write();
+  pull_map_xz->Write();
+
+  pull_map_bad_xy->Write();
+  pull_map_bad_xz->Write();
+  
+  for(int ichip=0; ichip<16; ichip++) {
+    not_recalculated_sca[ichip]->Write();
+    goodsca[ichip]->Write();
+    wrongsca[ichip]->Write();
+  }
+
+  
+  for(int isca=0; isca<15; isca++) {
+
+    //standard maps
+    totalcharge_vs_pedcharge[isca]->Write();
+    averagecharge_vs_pedcharge[isca]->Write();
+    nhits_vs_pedcharge[isca]->Write();
+    
+    nchannelsElarger5_vs_pedcharge[isca]->Write();
+    nchannelsElarger2_vs_pedcharge[isca]->Write();
+    nchannelsElarger1_vs_pedcharge[isca]->Write();
+    nchannelsElarger05_vs_pedcharge[isca]->Write();
+    /* // normalized plots
+    TH2F *totalcharge_vs_pedcharge_norm_temp = (TH2F*)totalcharge_vs_pedcharge[isca]->Clone("totalcharge_vs_pedcharge_norm_temp");
+    TH2F *averagecharge_vs_pedcharge_norm_temp = (TH2F*)averagecharge_vs_pedcharge[isca]->Clone("averagecharge_vs_pedcharge_norm_temp");
+    TH2F *nhits_vs_pedcharge_norm_temp = (TH2F*)nhits_vs_pedcharge[isca]->Clone("nhits_vs_pedcharge_norm_temp");
+
+    TH2F *nchannelsElarger5_vs_pedcharge_norm_temp = (TH2F*)nchannelsElarger5_vs_pedcharge[isca]->Clone("nchannelsElarger5_vs_pedcharge_norm_temp");
+    TH2F *nchannelsElarger2_vs_pedcharge_norm_temp = (TH2F*)nchannelsElarger2_vs_pedcharge[isca]->Clone("nchannelsElarger2_vs_pedcharge_norm_temp");
+    TH2F *nchannelsElarger1_vs_pedcharge_norm_temp = (TH2F*)nchannelsElarger1_vs_pedcharge[isca]->Clone("nchannelsElarger1_vs_pedcharge_norm_temp");
+    TH2F *nchannelsElarger05_vs_pedcharge_norm_temp = (TH2F*)nchannelsElarger05_vs_pedcharge[isca]->Clone("nchannelsElarger05_vs_pedcharge_norm_temp");
+
+    for(int ix=0; ix<totalcharge_vs_pedcharge_norm_temp->GetNbinsX(); ix++) {
+      double entries_x=0;
+      for(int iy=0; iy<totalcharge_vs_pedcharge_norm_temp->GetNbinsY(); iy++) 
+	entries_x+=totalcharge_vs_pedcharge_norm_temp->GetBinContent(ix,iy);
+
+      for(int iy=0; iy<totalcharge_vs_pedcharge_norm_temp->GetNbinsY(); iy++) 
+	if(entries_x>0) totalcharge_vs_pedcharge_norm_temp->SetBinContent(ix,iy,totalcharge_vs_pedcharge_norm_temp->GetBinContent(ix,iy)/entries_x);
+    }
+
+    totalcharge_vs_pedcharge_norm_temp->SetName(TString::Format("totalcharge_vs_pedcharge_sca%i_norm",isca));
+    totalcharge_vs_pedcharge_norm_temp->Write();*/
+
+    //---------------------------------------------------------------------------------
+    // prevsca plots
+
+    totalcharge_vs_pedcharge_prevsca[isca]->Write();
+    averagecharge_vs_pedcharge_prevsca[isca]->Write();
+    nhits_vs_pedcharge_prevsca[isca]->Write();
+    
+    nchannelsElarger5_vs_pedcharge_prevsca[isca]->Write();
+    nchannelsElarger2_vs_pedcharge_prevsca[isca]->Write();
+    nchannelsElarger1_vs_pedcharge_prevsca[isca]->Write();
+    nchannelsElarger05_vs_pedcharge_prevsca[isca]->Write();
+
+  }
+
+  
+  TDirectory *cdhisto = file->mkdir("histograms");
+  cdhisto->cd();
+ 
+  for(int iz=0; iz<7; iz++) {
+    for(int ichip=0; ichip<16; ichip++) {
+      for(int ichn=0; ichn<64; ichn++) {
+	for(int isca=0; isca<15; isca++){
+	  if( pedestal_histo[iz][ichip][ichn][isca]->GetEntries()>50) pedestal_histo[iz][ichip][ichn][isca]->Write();
+	  charge_histo[iz][ichip][ichn][isca]->Write();
+	}
+      }
+    }
+  }
+
+  file->Close();
+  
+  
+}
+
+
 void protoAnalysis::ShowerDistributions_pedestal(TString folder="y", TString configuration="conf1", TString energy_string="3GeV", TString gridpoint ="grid20", double mipcut=0.5, int bcid_max=2900, int nslabs_selection=6, bool RMIsolatedHits=true)
 {
 
@@ -518,12 +1092,49 @@ void protoAnalysis::ShowerDistributions_pedestal(TString folder="y", TString con
   //#******************************************************************************************************
   // PEDESTAL PART:
   // th1f, i,j,k,sca
+  TH2F* totalcharge_vs_pedcharge[15];
+  TH2F* averagecharge_vs_pedcharge[15];
+  TH2F* nhits_vs_pedcharge[15];
+  TH2F* nchannelsElarger5_vs_pedcharge[15];
+  TH2F* nchannelsElarger10_vs_pedcharge[15];
+  TH2F* nchannelsElarger20_vs_pedcharge[15];
+  TH2F* nchannelsEsmaller05_vs_pedcharge[15];
+
+  TH2F* totalcharge_vs_pedcharge_prevsca[14];
+  TH2F* averagecharge_vs_pedcharge_prevsca[14];
+  TH2F* nhits_vs_pedcharge_prevsca[14];
+  TH2F* nchannelsElarger5_vs_pedcharge_prevsca[15];
+  TH2F* nchannelsElarger10_vs_pedcharge_prevsca[15];
+  TH2F* nchannelsElarger20_vs_pedcharge_prevsca[15];
+  TH2F* nchannelsEsmaller05_vs_pedcharge_prevsca[15];
+
+  for(int isca=0; isca<15; isca++) {
+    totalcharge_vs_pedcharge[isca] = new TH2F(TString::Format("totalcharge_vs_pedcharge_sca%i",isca),TString::Format("totalcharge_vs_pedcharge_sca%i",isca),100,5,1005,1500,-4.995,10.005);
+    averagecharge_vs_pedcharge[isca] = new TH2F(TString::Format("averagecharge_vs_pedcharge_sca%i",isca),TString::Format("averagecharge_vs_pedcharge_sca%i",isca),300,0,30,1500,-4.995,10.005);
+    nhits_vs_pedcharge[isca] = new TH2F(TString::Format("nhits_vs_pedcharge_sca%i",isca),TString::Format("nhits_vs_pedcharge_sca%i",isca),200,0.5,200.5,1500,-4.995,10.005);
+
+    nchannelsElarger5_vs_pedcharge[isca] = new TH2F(TString::Format("nchannelsElarger5_vs_pedcharge_sca%i",isca),TString::Format("nchannelsElarger5_vs_pedcharge_sca%i",isca),200,0.5,200.5,1500,-4.995,10.005);
+    nchannelsElarger10_vs_pedcharge[isca] = new TH2F(TString::Format("nchannelsElarger10_vs_pedcharge_sca%i",isca),TString::Format("nchannelsElarger10_vs_pedcharge_sca%i",isca),200,0.5,200.5,1500,-4.995,10.005);
+    nchannelsElarger20_vs_pedcharge[isca] = new TH2F(TString::Format("nchannelsElarger20_vs_pedcharge_sca%i",isca),TString::Format("nchannelsElarger20_vs_pedcharge_sca%i",isca),200,0.5,200.5,1500,-4.995,10.005);
+    nchannelsEsmaller05_vs_pedcharge[isca] = new TH2F(TString::Format("nchannelsEsmaller05_vs_pedcharge_sca%i",isca),TString::Format("nchannelsEsmaller05_vs_pedcharge_sca%i",isca),200,0.5,200.5,1500,-4.995,10.005);
+
+  }
+
+  for(int isca=0; isca<14; isca++) {
+    totalcharge_vs_pedcharge_prevsca[isca] = new TH2F(TString::Format("totalcharge_vs_pedcharge_prevsca_sca%i",isca+1),TString::Format("totalcharge_vs_pedcharge_prevsca_sca%i",isca+1),100,5,1005,1500,-4.995,10.005);
+    averagecharge_vs_pedcharge_prevsca[isca] = new TH2F(TString::Format("averagecharge_vs_pedcharge_prevsca_sca%i",isca+1),TString::Format("averagecharge_vs_pedcharge_prevsca_sca%i",isca+1),150,0,30,1500,-4.995,10.005);
+    nhits_vs_pedcharge_prevsca[isca] = new TH2F(TString::Format("nhits_vs_pedcharge_prevsca_sca%i",isca+1),TString::Format("nhits_vs_pedcharge_prevsca_sca%i",isca+1),200,0.5,200.5,1500,-4.995,10.005);
+
+    nchannelsElarger5_vs_pedcharge_prevsca[isca] = new TH2F(TString::Format("nchannelsElarger5_vs_pedcharge_prevsca_sca%i",isca+1),TString::Format("nchannelsElarger5_vs_pedcharge_prevsca_sca%i",isca+1),200,0.5,200.5,1500,-4.995,10.005);
+    nchannelsElarger10_vs_pedcharge_prevsca[isca] = new TH2F(TString::Format("nchannelsElarger10_vs_pedcharge_prevsca_sca%i",isca+1),TString::Format("nchannelsElarger10_vs_pedcharge_prevsca_sca%i",isca+1),200,0.5,200.5,1500,-4.995,10.005);
+    nchannelsElarger20_vs_pedcharge_prevsca[isca] = new TH2F(TString::Format("nchannelsElarger20_vs_pedcharge_prevsca_sca%i",isca+1),TString::Format("nchannelsElarger20_vs_pedcharge_prevsca_sca%i",isca+1),200,0.5,200.5,1500,-4.995,10.005);
+    nchannelsEsmaller05_vs_pedcharge_prevsca[isca] = new TH2F(TString::Format("nchannelsEsmaller05_vs_pedcharge_prevsca_sca%i",isca+1),TString::Format("nchannelsEsmaller05_vs_pedcharge_prevsca_sca%i",isca+1),200,0.5,200.5,1500,-4.995,10.005);
+
+    
+  }
 
 
-  TH2F* energy_noise = new TH2F("energy_noise","energy_noise",100,5,1005,61,-15.25,15.25);
-  TH2F* energy_noise_center_05 = new TH2F("energy_noise_center_zm05","energy_noise_center_zm05",100,5,1005,61,-15.25,15.25);
-  TH2F* energy_noise_center_1 = new TH2F("energy_noise_center_zm1","energy_noise_center_zm1",100,5,1005,61,-15.25,15.25);
-  TH2F* energy_noise_center_2 = new TH2F("energy_noise_center_zm2","energy_noise_center_zm2",100,5,1005,61,-15.25,15.25);
+  
   
   TH1F *pull_beamspot[15];
   TH1F *stdev_beamspot[15];
@@ -629,7 +1240,7 @@ void protoAnalysis::ShowerDistributions_pedestal(TString folder="y", TString con
 	    double error_v = rms_v/sqrt(entries_v);
 	    double pull_v=mean_v/rms_v;
 
-	    if(ichip>11) {
+	    if(  (map_pointX[ichip][ichn]<-20 & map_pointX[ichip][ichn]>-50 ) && (map_pointY[ichip][ichn]<-30 && map_pointY[ichip][ichn]>-60 ) ) {
 	      pull_beamspot[isca]->Fill(pull_v);
 	      stdev_beamspot[isca]->Fill(rms_v);
 	      mean_beamspot[isca]->Fill(pedestal_histo[iz][ichip][ichn][isca]->GetMean());
@@ -754,13 +1365,13 @@ void protoAnalysis::ShowerDistributions_pedestal(TString folder="y", TString con
 
       if(mindist< mindist_th && IsHit(ihit)==true && (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]])>mipcut) {
 	n_hitstotal++;
-	  energy_sum_tmp += (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]);
-	  energy_X0_sum_tmp += w[int(hit_z[ihit])] * (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]);
-	  weight_X0_sum_tmp += w[int(hit_z[ihit])];
+	energy_sum_tmp += (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]);
+	energy_X0_sum_tmp += w[int(hit_z[ihit])] * (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]);
+	weight_X0_sum_tmp += w[int(hit_z[ihit])];
 
-	  xm +=  - hit_x[ihit] * (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]) * w[int(hit_z[ihit])];
-	  ym +=  - hit_y[ihit] * (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]) * w[int(hit_z[ihit])];
-	  zm +=  hit_z[ihit] * (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]) * w[int(hit_z[ihit])];
+	xm +=  - hit_x[ihit] * (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]) * w[int(hit_z[ihit])];
+	ym +=  - hit_y[ihit] * (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]) * w[int(hit_z[ihit])];
+	zm +=  hit_z[ihit] * (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]) * w[int(hit_z[ihit])];
       }
 	
     }
@@ -794,179 +1405,212 @@ void protoAnalysis::ShowerDistributions_pedestal(TString folder="y", TString con
 	energy_yX0->Fill(-hit_y[ihit],hit_x0[ihit],(hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]])/energy_sum_tmp);
       }
     }
+    int nchannelswithhits=0;
+    double totalcharge=0;
 
-    for(int ihit=0; ihit< nhit_chan; ihit ++) {
-      if(IsPedestal(ihit)==true) energy_noise->Fill(energy_X0_sum_tmp,hit_energy[ihit]);
-    }
+    int nchannelswithhits_sca[15];
+    int nchannelswithElarger5_sca[15];
+    int nchannelswithElarger10_sca[15];
+    int nchannelswithElarger20_sca[15];
+    int nchannelswithEsmaller05_sca[15];
+    double totalcharge_sca[15];
     
-    energy->Fill(energy_X0_sum_tmp);
-
-    xbarycenter->Fill(xm, energy_X0_sum_tmp);
-    ybarycenter->Fill(ym, energy_X0_sum_tmp);
-    zbarycenter->Fill(zm,energy_X0_sum_tmp);
-
-    xybarycenter->Fill(xm,ym,energy_X0_sum_tmp);
-    xzbarycenter->Fill(xm,zm,energy_X0_sum_tmp);
-    yzbarycenter->Fill(ym,zm,energy_X0_sum_tmp);
-
-    n_x->Fill(xm);
-    n_y->Fill(ym);
-    n_z->Fill(zm);
-
-
-  }
-
-
-  // First analysis, normalization and barycenter graph filling
-  double rawE_x[binnumx];
-  double rawE_y[binnumx];
-  double rawE_z[binnumz];
-
-  double erawE_x[binnumx];
-  double erawE_y[binnumx];
-  double erawE_z[binnumz];
-
-  double x[binnumx];
-  double y[binnumx];
-  double z[binnumz];
-
-  for(int i=0; i<binnumx; i++) {
-    rawE_x[i]=0.; rawE_y[i]=0.;
-    x[i]=n_x->GetBinCenter(i+1);
-    y[i]=n_y->GetBinCenter(i+1);
-
-    if(  n_x->GetBinContent(i+1) >50 ) rawE_x[i]=xbarycenter->GetBinContent(i+1)/n_x->GetBinContent(i+1);
-    if(  n_y->GetBinContent(i+1) >50 ) rawE_y[i]=ybarycenter->GetBinContent(i+1)/n_y->GetBinContent(i+1);
-
-
-    if(  n_x->GetBinContent(i+1) >50 ) erawE_x[i]=rawE_x[i]/sqrt(n_x->GetBinContent(i+1));
-    if(  n_y->GetBinContent(i+1) >50 ) erawE_y[i]=rawE_y[i]/sqrt(n_y->GetBinContent(i+1));
-
-  }
-
-  for(int i=0; i<binnumz; i++) {
-    rawE_z[i]=0.;
-    z[i]=n_z->GetBinCenter(i+1);
-
-    if(  n_z->GetBinContent(i+1) >50 ) rawE_z[i]=zbarycenter->GetBinContent(i+1)/n_z->GetBinContent(i+1);
-    if(  n_y->GetBinContent(i+1) >50 ) erawE_z[i]=rawE_z[i]/sqrt(n_z->GetBinContent(i+1));
-
-
-  }
-
-  TGraphErrors * E_xbarycenter = new TGraphErrors(32,x,rawE_x,0,erawE_x);
-  TGraphErrors * E_ybarycenter = new TGraphErrors(32,y,rawE_y,0,erawE_y);
-  TGraphErrors * E_zbarycenter = new TGraphErrors(10,z,rawE_z,0,erawE_z);
-
-  energy_profile_z->Scale(1./number_hits);
-  energy_profile_X0->Scale(1./number_hits);
-
-  energy_xy->Scale(1./number_hits);
-  energy_xz->Scale(1./number_hits);
-  energy_yz->Scale(1./number_hits);
-
-  energy_xX0->Scale(1./number_hits);
-  energy_yX0->Scale(1./number_hits);
-
-  xbarycenter->Scale(1./number_hits);
-  ybarycenter->Scale(1./number_hits);
-  zbarycenter->Scale(1./number_hits);
-  
-  xybarycenter->Scale(1./number_hits);
-  xzbarycenter->Scale(1./number_hits);
-  yzbarycenter->Scale(1./number_hits);
-
-  E_xbarycenter->SetName("mean_Eraw_vs_xm");
-  E_ybarycenter->SetName("mean_Eraw_vs_ym");
-  E_zbarycenter->SetName("mean_Eraw_vs_zm");
-
-
-
-  // #########################################################################################################
-  // -----------------------------------------------------
-  // SECOND ANALYSIS, using barycenter of the shower as input for selection
-  TF1 *fit_xbarycenter = new TF1("fit_xbarycenter","gaus");
-  xbarycenter->Fit(fit_xbarycenter,"MQE");
-  
-  double xm_max=fit_xbarycenter->GetParameter(1)+2.*fit_xbarycenter->GetParameter(2);
-  double xm_min=fit_xbarycenter->GetParameter(1)-2.*fit_xbarycenter->GetParameter(2);
-
-  TF1 *fit_ybarycenter = new TF1("fit_ybarycenter","gaus");
-  ybarycenter->Fit(fit_ybarycenter,"MQE");
-  
-  double ym_max=fit_ybarycenter->GetParameter(1)+2.*fit_ybarycenter->GetParameter(2);
-  double ym_min=fit_ybarycenter->GetParameter(1)-2.*fit_ybarycenter->GetParameter(2);
-
-  TF1 *fit_zbarycenter = new TF1("fit_zbarycenter","gaus");
-  zbarycenter->Fit(fit_zbarycenter,"MEQ");
-  
-  double zm_max_05=fit_zbarycenter->GetParameter(1)+0.5*fit_zbarycenter->GetParameter(2);
-  double zm_min_05=fit_zbarycenter->GetParameter(1)-0.5*fit_zbarycenter->GetParameter(2);
-
-  double zm_max_1=fit_zbarycenter->GetParameter(1)+1.*fit_zbarycenter->GetParameter(2);
-  double zm_min_1=fit_zbarycenter->GetParameter(1)-1.*fit_zbarycenter->GetParameter(2);
-
-  double zm_max_2=fit_zbarycenter->GetParameter(1)+2.*fit_zbarycenter->GetParameter(2);
-  double zm_min_2=fit_zbarycenter->GetParameter(1)-2.*fit_zbarycenter->GetParameter(2);
-
-  // -----------------------------------------------------------------------------------------------------   
-  
-  // Signal readout
-  nbytes = 0; nb = 0;
-  for (Long64_t jentry=0; jentry<nentries;jentry++) {
-    Long64_t ientry = LoadTree(jentry);
-    if (ientry < 0) break;
-    nb = fChain->GetEntry(jentry);   nbytes += nb;
-
-    if(ShowerBasicSelection(mipcut,bcid_max,nslabs_selection)==false) continue;
-
-
-    // ---------------------------------------------
-    //   the energy and other variables,
-    double energy_sum_tmp=0;
-    double weight_X0_sum_tmp=0;
-    double energy_X0_sum_tmp=0;
-    double xm=0, ym=0., zm=0.;
+    for(int isca=0; isca< 15; isca ++) {
+      nchannelswithhits_sca[isca]=0;
+      totalcharge_sca[isca]=0;
+      nchannelswithElarger5_sca[isca]=0;
+      nchannelswithElarger10_sca[isca]=0;
+      nchannelswithElarger20_sca[isca]=0;
+      nchannelswithEsmaller05_sca[isca]=0;
+    }
 
     for(int ihit=0; ihit< nhit_chan; ihit ++) {
-      int z=hit_z[ihit];
-      if(z==9) z=6;
-      if((hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]])>mipcut && IsHit(ihit)==true ) {
-	energy_sum_tmp += (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]);
-	energy_X0_sum_tmp += w[int(hit_z[ihit])] * (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]);
-	weight_X0_sum_tmp += w[int(hit_z[ihit])];
-
-	xm +=  - hit_x[ihit] * (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]) * w[int(hit_z[ihit])];
-	ym +=  - hit_y[ihit] * (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]) * w[int(hit_z[ihit])];
-	zm +=  hit_z[ihit] * (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]) * w[int(hit_z[ihit])];
+      if(IsHit(ihit)==true && hit_chip[ihit]==12 && hit_z[ihit]==9) {
+	nchannelswithhits++;
+	totalcharge+=hit_energy[ihit];
+	nchannelswithhits_sca[hit_sca[ihit]]++;
+	totalcharge_sca[hit_sca[ihit]]+=hit_energy[ihit];
+	if(hit_energy[ihit]<0.5) nchannelswithEsmaller05_sca[hit_sca[ihit]]++;
+	if(hit_energy[ihit]>5) nchannelswithElarger5_sca[hit_sca[ihit]]++;
+	if(hit_energy[ihit]>10) nchannelswithElarger10_sca[hit_sca[ihit]]++;
+	if(hit_energy[ihit]>20) nchannelswithElarger20_sca[hit_sca[ihit]]++;
+	
       }
     }
 
-
-    // ---------------------------------------------
-    //  recalculate the energy and other variables, with a cut in the distance (avoid isolated cells)
-    energy_sum_tmp=0;
-    weight_X0_sum_tmp=0;
-    energy_X0_sum_tmp=0;
-    xm=0, ym=0., zm=0.;
-
-    int n_hitstotal=0;
-
+	
     for(int ihit=0; ihit< nhit_chan; ihit ++) {
-      int z=hit_z[ihit];
-      if(z==9) z=6;
+      if(IsPedestal(ihit)==true && nchannelswithhits_sca[hit_sca[ihit]]>0 && hit_chip[ihit]==12 && hit_z[ihit]==9) {
+	totalcharge_vs_pedcharge[hit_sca[ihit]]->Fill(totalcharge_sca[hit_sca[ihit]],hit_energy[ihit]);
+	averagecharge_vs_pedcharge[hit_sca[ihit]]->Fill(totalcharge_sca[hit_sca[ihit]]/nchannelswithhits_sca[hit_sca[ihit]],hit_energy[ihit]);
+	nhits_vs_pedcharge[hit_sca[ihit]]->Fill(nchannelswithhits_sca[hit_sca[ihit]],hit_energy[ihit]);
+
+	nchannelsElarger5_vs_pedcharge[hit_sca[ihit]]->Fill(nchannelswithElarger5_sca[hit_sca[ihit]],hit_energy[ihit]);
+	nchannelsElarger10_vs_pedcharge[hit_sca[ihit]]->Fill(nchannelswithElarger10_sca[hit_sca[ihit]],hit_energy[ihit]);
+	nchannelsElarger20_vs_pedcharge[hit_sca[ihit]]->Fill(nchannelswithElarger20_sca[hit_sca[ihit]],hit_energy[ihit]);
+	nchannelsEsmaller05_vs_pedcharge[hit_sca[ihit]]->Fill(nchannelswithEsmaller05_sca[hit_sca[ihit]],hit_energy[ihit]);
+
+      }
+
+      for (Long64_t jentry2=jentry-20; jentry2<jentry+20;jentry2++) {
+	Long64_t ientry2 = LoadTree(jentry2);
+	if (ientry2 < 0) break;
+	Long64_t nbytes2 = 0, nb2 = 0;
+	nb2 = fChain->GetEntry(jentry2);   nbytes2 += nb2;
+
+	//basic selection
+	if(bcid<1250)  continue;
+	if(bcid>bcid_max) continue;
       
-      if((hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]])>mipcut && IsHit(ihit)==true) {
-	charge_histo[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]->Fill(hit_energy[ihit]);
+	if( hit_sca[ihit]> 0) {
+	  if(IsPedestal(ihit)==true && nchannelswithhits_sca[hit_sca[ihit]-1]>0 && hit_chip[ihit]==12 ) cout<<hit_z[ihit]<<endl;
+	  if(IsPedestal(ihit)==true && nchannelswithhits_sca[hit_sca[ihit]-1]>0 && hit_chip[ihit]==12 && hit_z[ihit]==9) {
+	    cout<<"--- "<<endl;
+	    totalcharge_vs_pedcharge_prevsca[hit_sca[ihit]-1]->Fill(totalcharge_sca[hit_sca[ihit]-1],hit_energy[ihit]);
+	    averagecharge_vs_pedcharge_prevsca[hit_sca[ihit]-1]->Fill(totalcharge_sca[hit_sca[ihit]-1]/nchannelswithhits_sca[hit_sca[ihit]-1],hit_energy[ihit]);
+	    nhits_vs_pedcharge_prevsca[hit_sca[ihit]-1]->Fill(nchannelswithhits_sca[hit_sca[ihit]-1],hit_energy[ihit]);
+
+	    nchannelsElarger5_vs_pedcharge_prevsca[hit_sca[ihit]-1]->Fill(nchannelswithElarger5_sca[hit_sca[ihit]-1],hit_energy[ihit]);
+	    nchannelsElarger10_vs_pedcharge_prevsca[hit_sca[ihit]-1]->Fill(nchannelswithElarger10_sca[hit_sca[ihit]-1],hit_energy[ihit]);
+	    nchannelsElarger20_vs_pedcharge_prevsca[hit_sca[ihit]-1]->Fill(nchannelswithElarger20_sca[hit_sca[ihit]-1],hit_energy[ihit]);
+	    nchannelsEsmaller05_vs_pedcharge_prevsca[hit_sca[ihit]-1]->Fill(nchannelswithEsmaller05_sca[hit_sca[ihit]-1],hit_energy[ihit]);
+
+	  }
+	}
       }
+      energy->Fill(energy_X0_sum_tmp);
 
-      double mindist=MinDistCalc(ihit,mipcut);
-    
-      double mindist_th=10000.;
-      if(RMIsolatedHits==true) mindist_th=7.0;
+      xbarycenter->Fill(xm, energy_X0_sum_tmp);
+      ybarycenter->Fill(ym, energy_X0_sum_tmp);
+      zbarycenter->Fill(zm,energy_X0_sum_tmp);
 
-      if(mindist< mindist_th && IsHit(ihit)==true && (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]])>mipcut ) {
-	n_hitstotal++;
+      xybarycenter->Fill(xm,ym,energy_X0_sum_tmp);
+      xzbarycenter->Fill(xm,zm,energy_X0_sum_tmp);
+      yzbarycenter->Fill(ym,zm,energy_X0_sum_tmp);
+
+      n_x->Fill(xm);
+      n_y->Fill(ym);
+      n_z->Fill(zm);
+
+
+    }
+
+
+    // First analysis, normalization and barycenter graph filling
+    double rawE_x[binnumx];
+    double rawE_y[binnumx];
+    double rawE_z[binnumz];
+
+    double erawE_x[binnumx];
+    double erawE_y[binnumx];
+    double erawE_z[binnumz];
+
+    double x[binnumx];
+    double y[binnumx];
+    double z[binnumz];
+
+    for(int i=0; i<binnumx; i++) {
+      rawE_x[i]=0.; rawE_y[i]=0.;
+      x[i]=n_x->GetBinCenter(i+1);
+      y[i]=n_y->GetBinCenter(i+1);
+
+      if(  n_x->GetBinContent(i+1) >50 ) rawE_x[i]=xbarycenter->GetBinContent(i+1)/n_x->GetBinContent(i+1);
+      if(  n_y->GetBinContent(i+1) >50 ) rawE_y[i]=ybarycenter->GetBinContent(i+1)/n_y->GetBinContent(i+1);
+
+
+      if(  n_x->GetBinContent(i+1) >50 ) erawE_x[i]=rawE_x[i]/sqrt(n_x->GetBinContent(i+1));
+      if(  n_y->GetBinContent(i+1) >50 ) erawE_y[i]=rawE_y[i]/sqrt(n_y->GetBinContent(i+1));
+
+    }
+
+    for(int i=0; i<binnumz; i++) {
+      rawE_z[i]=0.;
+      z[i]=n_z->GetBinCenter(i+1);
+
+      if(  n_z->GetBinContent(i+1) >50 ) rawE_z[i]=zbarycenter->GetBinContent(i+1)/n_z->GetBinContent(i+1);
+      if(  n_y->GetBinContent(i+1) >50 ) erawE_z[i]=rawE_z[i]/sqrt(n_z->GetBinContent(i+1));
+
+
+    }
+
+    TGraphErrors * E_xbarycenter = new TGraphErrors(32,x,rawE_x,0,erawE_x);
+    TGraphErrors * E_ybarycenter = new TGraphErrors(32,y,rawE_y,0,erawE_y);
+    TGraphErrors * E_zbarycenter = new TGraphErrors(10,z,rawE_z,0,erawE_z);
+
+    energy_profile_z->Scale(1./number_hits);
+    energy_profile_X0->Scale(1./number_hits);
+
+    energy_xy->Scale(1./number_hits);
+    energy_xz->Scale(1./number_hits);
+    energy_yz->Scale(1./number_hits);
+
+    energy_xX0->Scale(1./number_hits);
+    energy_yX0->Scale(1./number_hits);
+
+    xbarycenter->Scale(1./number_hits);
+    ybarycenter->Scale(1./number_hits);
+    zbarycenter->Scale(1./number_hits);
+  
+    xybarycenter->Scale(1./number_hits);
+    xzbarycenter->Scale(1./number_hits);
+    yzbarycenter->Scale(1./number_hits);
+
+    E_xbarycenter->SetName("mean_Eraw_vs_xm");
+    E_ybarycenter->SetName("mean_Eraw_vs_ym");
+    E_zbarycenter->SetName("mean_Eraw_vs_zm");
+
+
+
+    // #########################################################################################################
+    // -----------------------------------------------------
+    // SECOND ANALYSIS, using barycenter of the shower as input for selection
+    TF1 *fit_xbarycenter = new TF1("fit_xbarycenter","gaus");
+    xbarycenter->Fit(fit_xbarycenter,"MQE");
+  
+    double xm_max=fit_xbarycenter->GetParameter(1)+2.*fit_xbarycenter->GetParameter(2);
+    double xm_min=fit_xbarycenter->GetParameter(1)-2.*fit_xbarycenter->GetParameter(2);
+
+    TF1 *fit_ybarycenter = new TF1("fit_ybarycenter","gaus");
+    ybarycenter->Fit(fit_ybarycenter,"MQE");
+  
+    double ym_max=fit_ybarycenter->GetParameter(1)+2.*fit_ybarycenter->GetParameter(2);
+    double ym_min=fit_ybarycenter->GetParameter(1)-2.*fit_ybarycenter->GetParameter(2);
+
+    TF1 *fit_zbarycenter = new TF1("fit_zbarycenter","gaus");
+    zbarycenter->Fit(fit_zbarycenter,"MEQ");
+  
+    double zm_max_05=fit_zbarycenter->GetParameter(1)+0.5*fit_zbarycenter->GetParameter(2);
+    double zm_min_05=fit_zbarycenter->GetParameter(1)-0.5*fit_zbarycenter->GetParameter(2);
+
+    double zm_max_1=fit_zbarycenter->GetParameter(1)+1.*fit_zbarycenter->GetParameter(2);
+    double zm_min_1=fit_zbarycenter->GetParameter(1)-1.*fit_zbarycenter->GetParameter(2);
+
+    double zm_max_2=fit_zbarycenter->GetParameter(1)+2.*fit_zbarycenter->GetParameter(2);
+    double zm_min_2=fit_zbarycenter->GetParameter(1)-2.*fit_zbarycenter->GetParameter(2);
+
+    // -----------------------------------------------------------------------------------------------------   
+  
+    // Signal readout
+    nbytes = 0; nb = 0;
+    for (Long64_t jentry=0; jentry<nentries;jentry++) {
+      Long64_t ientry = LoadTree(jentry);
+      if (ientry < 0) break;
+      nb = fChain->GetEntry(jentry);   nbytes += nb;
+
+      if(ShowerBasicSelection(mipcut,bcid_max,nslabs_selection)==false) continue;
+
+
+      // ---------------------------------------------
+      //   the energy and other variables,
+      double energy_sum_tmp=0;
+      double weight_X0_sum_tmp=0;
+      double energy_X0_sum_tmp=0;
+      double xm=0, ym=0., zm=0.;
+
+      for(int ihit=0; ihit< nhit_chan; ihit ++) {
+	int z=hit_z[ihit];
+	if(z==9) z=6;
+	if((hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]])>mipcut && IsHit(ihit)==true ) {
 	  energy_sum_tmp += (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]);
 	  energy_X0_sum_tmp += w[int(hit_z[ihit])] * (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]);
 	  weight_X0_sum_tmp += w[int(hit_z[ihit])];
@@ -974,157 +1618,194 @@ void protoAnalysis::ShowerDistributions_pedestal(TString folder="y", TString con
 	  xm +=  - hit_x[ihit] * (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]) * w[int(hit_z[ihit])];
 	  ym +=  - hit_y[ihit] * (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]) * w[int(hit_z[ihit])];
 	  zm +=  hit_z[ihit] * (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]) * w[int(hit_z[ihit])];
+	}
       }
+
+
+      // ---------------------------------------------
+      //  recalculate the energy and other variables, with a cut in the distance (avoid isolated cells)
+      energy_sum_tmp=0;
+      weight_X0_sum_tmp=0;
+      energy_X0_sum_tmp=0;
+      xm=0, ym=0., zm=0.;
+
+      int n_hitstotal=0;
+
+      for(int ihit=0; ihit< nhit_chan; ihit ++) {
+	int z=hit_z[ihit];
+	if(z==9) z=6;
+      
+	if((hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]])>mipcut && IsHit(ihit)==true) {
+	  charge_histo[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]->Fill(hit_energy[ihit]);
+	}
+
+	double mindist=MinDistCalc(ihit,mipcut);
+    
+	double mindist_th=10000.;
+	if(RMIsolatedHits==true) mindist_th=7.0;
+
+	if(mindist< mindist_th && IsHit(ihit)==true && (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]])>mipcut ) {
+	  n_hitstotal++;
+	  energy_sum_tmp += (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]);
+	  energy_X0_sum_tmp += w[int(hit_z[ihit])] * (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]);
+	  weight_X0_sum_tmp += w[int(hit_z[ihit])];
+
+	  xm +=  - hit_x[ihit] * (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]) * w[int(hit_z[ihit])];
+	  ym +=  - hit_y[ihit] * (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]) * w[int(hit_z[ihit])];
+	  zm +=  hit_z[ihit] * (hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]) * w[int(hit_z[ihit])];
+	}
 	
-    }
+      }
 
-    if(energy_sum_tmp<0.5) continue;
+      if(energy_sum_tmp<0.5) continue;
 
-    xm = xm / energy_X0_sum_tmp;
-    ym = ym / energy_X0_sum_tmp;
-    zm = zm / energy_X0_sum_tmp;
+      xm = xm / energy_X0_sum_tmp;
+      ym = ym / energy_X0_sum_tmp;
+      zm = zm / energy_X0_sum_tmp;
 
+      if( zm > zm_min_05 && zm < zm_max_05 ) {
+	energy_center_05->Fill(energy_X0_sum_tmp);
+	nhitstotal_center_05->Fill(n_hitstotal);
+      }
 
-    if( zm > zm_min_05 && zm < zm_max_05 ) {
-      energy_center_05->Fill(energy_X0_sum_tmp);
-      nhitstotal_center_05->Fill(n_hitstotal);
-      for(int ihit=0; ihit< nhit_chan; ihit ++)
-	if(IsPedestal(ihit)==true) {
-	  energy_noise_center_05->Fill(energy_X0_sum_tmp,hit_energy[ihit]);
-	}
-    }
+      if( zm > zm_min_1 && zm < zm_max_1 ) {
+	energy_center_1->Fill(energy_X0_sum_tmp);
+	nhitstotal_center_1->Fill(n_hitstotal);
+      }
 
-
-    if( zm > zm_min_1 && zm < zm_max_1 ) {
-      energy_center_1->Fill(energy_X0_sum_tmp);
-      nhitstotal_center_1->Fill(n_hitstotal);
-      for(int ihit=0; ihit< nhit_chan; ihit ++)
-	if(IsPedestal(ihit)==true) {
-	  energy_noise_center_1->Fill(energy_X0_sum_tmp,hit_energy[ihit]);
-	}
-    }
-
-
-
-    if( zm > zm_min_2 && zm < zm_max_2 ) {
-      energy_center_2->Fill(energy_X0_sum_tmp);
-      nhitstotal_center_2->Fill(n_hitstotal);
-      for(int ihit=0; ihit< nhit_chan; ihit ++)
-	if(IsPedestal(ihit)==true) {
-	  energy_noise_center_2->Fill(energy_X0_sum_tmp,hit_energy[ihit]);
-	}
-    }
+      if( zm > zm_min_2 && zm < zm_max_2 ) {
+	energy_center_2->Fill(energy_X0_sum_tmp);
+	nhitstotal_center_2->Fill(n_hitstotal);
+      }
     
 
 
-  }
+    }
 
+    // Signal analysis
+    TFile *file = new TFile(TString::Format("%s%s_%s_%s_mipcut%0.1f_showers.root",folder.Data(),configuration.Data(),gridpoint.Data(),energy_string.Data(),mipcut) , "RECREATE");
+    file->cd();
 
-  // Signal analysis
-  TFile *file = new TFile(TString::Format("%s%s_%s_%s_mipcut%0.1f_showers.root",folder.Data(),configuration.Data(),gridpoint.Data(),energy_string.Data(),mipcut) , "RECREATE");
-  file->cd();
+    for(int isca=0; isca<15; isca++) {
+      pull_beamspot[isca]->SetName(TString::Format("bs_pedestal_pull_distribution_isca%i",isca));
+      pull_beamspot[isca]->Write();
+      stdev_beamspot[isca]->SetName(TString::Format("bs_pedestal_stdev_distribution_isca%i",isca));
+      stdev_beamspot[isca]->Write();
+      mean_beamspot[isca]->SetName(TString::Format("bs_pedestal_mean_distribution_isca%i",isca));
+      mean_beamspot[isca]->Write();
 
-  for(int isca=0; isca<15; isca++) {
-    pull_beamspot[isca]->SetName(TString::Format("bs_pedestal_pull_distribution_isca%i",isca));
-    pull_beamspot[isca]->Write();
-    stdev_beamspot[isca]->SetName(TString::Format("bs_pedestal_stdev_distribution_isca%i",isca));
-    stdev_beamspot[isca]->Write();
-    mean_beamspot[isca]->SetName(TString::Format("bs_pedestal_mean_distribution_isca%i",isca));
-    mean_beamspot[isca]->Write();
-
-    pull_outbeamspot[isca]->SetName(TString::Format("pedestal_pull_distribution_isca%i",isca));
-    pull_outbeamspot[isca]->Write();
-    stdev_outbeamspot[isca]->SetName(TString::Format("pedestal_stdev_distribution_isca%i",isca));
-    stdev_outbeamspot[isca]->Write();
-    mean_outbeamspot[isca]->SetName(TString::Format("pedestal_mean_distribution_isca%i",isca));
-    mean_outbeamspot[isca]->Write();
+      pull_outbeamspot[isca]->SetName(TString::Format("pedestal_pull_distribution_isca%i",isca));
+      pull_outbeamspot[isca]->Write();
+      stdev_outbeamspot[isca]->SetName(TString::Format("pedestal_stdev_distribution_isca%i",isca));
+      stdev_outbeamspot[isca]->Write();
+      mean_outbeamspot[isca]->SetName(TString::Format("pedestal_mean_distribution_isca%i",isca));
+      mean_outbeamspot[isca]->Write();
     
-  }
+    }
   
-  mean_vs_entries->Write();
-  rms_vs_entries->Write();
-  mean_vs_rms->Write();
+    mean_vs_entries->Write();
+    rms_vs_entries->Write();
+    mean_vs_rms->Write();
 
 
-  pull_map_xy->Write();
-  pull_map_xz->Write();
+    pull_map_xy->Write();
+    pull_map_xz->Write();
 
-  pull_map_bad_xy->Write();
-  pull_map_bad_xz->Write();
+    pull_map_bad_xy->Write();
+    pull_map_bad_xz->Write();
   
-  for(int ichip=0; ichip<16; ichip++) {
-    not_recalculated_sca[ichip]->Write();
-    goodsca[ichip]->Write();
-    wrongsca[ichip]->Write();
-  }
-
-  energy->Write();
-  
-  energy_center_05->Write();
-  energy_center_1->Write();
-  energy_center_2->Write();
-  
-  
-  energy_noise->Write();
-  energy_noise_center_05->Write();
-  energy_noise_center_1->Write();
-  energy_noise_center_2->Write();
-  
-
-  energy_profile_z->Write();
-  energy_profile_X0->Write();
-
-  energy_xy->Write();
-  energy_xz->Write();
-  energy_yz->Write();
-
-  energy_xX0->Write();
-  energy_yX0->Write();
-
-  xbarycenter->Write();
-  ybarycenter->Write();
-  zbarycenter->Write();
-  
-  xybarycenter->Write();
-  xzbarycenter->Write();
-  yzbarycenter->Write();
-
-  E_xbarycenter->Write();
-  E_ybarycenter->Write();
-  E_zbarycenter->Write();
-
-  n_x->Write();
-  n_y->Write();
-  n_z->Write();
-  nhitstotal->Write();
-  nhitstotal_center_05->Write();
-  nhitstotal_center_1->Write();
-  nhitstotal_center_2->Write();
-  
-  nhits_vs_energy->Write();
-  min_dist_vs_energy->Write();
-
-  
-  TDirectory *cdhisto = file->mkdir("histograms");
-  cdhisto->cd();
- 
-  for(int iz=0; iz<7; iz++) {
     for(int ichip=0; ichip<16; ichip++) {
-      for(int ichn=0; ichn<64; ichn++) {
-	for(int isca=0; isca<15; isca++){
-	  if( pedestal_histo[iz][ichip][ichn][isca]->GetEntries()>50) pedestal_histo[iz][ichip][ichn][isca]->Write();
-	  charge_histo[iz][ichip][ichn][isca]->Write();
+      not_recalculated_sca[ichip]->Write();
+      goodsca[ichip]->Write();
+      wrongsca[ichip]->Write();
+    }
+
+    energy->Write();
+  
+    energy_center_05->Write();
+    energy_center_1->Write();
+    energy_center_2->Write();
+  
+    for(int isca=0; isca<15; isca++) {
+      totalcharge_vs_pedcharge[isca]->Write();
+      averagecharge_vs_pedcharge[isca]->Write();
+      nhits_vs_pedcharge[isca]->Write();
+    
+      nchannelsElarger5_vs_pedcharge[isca]->Write();
+      nchannelsElarger10_vs_pedcharge[isca]->Write();
+      nchannelsElarger20_vs_pedcharge[isca]->Write();
+      nchannelsEsmaller05_vs_pedcharge[isca]->Write();
+
+      if(isca>0){
+	totalcharge_vs_pedcharge_prevsca[isca-1]->Write();
+	averagecharge_vs_pedcharge_prevsca[isca-1]->Write();
+	nhits_vs_pedcharge_prevsca[isca-1]->Write();
+
+	nchannelsElarger5_vs_pedcharge_prevsca[isca-1]->Write();
+	nchannelsElarger10_vs_pedcharge_prevsca[isca-1]->Write();
+	nchannelsElarger20_vs_pedcharge_prevsca[isca-1]->Write();
+	nchannelsEsmaller05_vs_pedcharge_prevsca[isca-1]->Write();
+
+      }
+    }
+
+
+  
+
+    energy_profile_z->Write();
+    energy_profile_X0->Write();
+
+    energy_xy->Write();
+    energy_xz->Write();
+    energy_yz->Write();
+
+    energy_xX0->Write();
+    energy_yX0->Write();
+
+    xbarycenter->Write();
+    ybarycenter->Write();
+    zbarycenter->Write();
+  
+    xybarycenter->Write();
+    xzbarycenter->Write();
+    yzbarycenter->Write();
+
+    E_xbarycenter->Write();
+    E_ybarycenter->Write();
+    E_zbarycenter->Write();
+
+    n_x->Write();
+    n_y->Write();
+    n_z->Write();
+    nhitstotal->Write();
+    nhitstotal_center_05->Write();
+    nhitstotal_center_1->Write();
+    nhitstotal_center_2->Write();
+  
+    nhits_vs_energy->Write();
+    min_dist_vs_energy->Write();
+
+  
+    TDirectory *cdhisto = file->mkdir("histograms");
+    cdhisto->cd();
+ 
+    for(int iz=0; iz<7; iz++) {
+      for(int ichip=0; ichip<16; ichip++) {
+	for(int ichn=0; ichn<64; ichn++) {
+	  for(int isca=0; isca<15; isca++){
+	    if( pedestal_histo[iz][ichip][ichn][isca]->GetEntries()>50) pedestal_histo[iz][ichip][ichn][isca]->Write();
+	    charge_histo[iz][ichip][ichn][isca]->Write();
+	  }
 	}
       }
     }
+
+    file->Close();
+  
+  
   }
 
-  file->Close();
-  
-  
 }
-
-
 
 void protoAnalysis::ShowerNoiseDistributions(TString folder="", TString configuration="conf1", double mipcut=0.5, int bcid_max=2800, int nslabs_selection=6, bool RMIsolatedHits=true)
 {
@@ -1371,68 +2052,68 @@ void protoAnalysis::ShowerNoiseDistributions(TString folder="", TString configur
     for (Long64_t jentry2=jentry+1; jentry2<nentries;jentry2++) {
       Long64_t ientry2 = LoadTree(jentry2);
       if (ientry2 < 0) break;
-        Long64_t nbytes2 = 0, nb2 = 0;
-	nb2 = fChain->GetEntry(jentry2);   nbytes2 += nb2;
+      Long64_t nbytes2 = 0, nb2 = 0;
+      nb2 = fChain->GetEntry(jentry2);   nbytes2 += nb2;
 
-	spill_2=spill;
-	if(spill_2==spill_1) { 
+      spill_2=spill;
+      if(spill_2==spill_1) { 
 
 
 	
-	  if(ShowerAntiSelection(mipcut,bcid_max,5)==true && event_selected[4]==false) {
-	    bcid_vs_next_5slab->Fill(bcid-bcid_1);
-	    bcid_vs_next_map_5slab->Fill(bcid,bcid-bcid_1);
-	    event_selected[4]=true;
-	  }
-	  if(ShowerAntiSelection(mipcut,bcid_max,4)==true && event_selected[3]==false) {
-	    bcid_vs_next_4slab->Fill(bcid-bcid_1);
-	    bcid_vs_next_map_4slab->Fill(bcid,bcid-bcid_1);
-	    event_selected[3]=true;
-	  }
-	  if(ShowerAntiSelection(mipcut,bcid_max,3)==true && event_selected[2]==false) {
-	    bcid_vs_next_3slab->Fill(bcid-bcid_1);
-	    bcid_vs_next_map_3slab->Fill(bcid,bcid-bcid_1);
-	    event_selected[2]=true;
-	  }
-	  if(ShowerAntiSelection(mipcut,bcid_max,2)==true && event_selected[1]==false) {
-	    bcid_vs_next_2slab->Fill(bcid-bcid_1);
-	    bcid_vs_next_map_2slab->Fill(bcid,bcid-bcid_1);
-	    event_selected[1]=true;
-	  }
-	  if(ShowerAntiSelection(mipcut,bcid_max,1)==true && event_selected[0]==false) {
-	    cout<<bcid<<" ";
-	    event_selected[0]=true;
+	if(ShowerAntiSelection(mipcut,bcid_max,5)==true && event_selected[4]==false) {
+	  bcid_vs_next_5slab->Fill(bcid-bcid_1);
+	  bcid_vs_next_map_5slab->Fill(bcid,bcid-bcid_1);
+	  event_selected[4]=true;
+	}
+	if(ShowerAntiSelection(mipcut,bcid_max,4)==true && event_selected[3]==false) {
+	  bcid_vs_next_4slab->Fill(bcid-bcid_1);
+	  bcid_vs_next_map_4slab->Fill(bcid,bcid-bcid_1);
+	  event_selected[3]=true;
+	}
+	if(ShowerAntiSelection(mipcut,bcid_max,3)==true && event_selected[2]==false) {
+	  bcid_vs_next_3slab->Fill(bcid-bcid_1);
+	  bcid_vs_next_map_3slab->Fill(bcid,bcid-bcid_1);
+	  event_selected[2]=true;
+	}
+	if(ShowerAntiSelection(mipcut,bcid_max,2)==true && event_selected[1]==false) {
+	  bcid_vs_next_2slab->Fill(bcid-bcid_1);
+	  bcid_vs_next_map_2slab->Fill(bcid,bcid-bcid_1);
+	  event_selected[1]=true;
+	}
+	if(ShowerAntiSelection(mipcut,bcid_max,1)==true && event_selected[0]==false) {
+	  cout<<bcid<<" ";
+	  event_selected[0]=true;
 
-	    if(nslabs_selection==1) {
-	      int z=-1;
-	      int chip_2=-1;
-	      for(int ihit=0; ihit< nhit_chan; ihit ++) {
-		if( hit_energy[ihit]>mipcut && IsHit(ihit)==true ) {
-		  z=hit_z[ihit];
-		  if(z==9) z=6;
-		  chip_2=hit_chip[ihit];
-		}
+	  if(nslabs_selection==1) {
+	    int z=-1;
+	    int chip_2=-1;
+	    for(int ihit=0; ihit< nhit_chan; ihit ++) {
+	      if( hit_energy[ihit]>mipcut && IsHit(ihit)==true ) {
+		z=hit_z[ihit];
+		if(z==9) z=6;
+		chip_2=hit_chip[ihit];
 	      }
-	      if(z==islab_withhit) {
-		cout<<" z, islab ="<<z<<" "<<islab_withhit<<endl;
-		bcid_vs_next_1slab->Fill(bcid-bcid_1);
-		bcid_vs_next_map_1slab->Fill(bcid,bcid-bcid_1);
-		for(int ichip=0; ichip<1000; ichip++) {
-		  if(chip_1[ichip]>-0.5)  chip_correl_1slab->Fill(chip_1[ichip],chip_2);
-		  chip_slab_1slab->Fill(chip_2,z);
-		}
-	      } else {
-		bcid_vs_next_1slab_different->Fill(bcid-bcid_1);
-		bcid_vs_next_map_1slab_different->Fill(bcid,bcid-bcid_1);
-	      }
-	    } else {
+	    }
+	    if(z==islab_withhit) {
+	      cout<<" z, islab ="<<z<<" "<<islab_withhit<<endl;
 	      bcid_vs_next_1slab->Fill(bcid-bcid_1);
 	      bcid_vs_next_map_1slab->Fill(bcid,bcid-bcid_1);
+	      for(int ichip=0; ichip<1000; ichip++) {
+		if(chip_1[ichip]>-0.5)  chip_correl_1slab->Fill(chip_1[ichip],chip_2);
+		chip_slab_1slab->Fill(chip_2,z);
+	      }
+	    } else {
+	      bcid_vs_next_1slab_different->Fill(bcid-bcid_1);
+	      bcid_vs_next_map_1slab_different->Fill(bcid,bcid-bcid_1);
 	    }
-	    
+	  } else {
+	    bcid_vs_next_1slab->Fill(bcid-bcid_1);
+	    bcid_vs_next_map_1slab->Fill(bcid,bcid-bcid_1);
 	  }
+	    
+	}
 	  
-	} else break;
+      } else break;
 
     }
 	
@@ -1730,7 +2411,14 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString configuration
   TH1F* energy_center_2 = new TH1F("energy_center_zm2","energy_center_zm2",500,1,1001);
   
   TH1F* energy_profile_z = new TH1F("energy_profile_z","energy_profile_z",7,-0.5,6.5);//binnumz,binsz);
+  TH1F* energy_profile_z_center_05 = new TH1F("energy_profile_z_center_05","energy_profile_z_center_05",7,-0.5,6.5);//binnumz,binsz);
+  TH1F* energy_profile_z_center_1 = new TH1F("energy_profile_z_center_1","energy_profile_z_center_1",7,-0.5,6.5);//binnumz,binsz);
+  TH1F* energy_profile_z_center_2 = new TH1F("energy_profile_z_center_2","energy_profile_z_center_2",7,-0.5,6.5);//binnumz,binsz);
+
   energy_profile_z->Sumw2();
+  energy_profile_z_center_05->Sumw2();
+  energy_profile_z_center_1->Sumw2();
+  energy_profile_z_center_2->Sumw2();
 
   // x,y,z histograms
   TH2F* energy_xy = new TH2F("energy_xy","energy_xy",binnumx,binsx,binnumx,binsx);
@@ -1966,6 +2654,9 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString configuration
 
   
   // -----------------------------------------------------------------------------------------------------   
+  int number_events_zm_05=0;
+  int number_events_zm_1=0;
+  int number_events_zm_2=0;
 
   // Signal readout
   nbytes = 0; nb = 0;
@@ -2000,36 +2691,52 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString configuration
 	  energy_X0_sum_tmp += w[int(hit_z[ihit])] * (hit_energy[ihit]);
 	  weight_X0_sum_tmp += w[int(hit_z[ihit])];
 	  xm +=  - hit_x[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
-    	  ym +=  - hit_y[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
-    	  zm +=  hit_z[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
+	  ym +=  - hit_y[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
+	  zm +=  hit_z[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
 	}
       }
     }
 
     if(energy_sum_tmp<0.5) continue;
-
+    
     xm = xm / energy_X0_sum_tmp;
     ym = ym / energy_X0_sum_tmp;
     zm = zm / energy_X0_sum_tmp;
 
    
+    for(int ihit=0; ihit< nhit_chan; ihit ++) {
+      if(hit_energy[ihit]>mipcut && IsHit(ihit)==true ) {
+	double zlayer=hit_z[ihit];
+	if(hit_z[ihit]>8) zlayer=6;
+	if( zm > zm_min_05 && zm < zm_max_05 )	energy_profile_z_center_05->Fill(zlayer,hit_energy[ihit]/energy_sum_tmp);
+	if( zm > zm_min_1 && zm < zm_max_1 )	energy_profile_z_center_1->Fill(zlayer,hit_energy[ihit]/energy_sum_tmp);
+	if( zm > zm_min_2 && zm < zm_max_2 )	energy_profile_z_center_2->Fill(zlayer,hit_energy[ihit]/energy_sum_tmp);
+      }
+    }
+   
     if( zm > zm_min_05 && zm < zm_max_05 ) {
       energy_center_05->Fill(energy_X0_sum_tmp);
       nhitstotal_center_05->Fill(n_hitstotal);
+      number_events_zm_05++;
     }
 
     if( zm > zm_min_1 && zm < zm_max_1 ) {
       energy_center_1->Fill(energy_X0_sum_tmp);
       nhitstotal_center_1->Fill(n_hitstotal);
+      number_events_zm_1++;
     }
 
     if( zm > zm_min_2 && zm < zm_max_2 ) {
       energy_center_2->Fill(energy_X0_sum_tmp);
       nhitstotal_center_2->Fill(n_hitstotal);
+      number_events_zm_2++;
     }
     
   }
 
+  energy_profile_z_center_05->Scale(1./number_events_zm_05);
+  energy_profile_z_center_1->Scale(1./number_events_zm_1);
+  energy_profile_z_center_2->Scale(1./number_events_zm_2);
 
   // Signal analysis
   TFile *file = new TFile(TString::Format("%s%s_%s_%s_mipcut%0.1f_showers.root",folder.Data(),configuration.Data(),gridpoint.Data(),energy_string.Data(),mipcut) , "RECREATE");
@@ -2041,6 +2748,10 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString configuration
   energy_center_2->Write();
   
   energy_profile_z->Write();
+  energy_profile_z_center_05->Write();
+  energy_profile_z_center_1->Write();
+  energy_profile_z_center_2->Write();
+
   energy_profile_X0->Write();
 
   energy_xy->Write();
