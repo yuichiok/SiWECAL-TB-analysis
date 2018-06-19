@@ -403,7 +403,7 @@ void protoAnalysis::SimpleDistributionsShower(TString outputname="")
 }
 
 
-void protoAnalysis::PedestalAnalysis_showers(TString folder="y", TString configuration="conf1", TString energy_string="3GeV", TString gridpoint ="grid20", double mipcut=0.5, int bcid_max=2900, int nslabs_selection=6, bool RMIsolatedHits=true, int analyze_chip=12, int analyze_layer=3)
+void protoAnalysis::PedestalAnalysis_showers(TString folder="y", TString configuration="conf1", TString energy_string="3GeV", TString gridpoint ="grid20", double mipcut=0.5, int bcid_max=2900, int nslabs_selection=6, bool RMIsolatedHits=true, int analyze_chip=12, int analyze_layer=2)
 {
 
   ReadMap("../fev10_chip_channel_x_y_mapping.txt");
@@ -422,6 +422,7 @@ void protoAnalysis::PedestalAnalysis_showers(TString folder="y", TString configu
   // PEDESTAL PART:
   // th1f, i,j,k,sca
   TH2F* totalcharge_vs_pedcharge[15];
+  TH2F* chargeinanotherchip_vs_pedcharge[15];
   TH2F* averagecharge_vs_pedcharge[15];
   TH2F* nhits_vs_pedcharge[15];
   TH2F* nchannelsElarger5_vs_pedcharge[15];
@@ -430,6 +431,7 @@ void protoAnalysis::PedestalAnalysis_showers(TString folder="y", TString configu
   TH2F* nchannelsElarger05_vs_pedcharge[15];
 
   TH2F* totalcharge_vs_pedcharge_prevsca[15];
+  TH2F* chargeinanotherchip_vs_pedcharge_prevsca[15];
   TH2F* averagecharge_vs_pedcharge_prevsca[15];
   TH2F* nhits_vs_pedcharge_prevsca[15];
   TH2F* nchannelsElarger5_vs_pedcharge_prevsca[15];
@@ -439,6 +441,8 @@ void protoAnalysis::PedestalAnalysis_showers(TString folder="y", TString configu
 
   for(int isca=0; isca<15; isca++) {
     totalcharge_vs_pedcharge[isca] = new TH2F(TString::Format("totalcharge_vs_pedcharge_sca%i",isca),TString::Format("totalcharge_vs_pedcharge_sca%i",isca),101,-0.5,100.5,80,-1,1);
+    chargeinanotherchip_vs_pedcharge[isca] = new TH2F(TString::Format("chargeinanotherchip_vs_pedcharge_sca%i",isca),TString::Format("chargeinanotherchip_vs_pedcharge_sca%i",isca),101,-0.5,100.5,80,-1,1);
+    
     averagecharge_vs_pedcharge[isca] = new TH2F(TString::Format("averagecharge_vs_pedcharge_sca%i",isca),TString::Format("averagecharge_vs_pedcharge_sca%i",isca),20,0,10,80,-1,1);
     nhits_vs_pedcharge[isca] = new TH2F(TString::Format("nhits_vs_pedcharge_sca%i",isca),TString::Format("nhits_vs_pedcharge_sca%i",isca),20,0.5,20.5,80,-1,1);
 
@@ -451,6 +455,8 @@ void protoAnalysis::PedestalAnalysis_showers(TString folder="y", TString configu
 
   for(int isca=0; isca<15; isca++) {
     totalcharge_vs_pedcharge_prevsca[isca] = new TH2F(TString::Format("totalcharge_vs_pedcharge_prevsca_sca%i",isca),TString::Format("totalcharge_vs_pedcharge_prevsca_sca%i",isca),101,-0.5,100.5,80,-1,1);
+    chargeinanotherchip_vs_pedcharge_prevsca[isca] = new TH2F(TString::Format("chargeinanotherchip_vs_pedcharge_prevsca_sca%i",isca),TString::Format("chargeinanotherchip_vs_pedcharge_prevsca_sca%i",isca),101,-0.5,100.5,80,-1,1);
+    
     averagecharge_vs_pedcharge_prevsca[isca] = new TH2F(TString::Format("averagecharge_vs_pedcharge_prevsca_sca%i",isca),TString::Format("averagecharge_vs_pedcharge_prevsca_sca%i",isca),20,0,10,80,-1,1);
     nhits_vs_pedcharge_prevsca[isca] = new TH2F(TString::Format("nhits_vs_pedcharge_prevsca_sca%i",isca),TString::Format("nhits_vs_pedcharge_prevsca_sca%i",isca),20,0.5,20.5,80,-1,1);
 
@@ -530,10 +536,10 @@ void protoAnalysis::PedestalAnalysis_showers(TString folder="y", TString configu
   	for(int isca=0; isca<15;isca++) {
   	  pedestal_histo[iz][ichip][ichan][isca] = new TH1F(TString::Format("pedestal_z%i_chip%i_chan%i_sca%i",iz,ichip,ichan,isca), TString::Format("pedestal_z%i_chip%i_chan%i_sca%i",iz,ichip,ichan,isca),2000,-10,10);
 	  charge_histo[iz][ichip][ichan][isca] = new TH1F(TString::Format("charge_z%i_chip%i_chan%i_sca%i",iz,ichip,ichan,isca), TString::Format("charge_z%i_chip%i_chan%i_sca%i",iz,ichip,ichan,isca),2000,-10,10);
-  	  pedestal[iz][ichip][ichan][isca] = 0.;
+  	  pedestal[iz][ichip][ichan][isca] = -9999.;
 
 	  pedestal_histo_bcid[iz][ichip][ichan][isca] = new TH1F(TString::Format("pedestal_z%i_chip%i_chan%i_bcid%i",iz,ichip,ichan,isca), TString::Format("pedestal_z%i_chip%i_chan%i_bcid%i",iz,ichip,ichan,isca),2000,-10,10);
-  	  pedestal_bcid[iz][ichip][ichan][isca] = 0.;
+  	  pedestal_bcid[iz][ichip][ichan][isca] = -9999.;
   	}
       }
     }
@@ -601,7 +607,7 @@ void protoAnalysis::PedestalAnalysis_showers(TString folder="y", TString configu
 
   	for(int isca=0; isca<15; isca++) {
 	  double entries_v = pedestal_histo[iz][ichip][ichn][isca]->GetEntries();
-  	  if( entries_v> 50 ){ 
+  	  if( entries_v> 100 ){ 
 	    // pedestal_histo[iz][ichip][ichn][isca]->GetXaxis()->SetRangeUser(-1,1);
 	    pedestal[iz][ichip][ichn][isca]=pedestal_histo[iz][ichip][ichn][isca]->GetMean();
 	    double mean_v = pedestal_histo[iz][ichip][ichn][isca]->GetMean();
@@ -692,15 +698,18 @@ void protoAnalysis::PedestalAnalysis_showers(TString folder="y", TString configu
     bool_hit_slab[4] = false;
     bool_hit_slab[5] = false;
     bool_hit_slab[6] = false;
-    
+
+    bool allpedestalcalculated=true;
     for(int ihit=0; ihit< nhit_chan; ihit ++) {
       int z=hit_z[ihit];
       if(z==9) z=6;
       if((hit_energy[ihit]-pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]])>mipcut && IsHit(ihit)==true ) {
 	bool_hit_slab[z]=true;
       }
+      if(pedestal[z][hit_chip[ihit]][hit_chan[ihit]][hit_sca[ihit]]<-5000) allpedestalcalculated=false;
     }
-    
+
+    //    if(allpedestalcalculated==false) continue;
     
     int nslabhitted =0;
     
@@ -720,10 +729,12 @@ void protoAnalysis::PedestalAnalysis_showers(TString folder="y", TString configu
     int nchannelswithElarger1_sca[15];
     int nchannelswithElarger05_sca[15];
     double totalcharge_sca[15];
+    double chargeinanotherchip_sca[15];
     
     for(int isca=0; isca< 15; isca ++) {
       nchannelswithhits_sca[isca]=0;
       totalcharge_sca[isca]=0;
+      chargeinanotherchip_sca[isca]=0;
       nchannelswithElarger5_sca[isca]=0;
       nchannelswithElarger2_sca[isca]=0;
       nchannelswithElarger1_sca[isca]=0;
@@ -752,6 +763,10 @@ void protoAnalysis::PedestalAnalysis_showers(TString folder="y", TString configu
 	y_hit[nhitsread]=hit_y[ihit];
 	nhitsread++;
       }
+      if(IsHit(ihit)==true && hit_chip[ihit]!=analyze_chip && hit_z[ihit]==analyze_layer) {
+	chargeinanotherchip_sca[hit_sca[ihit]]+=hit_energy[ihit];
+      }
+	
     }
 
 
@@ -777,6 +792,10 @@ void protoAnalysis::PedestalAnalysis_showers(TString folder="y", TString configu
 	sca_pedestal[npedestalsread]=hit_sca[ihit];
 	npedestalsread++;
       }
+
+      if(IsPedestal(ihit)==true && nchannelswithhits_sca[hit_sca[ihit]]>0 && hit_chip[ihit]!=analyze_chip && hit_z[ihit]==analyze_layer && sca0==hit_sca[ihit]) {
+	chargeinanotherchip_vs_pedcharge[hit_sca[ihit]]->Fill(chargeinanotherchip_sca[hit_sca[ihit]],hit_energy[ihit]);
+      }
     }
 
     for(int iped=0; iped< npedestalsread; iped ++) {
@@ -799,11 +818,12 @@ void protoAnalysis::PedestalAnalysis_showers(TString folder="y", TString configu
     int nchannelswithElarger1_prevsca=0;
     int nchannelswithElarger05_prevsca=0;
     double totalcharge_prevsca=0;
-
-    bool exitloop=false;
+    double chargeinanotherchip_prevsca=0;
+    
+     bool exitloop=false;
 
     if(sca0>0 && jentry>101 && nchannelswithhits_sca[sca0]>0) {
-      for (Long64_t jentry2=jentry-1; jentry2>jentry-100;jentry2--) {
+      for (Long64_t jentry2=jentry-1; jentry2>jentry-500;jentry2--) {
 	Long64_t ientry2 = LoadTree(jentry2);
 	if (ientry2 < 0) break;
 	Long64_t nbytes2 = 0, nb2 = 0;
@@ -811,7 +831,7 @@ void protoAnalysis::PedestalAnalysis_showers(TString folder="y", TString configu
 	if(spill<spill0) continue;
 	if(exitloop==true) continue;
 	if(bcid<bcid0) {
-	  bool exitloop0=false;
+	   bool exitloop0=false;
 	  for(int ihit2=0; ihit2< nhit_chan; ihit2 ++) {
 	    if(IsHit(ihit2)==true && hit_chip[ihit2]==analyze_chip && hit_z[ihit2]==analyze_layer && (sca0-hit_sca[ihit2])==1) {
 	      nchannelswithhits_prevsca++;
@@ -821,7 +841,10 @@ void protoAnalysis::PedestalAnalysis_showers(TString folder="y", TString configu
 	      if(hit_energy[ihit2]>5) nchannelswithElarger5_prevsca++;
 	      if(hit_energy[ihit2]>2) nchannelswithElarger2_prevsca++;
 	      if(hit_energy[ihit2]>1) nchannelswithElarger1_prevsca++;
-	      exitloop0=true;
+	       exitloop0=true;
+	    }
+	    if(IsHit(ihit2)==true && hit_chip[ihit2]!=analyze_chip && hit_z[ihit2]==analyze_layer && (sca0-hit_sca[ihit2])==1) {
+	      chargeinanotherchip_prevsca+=hit_energy[ihit2];
 	    }
 	  }
 	  if(exitloop0==true) exitloop=true;
@@ -843,6 +866,9 @@ void protoAnalysis::PedestalAnalysis_showers(TString folder="y", TString configu
 	  nchannelsElarger2_vs_pedcharge_prevsca[hit_sca[ihit]]->Fill(nchannelswithElarger2_prevsca,hit_energy[ihit]);
 	  nchannelsElarger1_vs_pedcharge_prevsca[hit_sca[ihit]]->Fill(nchannelswithElarger1_prevsca,hit_energy[ihit]);
 	  nchannelsElarger05_vs_pedcharge_prevsca[hit_sca[ihit]]->Fill(nchannelswithElarger05_prevsca,hit_energy[ihit]);
+	}
+	if(IsPedestal(ihit)==true && hit_chip[ihit]!=analyze_chip && hit_z[ihit]==analyze_layer && sca0==hit_sca[ihit]) {
+	  chargeinanotherchip_vs_pedcharge_prevsca[hit_sca[ihit]]->Fill(chargeinanotherchip_prevsca,hit_energy[ihit]);
 	}
       }
     }
@@ -912,6 +938,8 @@ void protoAnalysis::PedestalAnalysis_showers(TString folder="y", TString configu
 
     //standard maps
     totalcharge_vs_pedcharge[isca]->Write();
+    chargeinanotherchip_vs_pedcharge[isca]->Write();
+    
     averagecharge_vs_pedcharge[isca]->Write();
     nhits_vs_pedcharge[isca]->Write();
     
@@ -945,6 +973,8 @@ void protoAnalysis::PedestalAnalysis_showers(TString folder="y", TString configu
     // prevsca plots
 
     totalcharge_vs_pedcharge_prevsca[isca]->Write();
+    chargeinanotherchip_vs_pedcharge_prevsca[isca]->Write();
+    
     averagecharge_vs_pedcharge_prevsca[isca]->Write();
     nhits_vs_pedcharge_prevsca[isca]->Write();
     
@@ -2871,19 +2901,16 @@ void protoAnalysis::SimpleMIPAnalysis(TString outputname="", int nin=5, int nout
   // -----------------------------------------------------------------------------------------------------   
   // Signal readout
   Long64_t nbytes = 0, nb = 0;
-  for (Long64_t jentry=100; jentry<nentries-100;jentry++) {
+  //  nentries=500000;
+  for (Long64_t jentry=100; jentry<nentries-100;jentry++){//nentries-100;jentry++) {
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;
     nb = fChain->GetEntry(jentry);   nbytes += nb;
 
-    if( bcid<1290 || bcid>bcid_max) continue;
+    int fivepercent=nentries/20;
+    if( (jentry % fivepercent) == 0 ) cout<< "Progress: "<<100.*jentry/nentries<<" %" <<endl;
 
-    int n_calibrated_channels=0;
-    for(int ihit=0; ihit< nhit_chan; ihit ++) {
-      int z=hit_z[ihit];
-      if(hit_z[ihit]==9) z=6;
-      if( hit_isMasked[ihit] == 1 || calibrated[z][hit_chip[ihit]][hit_chan[ihit]]==1 ) n_calibrated_channels++;
-    }
+    if( bcid<1290 || bcid>bcid_max) continue;
 
 
     bool track=true; //track candidate
@@ -2899,17 +2926,15 @@ void protoAnalysis::SimpleMIPAnalysis(TString outputname="", int nin=5, int nout
     }
     // count hits in the perpendicular track
     int nintrack=0;
-    for(int ihit=0; ihit< nhit_chan; ihit ++) {
-      int z=hit_z[ihit];
-      if(hit_z[ihit]==9) z=6;
-      if( fabs(hit_x[ihit]-hit_x[imaxenergy]) == 0 && fabs(hit_y[ihit]-hit_y[imaxenergy]) == 0  && ( hit_isMasked[ihit] == 0 && calibrated[z][hit_chip[ihit]][hit_chan[ihit]]==0 ) && hit_isHit[ihit]==1 && hit_energy[ihit]>0.5) nintrack++;
-    }
-    // count hits outside the perpendicular track
     int nouttrack=0;
+    
     for(int ihit=0; ihit< nhit_chan; ihit ++) {
       int z=hit_z[ihit];
       if(hit_z[ihit]==9) z=6;
-      if( (fabs(hit_x[ihit]-hit_x[imaxenergy]) >0 || fabs(hit_y[ihit]-hit_y[imaxenergy]) >0 )  && ( hit_isMasked[ihit] == 0 && calibrated[z][hit_chip[ihit]][hit_chan[ihit]]==0 ) && hit_isHit[ihit]==1 && hit_energy[ihit]>0.15) nouttrack++;
+
+      if( fabs(hit_x[ihit]-hit_x[imaxenergy])< 8.6 && fabs(hit_y[ihit]-hit_y[imaxenergy])< 8.6  && ( hit_isMasked[ihit] == 0 && calibrated[z][hit_chip[ihit]][hit_chan[ihit]]==0 ) && hit_isHit[ihit]==1 && hit_energy[ihit]>0.15) nintrack++;
+    
+      if( (fabs(hit_x[ihit]-hit_x[imaxenergy]) > 8.6 || fabs(hit_y[ihit]-hit_y[imaxenergy]) > 8.6 )  && ( hit_isMasked[ihit] == 0 && calibrated[z][hit_chip[ihit]][hit_chan[ihit]]==0 ) && hit_isHit[ihit]==1 && hit_energy[ihit]>0.15) nouttrack++;
     }
     
     if(nintrack < nin ) track=false;
@@ -2925,10 +2950,13 @@ void protoAnalysis::SimpleMIPAnalysis(TString outputname="", int nin=5, int nout
 
       bool workinglayer[7];
       bool infolayer[7];
-
+      bool layerwithhitintrack[7];
+      
+      
       for(int iz=0; iz<7;iz++) {
 	workinglayer[iz]=false;
 	infolayer[iz]=false;
+	layerwithhitintrack[iz]=false;
 	if(  calibrated[iz][hit_chip[imaxenergy]][hit_chan[imaxenergy]]==0  )  workinglayer[iz]=true;
       }
 
@@ -2937,19 +2965,29 @@ void protoAnalysis::SimpleMIPAnalysis(TString outputname="", int nin=5, int nout
 	int z=hit_z[ihit];
 	if(hit_z[ihit]==9) z=6;
 
-	if( (fabs(hit_x[ihit]-hit_x[imaxenergy]) ==0 && fabs(hit_y[ihit]-hit_y[imaxenergy]) ==0 )  ) {
+	if( (fabs(hit_x[ihit]-hit_x[imaxenergy])< 8.6 && fabs(hit_y[ihit]-hit_y[imaxenergy])< 8.6 )  ) {
 
 	  infolayer[z]=true;
 
-	  if( ( hit_isMasked[ihit] == 0 && calibrated[z][hit_chip[ihit]][hit_chan[ihit]]==0 ) && hit_isHit[ihit]==1 && hit_energy[ihit]>0.5) {
+	  if( ( hit_isMasked[ihit] == 0 && calibrated[z][hit_chip[ihit]][hit_chan[ihit]]==0 ) && hit_isHit[ihit]==1 && hit_energy[ihit]>0.15) {
 	    mip_histo_all->Fill(hit_energy[ihit]);
 	    SCA_track->Fill(hit_sca[ihit]);
 	    SCA_BCID_track->Fill(hit_sca[ihit],bcid);
 	    mip_tracks.at(z)->Fill(hit_x[ihit],hit_y[ihit]);
 	    mip_tracks_chip_chn.at(z)->Fill(hit_chip[ihit],hit_chan[ihit]);
+	    layerwithhitintrack[z]=true;
 	  }
+
+	}
+      }
+      
+      for(int ihit=0; ihit< nhit_chan; ihit ++) {
+	int z=hit_z[ihit];
+	if(hit_z[ihit]==9) z=6;
+	
+	if( (fabs(hit_x[ihit]-hit_x[imaxenergy])< 8.6 && fabs(hit_y[ihit]-hit_y[imaxenergy])< 8.6 )  ) {
 	  
-	  if( ( hit_isMasked[ihit] == 0 && calibrated[z][hit_chip[ihit]][hit_chan[ihit]]==0 ) && hit_isHit[ihit]==0) {
+	  if( ( hit_isMasked[ihit] == 0 && calibrated[z][hit_chip[ihit]][hit_chan[ihit]]==0 ) && hit_isHit[ihit]==0 && layerwithhitintrack[z]==false) {
 	    int z=hit_z[ihit];
 	    if(hit_z[ihit]==9) z=6;
 	    
@@ -2966,14 +3004,14 @@ void protoAnalysis::SimpleMIPAnalysis(TString outputname="", int nin=5, int nout
       }//for nhits
 
       for(int z=0; z<7;z++) {
-	if(workinglayer[z]==true && infolayer[z]==false) {
+	if(workinglayer[z]==true && infolayer[z]==false && layerwithhitintrack[z]==false) {
 	  double ix=hit_x[imaxenergy];
 	  double iy=hit_y[imaxenergy];
 	  double iz=hit_z[imaxenergy];
 	  int spill_ref=spill;
 	  int spill_new=-1;
 	  int last_sca=-1;
-	  for (Long64_t jentry2=jentry-100; jentry2<jentry+100;jentry2++) {
+	  for (Long64_t jentry2=jentry-200; jentry2<jentry+200;jentry2++) {
 	    Long64_t ientry2 = LoadTree(jentry2);
 	    if (ientry2 < 0) break;
 	    Long64_t nbytes2 = 0, nb2 = 0;
@@ -2984,11 +3022,11 @@ void protoAnalysis::SimpleMIPAnalysis(TString outputname="", int nin=5, int nout
 	    if(spill_new>spill_ref) break;
 
 	    for(int ihit=0; ihit< nhit_chan; ihit ++) {
-	      if( spill_new==spill_ref && ix==hit_x[ihit] && iy==hit_y[ihit] && iz==hit_z[ihit]) last_sca=hit_sca[ihit];
+	      if( spill_new==spill_ref && fabs( ix - hit_x[ihit]) < 8.6 && fabs(iy - hit_y[ihit])< 8.6 && iz==hit_z[ihit]) last_sca=hit_sca[ihit];
 	    }
 	  }
 
-	  if(last_sca<14) {
+	  if(last_sca<13) {
 	    mip_ineff.at(z)->Fill(hit_x[imaxenergy],hit_y[imaxenergy]);
 	    mip_ineff_chip_chn.at(z)->Fill(hit_chip[imaxenergy],hit_chan[imaxenergy]);
 	  } else {

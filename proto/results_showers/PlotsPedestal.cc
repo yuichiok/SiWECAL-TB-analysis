@@ -28,14 +28,14 @@ void PlotsPedestal(){
 
   TString grid="grid20";
   TString conf="conf2";
-  bool bcidplot=true;
+  bool bcidplot=false;
   
   int islabs=6;
   TString nslabs_pedestal=TString::Format("pedestal_nslabs%i",islabs);
 
   TString bcid="bcidmax2850";
 
-  for(int ilayer=0; ilayer<7; ilayer++) {
+  for(int ilayer=2; ilayer<3; ilayer++) {
     TString energy_string[6];
     energy_string[0]="1GeV";
     energy_string[1]="2GeV";
@@ -55,17 +55,20 @@ void PlotsPedestal(){
       TString s_file=nslabs_pedestal+"_"+bcid+"/"+conf+"_"+grid+"_"+energy_string[ienergy]+"_mipcut0.5_showers.root";
       std::cout<<"Opening file: "<<s_file<<std::endl;
       TFile *file = new TFile(s_file);
-      
+
+      int nbins=0;
       for(int isca=0;isca<15; isca++) {
 	TString histostring = TString::Format("bs_pedestal_mean_distribution_isca%i_ilayer%i",isca,ilayer);
 	if(bcidplot==true) histostring = TString::Format("bs_pedestal_mean_distribution_ibcid%i_ilayer%i",isca,ilayer);
 	TH1F *temp= (TH1F*)file->Get(histostring);
 	x[isca]=isca;
 	if(bcidplot==true) x[isca]=isca*100.+1200;
+	if (temp->GetEntries()==0) continue;
 	y[isca]=100*temp->GetMean();
+	nbins++;
       }
       
-      pedestal_mean[ienergy] = new TGraph(15,x,y);
+      pedestal_mean[ienergy] = new TGraph(nbins,x,y);
     }
     
     TCanvas *c_energy = new TCanvas(TString::Format("c_energy_ilayer%i",ilayer),TString::Format("c_energy_ilayer%i",ilayer),800,600);

@@ -26,29 +26,29 @@ void TungstenProfile(){
   TH1F *conf2 = new TH1F("conf2","conf2",7,0.5,7.5);
   TH1F *conf3 = new TH1F("conf3","conf3",7,0.5,7.5);
 
-  conf1->SetBinContent(1,2*0.56);
-  conf1->SetBinContent(2,2*0.56);
-  conf1->SetBinContent(3,2*0.56);
-  conf1->SetBinContent(4,2*0.56);
-  conf1->SetBinContent(5,4*0.56);
-  conf1->SetBinContent(6,4*0.56);
-  conf1->SetBinContent(7,6*0.56);
+  conf1->SetBinContent(1,2*1/3.5);
+  conf1->SetBinContent(2,2*1/3.5);
+  conf1->SetBinContent(3,2*1/3.5);
+  conf1->SetBinContent(4,2*1/3.5);
+  conf1->SetBinContent(5,4*1/3.5);
+  conf1->SetBinContent(6,4*1/3.5);
+  conf1->SetBinContent(7,6*1/3.5);
 
-  conf2->SetBinContent(1,4*0.56);
-  conf2->SetBinContent(2,2*0.56);
-  conf2->SetBinContent(3,2*0.56);
-  conf2->SetBinContent(4,4*0.56);
-  conf2->SetBinContent(5,4*0.56);
-  conf2->SetBinContent(6,6*0.56);
-  conf2->SetBinContent(7,6*0.56);
+  conf2->SetBinContent(1,4*1/3.5);
+  conf2->SetBinContent(2,2*1/3.5);
+  conf2->SetBinContent(3,2*1/3.5);
+  conf2->SetBinContent(4,4*1/3.5);
+  conf2->SetBinContent(5,4*1/3.5);
+  conf2->SetBinContent(6,6*1/3.5);
+  conf2->SetBinContent(7,6*1/3.5);
   
-  conf3->SetBinContent(1,6*0.56);
-  conf3->SetBinContent(2,2*0.56);
-  conf3->SetBinContent(3,4*0.56);
-  conf3->SetBinContent(4,4*0.56);
-  conf3->SetBinContent(5,6*0.56);
-  conf3->SetBinContent(6,6*0.56);
-  conf3->SetBinContent(7,6*0.56);
+  conf3->SetBinContent(1,6*1/3.5);
+  conf3->SetBinContent(2,2*1/3.5);
+  conf3->SetBinContent(3,4*1/3.5);
+  conf3->SetBinContent(4,4*1/3.5);
+  conf3->SetBinContent(5,6*1/3.5);
+  conf3->SetBinContent(6,6*1/3.5);
+  conf3->SetBinContent(7,6*1/3.5);
   
     
   TCanvas *c_energy = new TCanvas("c_energy","c_energy",800,600);
@@ -73,9 +73,9 @@ void TungstenProfile(){
   conf3->Draw("same");
 
   TLegend *l_energy = new TLegend(0.4,0.7,0.8,0.8);
-  l_energy->AddEntry(conf1,"configuration 1 (12.32 X_{0})","l");
-  l_energy->AddEntry(conf2,"configuration 2 (15.68 X_{0})","l");
-  l_energy->AddEntry(conf3,"configuration 3 (19.04 X_{0})","l");
+  l_energy->AddEntry(conf1,"configuration 1 (6.6 X_{0})","l");
+  l_energy->AddEntry(conf2,"configuration 2 (8.4 X_{0})","l");
+  l_energy->AddEntry(conf3,"configuration 3 (10.2 X_{0})","l");
 
   l_energy->SetFillColor(0);
   l_energy->SetLineColor(0);
@@ -90,29 +90,29 @@ void TungstenProfile(){
   TH1F *acc_conf2 = new TH1F("acc_conf2","acc_conf2",7,0.5,7.5);
   TH1F *acc_conf3 = new TH1F("acc_conf3","acc_conf3",7,0.5,7.5);
 
-  acc_conf1->SetBinContent(1,2*0.56);
-  acc_conf1->SetBinContent(2,4*0.56);
-  acc_conf1->SetBinContent(3,6*0.56);
-  acc_conf1->SetBinContent(4,8*0.56);
-  acc_conf1->SetBinContent(5,12*0.56);
-  acc_conf1->SetBinContent(6,16*0.56);
-  acc_conf1->SetBinContent(7,22*0.56);
+  acc_conf1->SetBinContent(1,2*1/3.5);
+  acc_conf1->SetBinContent(2,4*1/3.5);
+  acc_conf1->SetBinContent(3,6*1/3.5);
+  acc_conf1->SetBinContent(4,8*1/3.5);
+  acc_conf1->SetBinContent(5,12*1/3.5);
+  acc_conf1->SetBinContent(6,16*1/3.5);
+  acc_conf1->SetBinContent(7,22*1/3.5);
 
-  acc_conf2->SetBinContent(1,4*0.56);
-  acc_conf2->SetBinContent(2,6*0.56);
-  acc_conf2->SetBinContent(3,8*0.56);
-  acc_conf2->SetBinContent(4,12*0.56);
-  acc_conf2->SetBinContent(5,16*0.56);
-  acc_conf2->SetBinContent(6,22*0.56);
-  acc_conf2->SetBinContent(7,28*0.56);
+  acc_conf2->SetBinContent(1,4*1/3.5);
+  acc_conf2->SetBinContent(2,6*1/3.5);
+  acc_conf2->SetBinContent(3,8*1/3.5);
+  acc_conf2->SetBinContent(4,12*1/3.5);
+  acc_conf2->SetBinContent(5,16*1/3.5);
+  acc_conf2->SetBinContent(6,22*1/3.5);
+  acc_conf2->SetBinContent(7,28*1/3.5);
   
-  acc_conf3->SetBinContent(1,6*0.56);
-  acc_conf3->SetBinContent(2,8*0.56);
-  acc_conf3->SetBinContent(3,12*0.56);
-  acc_conf3->SetBinContent(4,16*0.56);
-  acc_conf3->SetBinContent(5,22*0.56);
-  acc_conf3->SetBinContent(6,28*0.56);
-  acc_conf3->SetBinContent(7,34*0.56);
+  acc_conf3->SetBinContent(1,6*1/3.5);
+  acc_conf3->SetBinContent(2,8*1/3.5);
+  acc_conf3->SetBinContent(3,12*1/3.5);
+  acc_conf3->SetBinContent(4,16*1/3.5);
+  acc_conf3->SetBinContent(5,22*1/3.5);
+  acc_conf3->SetBinContent(6,28*1/3.5);
+  acc_conf3->SetBinContent(7,34*1/3.5);
   
     
   TCanvas *c_energy2 = new TCanvas("c_energy2","c_energy2",800,600);
@@ -138,9 +138,9 @@ void TungstenProfile(){
   acc_conf3->Draw("same");
 
   TLegend *l_energy2 = new TLegend(0.2,0.7,0.6,0.8);
-  l_energy2->AddEntry(acc_conf1,"configuration 1 (12.32 X_{0})","l");
-  l_energy2->AddEntry(acc_conf2,"configuration 2 (15.68 X_{0})","l");
-  l_energy2->AddEntry(acc_conf3,"configuration 3 (19.04 X_{0})","l");
+  l_energy2->AddEntry(acc_conf1,"configuration 1 (6.6 X_{0})","l");
+  l_energy2->AddEntry(acc_conf2,"configuration 2 (8.4 X_{0})","l");
+  l_energy2->AddEntry(acc_conf3,"configuration 3 (10.2 X_{0})","l");
 
   l_energy2->SetFillColor(0);
   l_energy2->SetLineColor(0);
