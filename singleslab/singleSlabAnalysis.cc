@@ -17,6 +17,103 @@
 using namespace std;
 
 
+
+
+void singleSlabAnalysis::SimpleMaps(TString dif="dif_1_1_1", TString outputname="", TString map_filename="/home/irles/cernbox/TB2017/SiWECAL-TB-analysis-dev/fev10_chip_channel_x_y_mapping.txt")
+{
+
+  int maxnhit=20; // plane event threshold
+
+  //Read the channel/chip -- x/y mapping
+  ReadMap(map_filename);
+
+
+  // --------------
+  if (fChain == 0) return;
+  Long64_t nentries = fChain->GetEntriesFast();
+  //-----------------
+
+
+  //maps 
+  TH2F* good_2d = new TH2F("good_2d_"+dif,"good_2d_"+dif,32,-90,90,32,-90,90);
+  TH2F* ADC4_2d = new TH2F("ADC4_2d_"+dif,"ADC4_2d_"+dif,32,-90,90,32,-90,90);
+  TH2F* retrig_2d = new TH2F("retrig_2d_"+dif,"retrig_2d_"+dif,32,-90,90,32,-90,90);
+  TH2F* bad_2d = new TH2F("bad_2d_"+dif,"bad_2d_"+dif,32,-90,90,32,-90,90);
+  TH1F* bcid_diff = new TH1F("bcid_diff_"+dif,"bcid_diff_"+dif,3001,-1000.5,2000.5);
+
+ 
+  // -----------------------------------------------------------------------------------------------------   
+  // Signal readout
+  Long64_t nbytes = 0, nb = 0;
+  for (Long64_t jentry=0; jentry<nentries;jentry++) {
+    Long64_t ientry = LoadTree(jentry);
+    if (ientry < 0) break;
+    nb = fChain->GetEntry(jentry);   nbytes += nb;
+     
+
+    for(int ichip=0; ichip<16; ichip++) {
+
+      int bcidref=0;
+      for(int isca=0; isca<15; isca++) {
+
+	int ntriggers=0;
+	for(int ichn=0; ichn<64; ichn++) {
+	  if(gain_hit_high[ichip][isca][ichn]==1) 
+	    ntriggers++;
+	}
+
+	if(badbcid[ichip][isca]==0 && ntriggers<maxnhit) bcidref=bcid[ichip][isca];
+	
+	for(int ichn=0; ichn<64; ichn++) {
+
+	  if(gain_hit_high[ichip][isca][ichn]==1) {
+	    if(charge_hiGain[ichip][isca][ichn]>-1 && charge_hiGain[ichip][isca][ichn]<11) {
+	      ADC4_2d->Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn]);
+	      bad_2d->Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn]);
+	    } else if(badbcid[ichip][isca]==0 || badbcid[ichip][isca]==1)
+	      good_2d->Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn]);
+	    else if(badbcid[ichip][isca]>2 || ntriggers>maxnhit) {
+	      if(isca >0 &&  badbcid[ichip][isca-1] == 0 ){
+		retrig_2d->Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn]);
+		bad_2d->Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn]);
+	      }
+	    }
+	  }
+	      
+    	}//ichn
+
+	ntriggers=0;
+	if(isca<15) {
+	  for(int ichn=0; ichn<64; ichn++) {
+	    if(gain_hit_high[ichip][isca+1][ichn]==1) 
+	      ntriggers++;
+	  }
+	  if(bcidref>0 && (badbcid[ichip][isca+1]>1 || ntriggers>maxnhit)) bcid_diff->Fill(bcid[ichip][isca+1]-bcidref);
+	}
+	
+      }//sca    
+    }//ichip
+    
+  }
+
+  // -----------------------------------------------------------------------------------------------------   
+  // Signal analysis
+  TFile *signalfile_summary = new TFile("results_mipcalibration/SimplePlots_"+dif+"_"+outputname+".root" , "RECREATE");
+  signalfile_summary->cd();
+
+  // SUMMARY MAPS
+  ADC4_2d->Write();
+  retrig_2d->Write();
+  good_2d->Write();
+  bad_2d->Write();
+  bcid_diff->Write();
+  signalfile_summary->Close();
+
+}
+
+
+
+
 void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputname="", bool readpedestal=false, TString map_filename="/home/calice/SiWECAL-TB-analysis/fev10_chip_channel_x_y_mapping.txt")
 {
 
@@ -647,7 +744,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
 
   if(grid!="") dif=dif+grid;
 
-  ofstream fout_ped("results_pedestal/Pedestal_"+dif+".txt",ios::out);
+  ofstream fout_ped("results_pedestal/magnetictests/Pedestal_"+dif+".txt",ios::out);
 
   fout_ped<<"#pedestal results (fit to a gaussian) remove channels/sca with two pedestals peaks from the analysis : "<<dif<<endl;
   fout_ped<<"#chip channel ped0 eped0 widthped0 ped1 eped1 widthped1... ped14 eped14 widhtped14 (all SCA)"<<endl;
@@ -788,7 +885,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
   }  // end first loop analysis to fill pedestal historgrams
 
 
-  TFile *pedfile = new TFile("results_pedestal/Pedestal_"+dif+".root" , "RECREATE");
+  TFile *pedfile = new TFile("results_pedestal/magnetictests/Pedestal_"+dif+".root" , "RECREATE");
   pedfile->cd();
 
   //initialize pedestal vectors
@@ -945,7 +1042,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
 
   pedfile->Close();
 
-  TFile *pedfile_summary = new TFile("results_pedestal/Pedestal_summary_"+dif+".root" , "RECREATE");
+  TFile *pedfile_summary = new TFile("results_pedestal/magnetictests/Pedestal_summary_"+dif+".root" , "RECREATE");
   pedfile_summary->cd();
   
   // good pedestal events (not tagged events)
@@ -1220,7 +1317,7 @@ void singleSlabAnalysis::PedestalAnalysis_gridpoints(TString dif,TString grid=""
 
   if(grid!="") dif=dif+"_"+grid;
 
-  ofstream fout_ped("results_pedestal/gridpoints/Pedestal_"+dif+".txt",ios::out);
+  ofstream fout_ped("results_pedestal/magnetictests/Pedestal_"+dif+".txt",ios::out);
 
   //fout_ped<<"#pedestal results (fit to a gaussian) remove channels/sca with two pedestals peaks from the analysis : "<<dif<<endl;
   //fout_ped<<"#chip channel ped0 eped0 widthped0 ped1 eped1 widthped1... ped14 eped14 widhtped14 (all SCA)"<<endl;
@@ -1361,7 +1458,7 @@ void singleSlabAnalysis::PedestalAnalysis_gridpoints(TString dif,TString grid=""
   }  // end first loop analysis to fill pedestal historgrams
 
 
-  TFile *pedfile = new TFile("results_pedestal/gridpoints/Pedestal_"+dif+".root" , "RECREATE");
+  TFile *pedfile = new TFile("results_pedestal/magnetictests/Pedestal_"+dif+".root" , "RECREATE");
   pedfile->cd();
 
 
@@ -1524,7 +1621,7 @@ void singleSlabAnalysis::PedestalAnalysis_gridpoints(TString dif,TString grid=""
 
   pedfile->Close();
 
-  TFile *pedfile_summary = new TFile("results_pedestal/gridpoints/Pedestal_summary_"+dif+".root" , "RECREATE");
+  TFile *pedfile_summary = new TFile("results_pedestal/magnetictests/Pedestal_summary_"+dif+".root" , "RECREATE");
   pedfile_summary->cd();
   
   // good pedestal events (not tagged events)
