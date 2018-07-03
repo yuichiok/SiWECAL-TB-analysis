@@ -1,8 +1,10 @@
 #ifndef INFOCHIP_CC
 #define INFOCHIP_CC
 
-using std::cout;
-using std::endl;
+#include <iostream>
+#include <fstream>
+
+using namespace std;
 
 
 /*   COMMENTS
@@ -64,8 +66,8 @@ public:
     // locations for quadrant center (1 chip=1 quadrant)
 	// locations for pads in a Left or Right handed quadrant  (chip rotated by
 	// 180o)
-    ifstream fileChipPos("FEV10/PositionChips.txt");
-    ifstream filePadPos("FEV10/PositionPads.txt");
+    ifstream fileChipPos("PositionChips_FEV10.txt");
+    ifstream filePadPos("PositionPads_FEV10.txt");
 
 
     double val;
@@ -85,7 +87,7 @@ public:
       if(!fileChipPos.eof()) { fileChipPos >> val; }
       if(!fileChipPos.eof()) { fileChipPos >> ChipPosX[i]; }
       if(!fileChipPos.eof()) { fileChipPos >> ChipPosY[i]; }
-      if(fileChipPos.eof()) { cout << "Error in Chip's position file" << endl; }
+      //if(fileChipPos.eof()) { cout << "Error in Chip's position file" << endl; }
     }
     // Read Pads positions  LEFT
     double PadPosX[NCHANNELS];
@@ -128,7 +130,7 @@ private:
   enum {
     MEMDEPTH=15,
     NCHANNELS=64,
-    NCHIPS=16
+    NCHIPS=128
   };
 
 };

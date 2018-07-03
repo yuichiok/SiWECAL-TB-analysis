@@ -41,7 +41,7 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
   std::vector<std::vector<TH1F*> > mip_histo;
   std::vector<std::vector<TH1F*> > s_n_histo;
 
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     std::vector<TH1F*>  tmpmip_histo;
     std::vector<TH1F*>  tmps_n_histo;
 	
@@ -57,14 +57,14 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
     s_n_histo.push_back(tmps_n_histo);
   }
 
-  //maps 
+  /* //maps 
   TH2F* MPV_2d = new TH2F("MPV_2d_"+dif,"MPV_2d_"+dif,32,-90,90,32,-90,90);
   TH2F* eMPV_2d = new TH2F("eMPV_2d_"+dif,"eMPV_2d_"+dif,32,-90,90,32,-90,90);
   TH2F* widthMPV_2d = new TH2F("widthMPV_2d_"+dif,"widthMPV_2d_"+dif,32,-90,90,32,-90,90);
   TH2F* chi2NDF_2d = new TH2F("chi2NDF_2d_"+dif,"chi2NDF_2d_"+dif,32,-90,90,32,-90,90);
   TH2F* mipEntries_2d = new TH2F("mipEntries_2d_"+dif,"mipEntries_2d_"+dif,32,-90,90,32,-90,90);
   TH2F* S_N_2d = new TH2F("S_N_2d_"+dif,"S_N_2d_"+dif,32,-90,90,32,-90,90);
-
+  */
   TH2F* correl_S_N_vs_nhits = new TH2F("correl_S_N_vs_nhits"+dif,"correl_S_N_vs_nhits"+dif,80,0.25,40.25,20,1225,51225);
   TH2F* correl_S_N_vs_mpv = new TH2F("correl_S_N_vs_mpv"+dif,"correl_S_N_vs_mpv"+dif,80,0.25,40.25,40,40.5,80.5);
   TH2F* correl_mpv_vs_nhits = new TH2F("correl_mpv_vs_nhits"+dif,"correl_mpv_vs_nhits"+dif,40,40.5,80.5,20,1225,51225);
@@ -72,11 +72,12 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
   TH2F* correl_S_N_vs_widthmpv = new TH2F("correl_S_N_vs_widthmpv"+dif,"correl_S_N_vs_widthmpv"+dif,80,0.25,40.25,50,0.5,50.5);
   TH2F* correl_S_N_vs_widthped = new TH2F("correl_S_N_vs_widthped"+dif,"correl_S_N_vs_widthped"+dif,80,0.25,40.25,50,2.05,7.05);
 
-
+  
+  
   //summary plots
-  TH1F* MPV_chip[16];
-  TH1F* S_N_chip[16];
-  for(int ichip=0; ichip<16; ichip++) {
+  TH1F* MPV_chip[128];
+  TH1F* S_N_chip[128];
+  for(int ichip=0; ichip<128; ichip++) {
     MPV_chip[ichip]= new TH1F(TString::Format("MPV_%s_chip%i",dif.Data(),ichip),TString::Format("MPV_%s_chip%i",dif.Data(),ichip),1500,0.05,150.05);
     S_N_chip[ichip]= new TH1F(TString::Format("S_N_%s_chip%i",dif.Data(),ichip),TString::Format("S_N_%s_chip%i",dif.Data(),ichip),500,0.05,50.05);
   }
@@ -93,7 +94,7 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
     nb = fChain->GetEntry(jentry);   nbytes += nb;
      
 
-    for(int ichip=0; ichip<16; ichip++) {
+    for(int ichip=0; ichip<128; ichip++) {
       for(int ichn=0; ichn<64; ichn++) {
 	for(int isca=0; isca<15; isca++) {
 
@@ -138,7 +139,7 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
 
   cdhisto->cd(); 
 
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     for(int ichn=0; ichn<64; ichn++) {
             
       if(mip_histo.at(ichip).at(ichn)->GetEntries()> 500 && mip_histo.at(ichip).at(ichn)->GetMean()>20){
@@ -159,12 +160,12 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
 	double chi2ndf=0;
 	if(ndf>0) chi2ndf=chisqr/ndf;
 	double mipentries=mip_histo.at(ichip).at(ichn)->GetEntries();
-
+	/*
 	MPV_2d->Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn],mpv);
 	eMPV_2d->Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn],empv);
         widthMPV_2d->Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn],wmpv);
 	chi2NDF_2d->Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn],chi2ndf);
-	mipEntries_2d->Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn],mipentries);
+	mipEntries_2d->Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn],mipentries);*/
 	MPV_chip[ichip]->Fill(mpv);
 	MPV_slab->Fill(mpv);
 
@@ -181,7 +182,7 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
 
         double s_n_temp=fitsnr_temp2->GetParameter(1);
 
-        S_N_2d->Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn],s_n_temp);
+	// S_N_2d->Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn],s_n_temp);
         S_N_chip[ichip]->Fill(s_n_temp);
         S_N_slab->Fill(s_n_temp);
 
@@ -208,8 +209,8 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
 
   signalfile_summary->cd();
 
-  TCanvas *canvas_maps = new TCanvas(TString::Format("Signal_%s",dif.Data()),TString::Format("Signal_%s",dif.Data()),1200,800);
-  canvas_maps->Divide(2,2);
+  // TCanvas *canvas_maps = new TCanvas(TString::Format("Signal_%s",dif.Data()),TString::Format("Signal_%s",dif.Data()),1200,800);
+  //canvas_maps->Divide(2,2);
   TCanvas *canvas_summary_mip = new TCanvas(TString::Format("mip_perchip_%s",dif.Data()),TString::Format("mip_perchip_%s",dif.Data()),1200,800);
   canvas_summary_mip->Divide(4,4);
   TCanvas *canvas_summary_s_n = new TCanvas(TString::Format("s_n_perchip_%s",dif.Data()),TString::Format("s_n_perchip_%s",dif.Data()),1200,1200);
@@ -220,7 +221,7 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
   TCanvas *canvas_correlations_S_N = new TCanvas(TString::Format("correlations_S_N_%s",dif.Data()),TString::Format("correlations_S_N_%s",dif.Data()),800,900);
   canvas_correlations_S_N->Divide(2,3);
 
-  
+  /*
   // SUMMARY MAPS
   eMPV_2d->SetTitle("eMIP[ADC] map, "+dif);
   eMPV_2d->GetXaxis()->SetTitle("x");
@@ -263,10 +264,10 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
   S_N_2d->GetYaxis()->SetTitle("y");
   //S_N_2d->GetZaxis()->SetRangeUser(0,50);
   S_N_2d->Draw("colz");
-  S_N_2d->Write();
+  S_N_2d->Write();*/
   
   // SUMMARY histograms (per chip)  
-  for(int ichip=0; ichip<16; ichip ++) {
+  for(int ichip=0; ichip<128; ichip ++) {
     TString dif0=dif+TString::Format("_chip%i",ichip);
     canvas_summary_mip->cd(ichip+1);
     MPV_chip[ichip]->SetStats(kFALSE);
@@ -278,7 +279,7 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
     MPV_chip[ichip]->Draw("colz");
     MPV_chip[ichip]->Write();
   }
-  for(int ichip=0; ichip<16; ichip ++) {
+  for(int ichip=0; ichip<128; ichip ++) {
     TString dif0=dif+TString::Format("_chip%i",ichip);
     canvas_summary_s_n->cd(ichip+1);
     S_N_chip[ichip]->SetStats(kFALSE);
@@ -367,7 +368,7 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
 
 
 
-  canvas_maps->Write();
+  // canvas_maps->Write();
   canvas_summary_mip->Write();
   canvas_summary_s_n->Write(); 
   canvas_summary->Write();
@@ -401,7 +402,7 @@ void singleSlabAnalysis::FindMasked(TString dif)
   //  std::vector<TCanvas*> chip;
   std::vector<std::vector<TH1F*> > h_charge_channel;
 
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     
     std::vector<TH1F*> chargetemp_sca;
     for(int ichn=0; ichn<64; ichn++) {
@@ -421,7 +422,7 @@ void singleSlabAnalysis::FindMasked(TString dif)
     if (ientry < 0) break;
     nb = fChain->GetEntry(jentry);   nbytes += nb;
 
-    for(int ichip=0; ichip<16; ichip++) {
+    for(int ichip=0; ichip<128; ichip++) {
       for(int isca=0; isca<15; isca++) {
 	bool gooddata=true;
 	if(global == true) {
@@ -450,13 +451,13 @@ void singleSlabAnalysis::FindMasked(TString dif)
   // do signal analysis (chip/channel/sca based) analysis
 
   //first we calculate a first estimation of total number of hits per chip and total of channels non masked per chip
-  double total_entries_chip[16];
-  double total_channels_chip[16];
-  for(int ichip=0; ichip<16; ichip++) {
+  double total_entries_chip[128];
+  double total_channels_chip[128];
+  for(int ichip=0; ichip<128; ichip++) {
     total_entries_chip[ichip]=0.;
     total_channels_chip[ichip]=0.;
   }
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     for(int ichn=0; ichn<64; ichn++) {
       total_entries_chip[ichip]+=h_charge_channel.at(ichip).at(ichn)->GetEntries();
       if(h_charge_channel.at(ichip).at(ichn)->GetEntries()>200) total_channels_chip[ichip]++;
@@ -471,7 +472,7 @@ void singleSlabAnalysis::FindMasked(TString dif)
   // 2- human mistake in the masking for few runs.
   // 3- error in the slow control loading ?
 
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     for(int ichn=0; ichn<64; ichn++) {
       fout_masked << ichip <<" " <<ichn<< " "; 
       //minimum of 100 entries per SCA
@@ -493,7 +494,7 @@ void singleSlabAnalysis::ReadMap(TString filename)
   if(!reading_file){
     cout<<" dameyo - damedame"<<endl;
   }
-  for(int i=0; i<16; i++) {
+  for(int i=0; i<128; i++) {
     for(int j=0; j<64; j++) {
       map_pointX[i][j] = -1000.;
       map_pointY[i][j] = -1000.;
@@ -519,7 +520,7 @@ void singleSlabAnalysis::ReadMasked(TString filename)
   if(!reading_file){
     cout<<" dameyo - damedame"<<endl;
   }
-  for(int i=0; i<16; i++) {
+  for(int i=0; i<128; i++) {
     for(int j=0; j<64; j++) {
       masked[i][j] = 0;
     }
@@ -541,7 +542,7 @@ void singleSlabAnalysis::ReadMasked(TString filename)
   }
 
   double nmasked=0.;
-  for(int i=0; i<16; i++) {
+  for(int i=0; i<128; i++) {
     for(int j=0; j<64; j++) {
       if(masked[i][j]==1) nmasked++;
     }
@@ -562,7 +563,7 @@ void singleSlabAnalysis::ReadPedestals(TString filename)
         cout<<" Pedestal input file: "<<filename<<endl;
   }
 
-  for(int i=0; i<16; i++) {
+  for(int i=0; i<128; i++) {
     std::vector<std::vector<Double_t> > chip_ped_mean;
     std::vector<std::vector<Double_t> > chip_ped_error;
     std::vector<std::vector<Double_t> > chip_ped_width;
@@ -580,7 +581,7 @@ void singleSlabAnalysis::ReadPedestals(TString filename)
     ped_width.push_back(chip_ped_width);
   }
 
-  for(int i=0; i<16; i++) {
+  for(int i=0; i<128; i++) {
     for(int j=0; j<64; j++) {
       for(int isca=0; isca<15; isca++) {
 	ped_mean.at(i).at(j).push_back(0.);
@@ -620,7 +621,7 @@ void singleSlabAnalysis::ReadPedestals(TString filename)
   ofstream fout_ped(filename2,ios::out);
   fout_ped<<"#pedestal results (fit to a gaussian) remove channels/sca with two pedestals peaks from the analysis "<<filename2<<endl;
   fout_ped<<"#chip channel ped0 eped0 widthped0 ped1 eped1 widthped1... ped14 eped14 widhtped14 (all SCA)"<<endl;
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     for(int ichn=0; ichn<64; ichn++) {
       fout_ped << ichip <<" " <<ichn<< " ";
       cout << ichip <<" " <<ichn<< " ";
@@ -660,6 +661,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
 
   Long64_t nentries = fChain->GetEntriesFast();
 
+  /*
   TH2F* pedestal_map[15];
   TH2F* pedestal_width_map[15];
   TH2F* pedestal_error_map[15];
@@ -691,7 +693,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
     pedestal_tagged_npeaks_map[isca]= new TH2F(TString::Format("pedestal_tagged_npeaks_map_sca%i",isca),TString::Format("pedestal_tagged_npeaks_map_sca%i;X[mm];Y[mm]",isca),32,-90,90,32,-90,90);
     pedestal_tagged_entries_map[isca]= new TH2F(TString::Format("pedestal_tagged_entries_map_sca%i",isca),TString::Format("pedestal_tagged_entries_map_sca%i;X[mm];Y[mm]",isca),32,-90,90,32,-90,90);
   }
- 
+  */
   // --------------------
   // all sca
   //  std::vector<TCanvas*> chip;
@@ -704,7 +706,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
   std::vector<TH1F*> pedestal_tagged_diff_chip ;
 
 
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     TH1F *ped_chip = new TH1F(TString::Format("ped_chip%i",ichip),TString::Format("ped_chip%i",ichip),1000,0.5,1000.5);
     pedestal_chip.push_back(ped_chip);
 
@@ -749,7 +751,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
     if (ientry < 0) break;
     nb = fChain->GetEntry(jentry);   nbytes += nb;
 
-    for(int ichip=0; ichip<16; ichip++) {
+    for(int ichip=0; ichip<128; ichip++) {
 
       for(int isca=0; isca<15; isca++) {
 
@@ -767,14 +769,14 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
 
 	  //good events
 	  bool selection=false;
-	  if(charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 && corrected_bcid[ichip][isca]>1247 && corrected_bcid[ichip][isca]<2900 ) selection=true;
+	  if(charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 && corrected_bcid[ichip][isca]>1247  ) selection=true;
 	  if(masked[ichip][ichn]==1) selection=false;
  	  if(gain_hit_high[ichip][isca][ichn]==0 && selection==true && gooddata==true)
 	    ped_sca.at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[ichip][isca][ichn]);
 
 	  //bad events
 	  selection=false;
-	  if( ( badbcid[ichip][isca]>0 || nhits[ichip][isca]>maxnhit || gooddata==false) && (corrected_bcid[ichip][isca]>1247 && corrected_bcid[ichip][isca]<2900)  ) selection=true;
+	  if( ( badbcid[ichip][isca]>0 || nhits[ichip][isca]>maxnhit || gooddata==false) && corrected_bcid[ichip][isca]>1247  ) selection=true;
 	  if(masked[ichip][ichn]==1) selection=false;
  	  if(gain_hit_high[ichip][isca][ichn]==0 && selection==true )
 	    ped_sca_tagged.at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[ichip][isca][ichn]);
@@ -792,7 +794,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
   pedfile->cd();
 
   //initialize pedestal vectors
-  for(int i=0; i<16; i++) {
+  for(int i=0; i<128; i++) {
     std::vector<std::vector<Double_t> > chip_ped_mean;
     std::vector<std::vector<Double_t> > chip_ped_error;
     std::vector<std::vector<Double_t> > chip_ped_width;
@@ -811,7 +813,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
   }
 
   // do pedestal (chip/channel/sca based) analysis
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     for(int ichn=0; ichn<64; ichn++) {
       
       fout_ped << ichip <<" " <<ichn<< " "; 
@@ -825,8 +827,8 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
 	ped_sca_tagged.at(ichip).at(ichn).at(isca)->SetName(TString::Format("ped_tagged_chip%i_chn%i_sca%i",ichip,ichn,isca));
 	ped_sca_tagged.at(ichip).at(ichn).at(isca)->Write();
 
-	pedestal_entries_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , ped_sca.at(ichip).at(ichn).at(isca)->GetEntries());
-	pedestal_tagged_entries_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , ped_sca_tagged.at(ichip).at(ichn).at(isca)->GetEntries());
+	//	pedestal_entries_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , ped_sca.at(ichip).at(ichn).at(isca)->GetEntries());
+	//	pedestal_tagged_entries_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , ped_sca_tagged.at(ichip).at(ichn).at(isca)->GetEntries());
 
 	
 	ped_mean.at(ichip).at(ichn).push_back(0.);
@@ -836,7 +838,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
 	if(ped_sca.at(ichip).at(ichn).at(isca)->GetEntries()> 300 ){ //max_entries/2 ) {
 	  TSpectrum *s = new TSpectrum();
 	  int npeaks = s->Search(ped_sca.at(ichip).at(ichn).at(isca),2,"",0.2); 
-	  pedestal_npeaks_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , npeaks);
+	  //	  pedestal_npeaks_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , npeaks);
 
 
 	  if(npeaks > 0) {
@@ -877,10 +879,10 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
 
 	    pedestal_chip.at(ichip)->Fill(f1->GetParameter(1));
 
-	    pedestal_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetParameter(1));
-	    pedestal_width_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetParameter(2));
-	    pedestal_error_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetParError(1));
-	    pedestal_chi2ndf_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetChisquare() / f1->GetNDF());
+	    //	    pedestal_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetParameter(1));
+	    //pedestal_width_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetParameter(2));
+	    //pedestal_error_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetParError(1));
+	    //pedestal_chi2ndf_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetChisquare() / f1->GetNDF());
 	      
 	  } else {
 	    fout_ped<<0<< " " << 0<<" "<<0<<" ";
@@ -893,7 +895,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
 	if(ped_sca_tagged.at(ichip).at(ichn).at(isca)->GetEntries()> 150 ){
 	  TSpectrum *s = new TSpectrum();
 	  int npeaks = s->Search(ped_sca_tagged.at(ichip).at(ichn).at(isca));
-	  pedestal_tagged_npeaks_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , npeaks);
+	  //	  pedestal_tagged_npeaks_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , npeaks);
 
 	  if(npeaks > 0) {
 
@@ -928,10 +930,10 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
 		ped_sca_tagged.at(ichip).at(ichn).at(isca)->Fit("f1","RQ");
 		pedestal_tagged_chip.at(ichip)->Fill(f1->GetParameter(1));
 		
-		pedestal_tagged_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetParameter(1));
-		pedestal_tagged_width_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetParameter(2));
-		pedestal_tagged_error_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetParError(1));
-		pedestal_tagged_chi2ndf_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetChisquare() / f1->GetNDF());
+		//		pedestal_tagged_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetParameter(1));
+		//pedestal_tagged_width_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetParameter(2));
+		//pedestal_tagged_error_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetParError(1));
+		//pedestal_tagged_chi2ndf_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , f1->GetChisquare() / f1->GetNDF());
 	      }
 	    }
 	  }
@@ -949,10 +951,10 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
   pedfile_summary->cd();
   
   // good pedestal events (not tagged events)
-  TCanvas *canvas_pedestal_map = new TCanvas("pedestal_map_"+dif, "pedestal_map_"+dif,1200,1200);
+  /*TCanvas *canvas_pedestal_map = new TCanvas("pedestal_map_"+dif, "pedestal_map_"+dif,1200,1200);
   canvas_pedestal_map->Divide(4,4);
   for(int isca=0; isca<15; isca ++) {
-    TString dif0=dif+TString::Format("_sca%i",isca);
+  TString dif0=dif+TString::Format("_sca%i",isca);
     canvas_pedestal_map->cd(isca+1);
     pedestal_map[isca]->SetStats(kFALSE);
     pedestal_map[isca]->SetTitle("pedestal_map, "+dif0);
@@ -1044,11 +1046,11 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
   canvas_pedestal_npeaks_map->Write();
   canvas_pedestal_entries_map->Write();
   canvas_pedestal_chi2ndf_map->Write();
-
+  */
    
   TCanvas *canvas_pedestal_pedestal = new TCanvas("pedestal_average_"+dif, "pedestal_average_"+dif,1200,1200);
   canvas_pedestal_pedestal->Divide(4,4);
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     canvas_pedestal_pedestal->cd(ichip+1);
     //gPad->SetLogy();
     pedestal_chip.at(ichip)->GetXaxis()->SetRangeUser(0,500);
@@ -1064,7 +1066,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
 
   TCanvas *canvas_pedestal_diff = new TCanvas("pedestal_diff_"+dif, "pedestal_diff_"+dif,1200,1200);
   canvas_pedestal_diff->Divide(4,4);
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     canvas_pedestal_diff->cd(ichip+1);
 
     pedestal_diff_chip.at(ichip)->GetXaxis()->SetRangeUser(-100,100);
@@ -1076,7 +1078,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
 
   canvas_pedestal_diff->Write();
 
-
+  /*
   // Tagged events
   TCanvas *canvas_pedestal_tagged_map = new TCanvas("pedestal_tagged_map_"+dif, "pedestal_tagged_map_"+dif,1200,1200);
   canvas_pedestal_tagged_map->Divide(4,4);
@@ -1173,11 +1175,11 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
   canvas_pedestal_tagged_npeaks_map->Write();
   canvas_pedestal_tagged_entries_map->Write();
   canvas_pedestal_tagged_chi2ndf_map->Write();
-
+  */
    
   TCanvas *canvas_pedestal_tagged_pedestal = new TCanvas("pedestal_tagged_average_"+dif, "pedestal_tagged_average_"+dif,1200,1200);
   canvas_pedestal_tagged_pedestal->Divide(4,4);
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     canvas_pedestal_tagged_pedestal->cd(ichip+1);
     pedestal_tagged_chip.at(ichip)->GetXaxis()->SetRangeUser(0,500);
     pedestal_tagged_chip.at(ichip)->SetTitle(TString::Format("Average pedestal_tagged, chip-%i",ichip));
@@ -1191,7 +1193,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
 
   TCanvas *canvas_pedestal_tagged_diff = new TCanvas("pedestal_tagged_diff_"+dif, "pedestal_tagged_diff_"+dif,1200,1200);
   canvas_pedestal_tagged_diff->Divide(4,4);
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     canvas_pedestal_tagged_diff->cd(ichip+1);
 
     pedestal_tagged_diff_chip.at(ichip)->GetXaxis()->SetRangeUser(-100,100);
@@ -1277,7 +1279,7 @@ void singleSlabAnalysis::PedestalAnalysis_gridpoints(TString dif,TString grid=""
   std::vector<TH1F*> pedestal_tagged_diff_chip ;
 
 
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     TH1F *ped_chip = new TH1F(TString::Format("ped_chip%i",ichip),TString::Format("ped_chip%i",ichip),1000,0.5,1000.5);
     pedestal_chip.push_back(ped_chip);
 
@@ -1322,7 +1324,7 @@ void singleSlabAnalysis::PedestalAnalysis_gridpoints(TString dif,TString grid=""
     if (ientry < 0) break;
     nb = fChain->GetEntry(jentry);   nbytes += nb;
 
-    for(int ichip=0; ichip<16; ichip++) {
+    for(int ichip=0; ichip<128; ichip++) {
 
       for(int isca=0; isca<15; isca++) {
 
@@ -1367,15 +1369,15 @@ void singleSlabAnalysis::PedestalAnalysis_gridpoints(TString dif,TString grid=""
 
   //// PREANALYZE PEDESTALS
   //  decide which channels are being saved
-  int savepedestal[16][64];
-  for(int i=0; i<16; i++) {
+  int savepedestal[128][64];
+  for(int i=0; i<128; i++) {
     for(int j=0; j<64; j++) {
       savepedestal[i][j]=0;
     }
   }
 
  // do pedestal (chip/channel/sca based) analysis
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     for(int ichn=0; ichn<64; ichn++) {
       
       int ngoodscas=0;
@@ -1397,7 +1399,7 @@ void singleSlabAnalysis::PedestalAnalysis_gridpoints(TString dif,TString grid=""
   /// WRITE DOWN PEDESTALS if and only if pedestal is calculated for at least 14 SCA
   
   // do pedestal (chip/channel/sca based) analysis
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     for(int ichn=0; ichn<64; ichn++) {
       
       if(savepedestal[ichip][ichn]>0) {
@@ -1627,7 +1629,7 @@ void singleSlabAnalysis::PedestalAnalysis_gridpoints(TString dif,TString grid=""
    
   TCanvas *canvas_pedestal_pedestal = new TCanvas("pedestal_average_"+dif, "pedestal_average_"+dif,1200,1200);
   canvas_pedestal_pedestal->Divide(4,4);
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     canvas_pedestal_pedestal->cd(ichip+1);
     //gPad->SetLogy();
     pedestal_chip.at(ichip)->GetXaxis()->SetRangeUser(0,500);
@@ -1643,7 +1645,7 @@ void singleSlabAnalysis::PedestalAnalysis_gridpoints(TString dif,TString grid=""
 
   TCanvas *canvas_pedestal_diff = new TCanvas("pedestal_diff_"+dif, "pedestal_diff_"+dif,1200,1200);
   canvas_pedestal_diff->Divide(4,4);
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     canvas_pedestal_diff->cd(ichip+1);
 
     pedestal_diff_chip.at(ichip)->GetXaxis()->SetRangeUser(-100,100);
@@ -1756,7 +1758,7 @@ void singleSlabAnalysis::PedestalAnalysis_gridpoints(TString dif,TString grid=""
    
   TCanvas *canvas_pedestal_tagged_pedestal = new TCanvas("pedestal_tagged_average_"+dif, "pedestal_tagged_average_"+dif,1200,1200);
   canvas_pedestal_tagged_pedestal->Divide(4,4);
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     canvas_pedestal_tagged_pedestal->cd(ichip+1);
     pedestal_tagged_chip.at(ichip)->GetXaxis()->SetRangeUser(0,500);
     pedestal_tagged_chip.at(ichip)->SetTitle(TString::Format("Average pedestal_tagged, chip-%i",ichip));
@@ -1770,7 +1772,7 @@ void singleSlabAnalysis::PedestalAnalysis_gridpoints(TString dif,TString grid=""
 
   TCanvas *canvas_pedestal_tagged_diff = new TCanvas("pedestal_tagged_diff_"+dif, "pedestal_tagged_diff_"+dif,1200,1200);
   canvas_pedestal_tagged_diff->Divide(4,4);
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     canvas_pedestal_tagged_diff->cd(ichip+1);
 
     pedestal_tagged_diff_chip.at(ichip)->GetXaxis()->SetRangeUser(-100,100);
@@ -1807,11 +1809,11 @@ void singleSlabAnalysis::PedestalAnalysis_bcid(TString dif, TString grid="",TStr
 
   Long64_t nentries = fChain->GetEntriesFast();
 
-  // TH1F* pedestal_normal[16][16][10];
+  // TH1F* pedestal_normal[128][128][10];
 
 
-  // for(int ichip=0; ichip<16; ichip++) {
-  //   for(int isca=0; isca<16; isca++) {
+  // for(int ichip=0; ichip<128; ichip++) {
+  //   for(int isca=0; isca<128; isca++) {
   //     for(int ibcid=0; ibcid<10; ibcid++) {
   // 	TString title = TString::Format("pedestal_normal_chip%i_sca%i_bcidrange%i",ichip,isca,ibcid);
   // 	if(isca==15) title = TString::Format("pedestal_normal_chip%i_sca%i_bcidrange%i",ichip,isca,ibcid);
@@ -1829,17 +1831,17 @@ void singleSlabAnalysis::PedestalAnalysis_bcid(TString dif, TString grid="",TStr
   Float_t bindev[102];
   for(int ibcid=0; ibcid<102; ibcid++) bindev[ibcid]=100*(-0.105+(0.2/101)*ibcid);
 
-  TH2F* pedestal_deviation[16];
+  TH2F* pedestal_deviation[128];
 
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     TString title  = TString::Format("pedestal_deviation_chip%i",ichip);
     pedestal_deviation[ichip]= new TH2F(title,title,binnum,timerange,101,bindev);//101,-0.0505,0.0505);
   }
 
   TString title  = TString::Format("pedestal_deviation_%s",dif.Data()); 
   TH2F* pedestal_deviation_slab = new TH2F(title,title,binnum,timerange,101,bindev);
-  TH2F* badpedestal_chip_channel = new TH2F("badpedestal_chip_channel","badpedestal_chip_channel",64,-0.5,63.5,16,-0.5,15.5);
-  TH2F* badpedestal_chip_sca = new TH2F("badpedestal_chip_sca","badpedestal_chip_sca",15,-0.5,14.5,16,-0.5,15.5);
+  TH2F* badpedestal_chip_channel = new TH2F("badpedestal_chip_channel","badpedestal_chip_channel",64,-0.5,63.5,128,-0.5,127.5);
+  TH2F* badpedestal_chip_sca = new TH2F("badpedestal_chip_sca","badpedestal_chip_sca",15,-0.5,14.5,128,-0.5,127.5);
   TH2F* badpedestal_sca_channel = new TH2F("badpedestal_sca_channel","badpedestal_sca_channel",64,-0.5,63.5,15,-0.5,14.5);
 
 
@@ -1848,7 +1850,7 @@ void singleSlabAnalysis::PedestalAnalysis_bcid(TString dif, TString grid="",TStr
   //  std::vector<TCanvas*> chip;
   std::vector<std::vector<std::vector<std::vector<TH1F*> > > > ped_sca_bcid;
 
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     std::vector<std::vector<std::vector<TH1F*> > >pedtemp_sca;
     for(int ichn=0; ichn<64; ichn++) {
       std::vector<std::vector<TH1F*> >pedtemp_sca2;
@@ -1874,7 +1876,7 @@ void singleSlabAnalysis::PedestalAnalysis_bcid(TString dif, TString grid="",TStr
     if (ientry < 0) break;
     nb = fChain->GetEntry(jentry);   nbytes += nb;
 
-    for(int ichip=0; ichip<16; ichip++) {
+    for(int ichip=0; ichip<128; ichip++) {
 
       for(int isca=0; isca<15; isca++) {
 
@@ -1912,7 +1914,7 @@ void singleSlabAnalysis::PedestalAnalysis_bcid(TString dif, TString grid="",TStr
 
   
   // do pedestal (chip/channel/sca based) analysis
-  for(int ichip=0; ichip<16; ichip++) {
+  for(int ichip=0; ichip<128; ichip++) {
     for(int isca=0; isca<15; isca++) {
       for(int ichn=0; ichn<64; ichn++) {
 	  
@@ -1989,7 +1991,7 @@ void singleSlabAnalysis::PedestalAnalysis_bcid(TString dif, TString grid="",TStr
   // good pedestal events (not tagged events)
   TCanvas *canvas_pedestal_bcid = new TCanvas(TString::Format("pedestal_bcid_chip_%s",dif.Data()),TString::Format("pedestal_bcid_chip_%s",dif.Data()),1200,1200);
   canvas_pedestal_bcid->Divide(4,4);
-  for(int ichip=0; ichip<16; ichip ++) {
+  for(int ichip=0; ichip<128; ichip ++) {
     canvas_pedestal_bcid->cd(ichip+1);
     pedestal_deviation[ichip]->SetTitle(TString::Format("pedestal_deviation_chip%i",ichip));
     pedestal_deviation[ichip]->GetXaxis()->SetTitle("time after val_evt (us)");
@@ -2029,7 +2031,7 @@ void singleSlabAnalysis::PedestalAnalysis_bcid(TString dif, TString grid="",TStr
   badpedestal_chip_sca->Draw("colz");
   canvas_pedestal_bcid2->Write();
 
-  for(int ichip=0; ichip<16; ichip ++) pedestal_deviation[ichip]->Write();
+  for(int ichip=0; ichip<128; ichip ++) pedestal_deviation[ichip]->Write();
   pedestal_deviation_slab->Write();
   badpedestal_chip_channel->Write();
   badpedestal_sca_channel->Write();
@@ -2071,7 +2073,7 @@ void singleSlabAnalysis::BcidCorrelations(TString dif)
     nb = fChain->GetEntry(jentry);   nbytes += nb;
 
 
-    for(int ichip=0; ichip<16; ichip++) {
+    for(int ichip=0; ichip<128; ichip++) {
       for(int isca=0; isca<15; isca++) {
 	bool gooddata=true;
 	if(global == true) {
@@ -2093,7 +2095,7 @@ void singleSlabAnalysis::BcidCorrelations(TString dif)
 	  
 	  if(selection == true && gooddata==true && masked[ichip][ichn] == 0) {
 
-	    for(int ichip2=0; ichip2<16; ichip2++) {
+	    for(int ichip2=0; ichip2<128; ichip2++) {
 	      for(int isca2=0; isca2<15; isca2++) {
 		double chip_bcid2=ichip2*5000.+bcid[ichip2][isca2];
 
@@ -2139,7 +2141,7 @@ void singleSlabAnalysis::BcidCorrelations(TString dif)
   
  
   TCanvas *canvas= new TCanvas("bcid_correl_"+dif, "bcid_correl_"+dif,1600,1000);
-  canvas->Divide(2,2);
+  canvas->Divide(2,2); 
   canvas->cd(1);
   h_badevents_samechip->GetXaxis()->SetTitle("x");
   h_badevents_samechip->GetYaxis()->SetTitle("y");   

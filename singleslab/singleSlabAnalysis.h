@@ -33,16 +33,16 @@ public :
    Int_t           event;
    Int_t           thr;
    Int_t           acqNumber;
-   Int_t           chipid[16];
-   Int_t           nColumns[16];
-   Int_t           bcid[16][15];
-   Int_t           corrected_bcid[16][15];
-   Int_t           badbcid[16][15];
-   Int_t           nhits[16][15];
-   Int_t           charge_lowGain[16][15][64];
-   Int_t           charge_hiGain[16][15][64];
-   Int_t           gain_hit_low[16][15][64];
-   Int_t           gain_hit_high[16][15][64];
+   Int_t           chipid[128];
+   Int_t           nColumns[128];
+   Int_t           bcid[128][15];
+   Int_t           corrected_bcid[128][15];
+   Int_t           badbcid[128][15];
+   Int_t           nhits[128][15];
+   Int_t           charge_lowGain[128][15][64];
+   Int_t           charge_hiGain[128][15][64];
+   Int_t           gain_hit_low[128][15][64];
+   Int_t           gain_hit_high[128][15][64];
 
    // List of branches
    TBranch        *b_event;   //!
@@ -90,9 +90,9 @@ public :
 
 private :
 
-  Float_t map_pointX[16][64];
-  Float_t map_pointY[16][64];
-  Int_t masked[16][64];
+  Float_t map_pointX[128][64];
+  Float_t map_pointY[128][64];
+  Int_t masked[128][64];
   std::vector<std::vector<std::vector<Double_t> > > ped_mean;
   std::vector<std::vector<std::vector<Double_t> > > ped_error;
   std::vector<std::vector<std::vector<Double_t> > > ped_width;
