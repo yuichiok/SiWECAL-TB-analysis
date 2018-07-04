@@ -654,7 +654,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
 
   
   bool global = true;
-  int maxnhit=5;
+  int maxnhit=60;
 
   if (fChain == 0) return;
 
@@ -767,14 +767,14 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
 
 	  //good events
 	  bool selection=false;
-	  if(charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 && corrected_bcid[ichip][isca]>1247 && corrected_bcid[ichip][isca]<2900 ) selection=true;
+	  if(charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 && corrected_bcid[ichip][isca]>1247 ) selection=true;
 	  if(masked[ichip][ichn]==1) selection=false;
  	  if(gain_hit_high[ichip][isca][ichn]==0 && selection==true && gooddata==true)
 	    ped_sca.at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[ichip][isca][ichn]);
 
 	  //bad events
 	  selection=false;
-	  if( ( badbcid[ichip][isca]>0 || nhits[ichip][isca]>maxnhit || gooddata==false) && (corrected_bcid[ichip][isca]>1247 && corrected_bcid[ichip][isca]<2900)  ) selection=true;
+	  if( ( badbcid[ichip][isca]>0 || nhits[ichip][isca]>maxnhit || gooddata==false) && corrected_bcid[ichip][isca]>1247   ) selection=true;
 	  if(masked[ichip][ichn]==1) selection=false;
  	  if(gain_hit_high[ichip][isca][ichn]==0 && selection==true )
 	    ped_sca_tagged.at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[ichip][isca][ichn]);
@@ -1983,7 +1983,7 @@ void singleSlabAnalysis::PedestalAnalysis_bcid(TString dif, TString grid="",TStr
   }
   
   
-  TFile *pedfile_bcid = new TFile("results_pedestal/tests/Pedestal_bcid_"+dif+".root" , "RECREATE");
+  TFile *pedfile_bcid = new TFile("results_pedestal/Pedestal_bcid_"+dif+".root" , "RECREATE");
   pedfile_bcid->cd();
 
   // good pedestal events (not tagged events)
