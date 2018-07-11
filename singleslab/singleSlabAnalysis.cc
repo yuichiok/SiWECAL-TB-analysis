@@ -17,15 +17,15 @@
 using namespace std;
 
 
-void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputname="", bool readpedestal=false, TString map_filename="/home/calice/SiWECAL-TB-analysis/fev10_chip_channel_x_y_mapping.txt")
+void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputname="", bool readpedestal=false, TString map_filename="../fev10_chip_channel_x_y_mapping.txt")
 {
 
-  int maxnhit=2; // plane event threshold
+  int maxnhit=1; // plane event threshold
 
   //Read the channel/chip -- x/y mapping
   ReadMap(map_filename);
   //Read the list of pedestals (this information contains, implicitily, the masked channels information )
-  if(readpedestal==true) ReadPedestals("results_pedestal/pedestals/Pedestal_"+dif+".txt");
+  if(readpedestal==true) ReadPedestals("results_pedestal/Pedestal_"+dif+".txt");
 
   ofstream fout_mip("results_mipcalibration/MIP_"+dif+outputname+".txt",ios::out);
   fout_mip<<"#mip results "<<dif<<endl;
@@ -141,7 +141,7 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
   for(int ichip=0; ichip<16; ichip++) {
     for(int ichn=0; ichn<64; ichn++) {
             
-      if(mip_histo.at(ichip).at(ichn)->GetEntries()> 500 && mip_histo.at(ichip).at(ichn)->GetMean()>20){
+      if(mip_histo.at(ichip).at(ichn)->GetEntries()> 1000 && mip_histo.at(ichip).at(ichn)->GetMean()>20){
 
 	fr[0]=mip_histo.at(ichip).at(ichn)->GetMean()-0.8*mip_histo.at(ichip).at(ichn)->GetRMS();
 	fr[1]=mip_histo.at(ichip).at(ichn)->GetMean();//+0.1*mip_histo.at(ichip).at(ichn)->GetRMS();
@@ -599,7 +599,7 @@ void singleSlabAnalysis::ReadPedestals(TString filename)
   }
   
   TString tmpst;
-  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >>  tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
+  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >>  tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst ;
   reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >>  tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
 
   while(reading_file){
@@ -637,13 +637,13 @@ void singleSlabAnalysis::ReadPedestals(TString filename)
 
 }
 
-void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString map_filename="/home/calice/SiWECAL-TB-analysis/fev10_chip_channel_x_y_mapping.txt")
+void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString map_filename="../fev10_chip_channel_x_y_mapping.txt")
 {
 
   //Read the channel/chip -- x/y mapping
   ReadMap(map_filename);
   //Read the list of masked channels
-  ReadMasked("maskedchannels/masked_"+dif+".txt");
+  //  ReadMasked("maskedchannels/masked_"+dif+".txt");
 
   if(grid!="") dif=dif+grid;
 
@@ -654,7 +654,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
 
   
   bool global = true;
-  int maxnhit=60;
+  int maxnhit=1;
 
   if (fChain == 0) return;
 
@@ -767,14 +767,14 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
 
 	  //good events
 	  bool selection=false;
-	  if(charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 && corrected_bcid[ichip][isca]>1247 ) selection=true;
+	  if(charge_hiGain[ichip][isca][ichn]>10 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 && bcid[ichip][isca]>1250 ) selection=true;
 	  if(masked[ichip][ichn]==1) selection=false;
  	  if(gain_hit_high[ichip][isca][ichn]==0 && selection==true && gooddata==true)
 	    ped_sca.at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[ichip][isca][ichn]);
 
 	  //bad events
 	  selection=false;
-	  if( ( badbcid[ichip][isca]>0 || nhits[ichip][isca]>maxnhit || gooddata==false) && corrected_bcid[ichip][isca]>1247   ) selection=true;
+	  if( ( badbcid[ichip][isca]!=0 || nhits[ichip][isca]>maxnhit || gooddata==false) && bcid[ichip][isca]>1250 ) selection=true;
 	  if(masked[ichip][ichn]==1) selection=false;
  	  if(gain_hit_high[ichip][isca][ichn]==0 && selection==true )
 	    ped_sca_tagged.at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[ichip][isca][ichn]);
@@ -833,7 +833,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
 	ped_error.at(ichip).at(ichn).push_back(0.);
 	ped_width.at(ichip).at(ichn).push_back(0.);
 
-	if(ped_sca.at(ichip).at(ichn).at(isca)->GetEntries()> 300 ){ //max_entries/2 ) {
+	if(ped_sca.at(ichip).at(ichn).at(isca)->GetEntries()> 1000 ){ //max_entries/2 ) {
 	  TSpectrum *s = new TSpectrum();
 	  int npeaks = s->Search(ped_sca.at(ichip).at(ichn).at(isca),2,"",0.2); 
 	  pedestal_npeaks_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , npeaks);
@@ -890,9 +890,9 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
 	}
 
 	// analyze pedestal for tagged events
-	if(ped_sca_tagged.at(ichip).at(ichn).at(isca)->GetEntries()> 150 ){
+	if(ped_sca_tagged.at(ichip).at(ichn).at(isca)->GetEntries()> 250 ){
 	  TSpectrum *s = new TSpectrum();
-	  int npeaks = s->Search(ped_sca_tagged.at(ichip).at(ichn).at(isca));
+	  int npeaks = s->Search(ped_sca_tagged.at(ichip).at(ichn).at(isca),2,"",0.2);
 	  pedestal_tagged_npeaks_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , npeaks);
 
 	  if(npeaks > 0) {
@@ -2165,6 +2165,158 @@ void singleSlabAnalysis::BcidCorrelations(TString dif)
 
   
 }
+
+
+ 
+void singleSlabAnalysis::Retriggers(TString dif, TString sufix="")
+{
+
+  //ReadMasked("maskedchannels/masked_"+dif+".txt");
+  ReadMap("../fev10_chip_channel_x_y_mapping.txt");
+  //function that reads a root file and check which channels have or not signal (hit bit ==1).
+  //should be used for root files that contain a full position scan, in order to provide meaninful list of masked channels.
+ 
+  bool global = true;
+  int maxnhit=3;
+
+  if (fChain == 0) return;
+  Long64_t nentries = fChain->GetEntriesFast();
+  
+  // --------------------
+  // all sca
+  TH2F* h_first_retriggering = new TH2F("first_retriggering_"+dif,"first_retriggering_"+dif,16,-0.5,15.5,64,-0.5,63.5);
+  TH2F* h_retrigger_train[16];
+  TH1F* h_retrigger_train_length[16];
+  TH1F* h_retrigger_n_trains[16];
+  TH1F* h_signal_n_events[16];
+
+  TH2F* h_bcid_correlation[16];
+  
+  TH1F* good[16];
+  TH1F* bad[16];
+  TH2F* good_vs_bad[16];
+
+  for(int ichip=0; ichip<16; ichip++) {
+    h_retrigger_train[ichip] = new TH2F(TString::Format("retrigger_train_chip%i_",ichip)+dif,TString::Format("retrigger_train_chip%i_",ichip)+dif,15,-0.5,14.5,64,-0.5,63.5);
+    h_retrigger_train_length[ichip] = new TH1F(TString::Format("retrigger_train_length_chip%i_",ichip)+dif,TString::Format("retrigger_train_length_chip%i_",ichip)+dif,15,0.5,15.5);
+    h_retrigger_n_trains[ichip] = new TH1F(TString::Format("retrigger_n_trains_chip%i_",ichip)+dif,TString::Format("retrigger_n_trains_chip%i_",ichip)+dif,5,-0.5,4.5);
+    h_signal_n_events[ichip] = new TH1F(TString::Format("signal_n_events_chip%i_",ichip)+dif,TString::Format("signal_n_events_chip%i_",ichip)+dif,5,-0.5,4.5);
+
+    h_bcid_correlation[ichip]
+      = new TH2F(TString::Format("bcid_correlation_chip%i_",ichip)+dif,TString::Format("bcid_correlation_chip%i_",ichip)+dif,50,0,5000,1000,0.5,1000.5);
+    
+    good[ichip]= new TH1F(TString::Format("good_chip%i_%s",ichip,dif.Data()),TString::Format("good_chip%i_%s",ichip,dif.Data()),15,0.5,15.5);
+    bad[ichip]= new TH1F(TString::Format("bad_chip%i_%s",ichip,dif.Data()),TString::Format("bad_chip%i_%s",ichip,dif.Data()),15,0.5,15.5);
+    good_vs_bad[ichip]= new TH2F(TString::Format("good_vs_bad_chip%i_%s",ichip,dif.Data()),TString::Format("good_vs_bad_chip%i_%s",ichip,dif.Data()),15,0.5,15.5,15,0.5,15.5);
+  }
+
+  // -----------------------------------------------------------------------------------------------------   
+  // SCA analysis
+  Long64_t nbytes = 0, nb = 0;
+  for (Long64_t jentry=0; jentry<nentries;jentry++) {
+    Long64_t ientry = LoadTree(jentry);
+    if (ientry < 0) break;
+    nb = fChain->GetEntry(jentry);   nbytes += nb;
+
+    for(int ichip=0; ichip<16; ichip++) {
+
+      double good_triggers=0;
+      double bad_triggers=0;
+
+      bool first_retrig=false;
+      int first_sca_retrig=0;
+      int length=0;
+      int n_trains=0;
+      int n_events=0;
+
+      float bcid_signal=0;
+      float bcid_retrigger=0;
+      
+      for(int isca=0; isca<15; isca++) {
+
+	if(badbcid[ichip][isca]==0) {
+	  bcid_signal=bcid[ichip][isca];
+	  good_triggers++;
+	  n_events++;
+	}
+
+	if(badbcid[ichip][isca]>2 && first_retrig==true && badbcid[ichip][isca-1]==0) {
+	  first_retrig=false;
+	  length=0;
+	  n_trains++;
+	  bcid_retrigger=bcid[ichip][isca];
+
+	}
+
+	//train
+	if(badbcid[ichip][isca]>2 && first_retrig==true) {
+	  int ntriggers=0;
+	  for(int ichn=0; ichn<64; ichn++) 
+	    if(gain_hit_high[ichip][isca][ichn]==1) ntriggers++;
+	  
+	  h_retrigger_train[ichip]->Fill(isca-first_sca_retrig,ntriggers);
+	  length++;
+	}
+
+	if(badbcid[ichip][isca]>2 && first_retrig==false) {
+	  bcid_retrigger=bcid[ichip][isca];
+	  bad_triggers++;
+	  first_retrig=true;
+	  first_sca_retrig=isca;
+	  n_trains++;
+
+	  for(int ichn=0; ichn<64; ichn++) {
+	    if(gain_hit_high[ichip][isca][ichn]==1) {
+	      h_first_retriggering -> Fill(ichip,ichn);
+	    }
+	  }
+	}// first retrigg
+
+	if(bcid_signal>0 && bcid_retrigger>0) {
+	  h_bcid_correlation[ichip]->Fill(bcid_signal,bcid_retrigger-bcid_signal);
+	  bcid_signal=0;
+	  bcid_retrigger=0;
+	}
+      
+      }
+
+      
+      h_retrigger_train_length[ichip]->Fill(length);
+      h_retrigger_n_trains[ichip]->Fill(n_trains);
+      h_signal_n_events[ichip]->Fill(n_events);
+
+      good[ichip]->Fill(good_triggers);
+      bad[ichip]->Fill(bad_triggers);
+      good_vs_bad[ichip]->Fill(good_triggers,bad_triggers);
+
+    }
+  }
+
+  TFile *summary = new TFile("results_retriggers/Retriggers_"+dif+"_"+sufix+".root" , "RECREATE");
+  summary->cd();
+
+  h_first_retriggering->Write();
+  
+  for(int ichip=0; ichip<16; ichip++) {
+    h_bcid_correlation[ichip]->GetXaxis()->SetTitle("bcid trigger");
+    h_bcid_correlation[ichip]->GetYaxis()->SetTitle("bcid retrigger - bcid trigger");
+
+    h_bcid_correlation[ichip]->Write();
+    
+    h_retrigger_train[ichip]->Write();
+    h_retrigger_train_length[ichip]->Write();
+    h_retrigger_n_trains[ichip]->Write();
+    h_signal_n_events[ichip]->Write();
+
+    good[ichip]->Write();
+    bad[ichip]->Write();
+    good_vs_bad[ichip]->Write();
+  }
+
+
+  
+}
+
 
 // LANDAU STUFF
 //---------------------------------------------------------------------------------------

@@ -85,6 +85,7 @@ public :
    //   virtual Double_t langaufun(Double_t *x, Double_t *par);
    // bcid correlations of retriggers (good vs bad events)
    virtual void     BcidCorrelations(TString filename);
+   virtual void     Retriggers(TString dif, TString sufix);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
 
