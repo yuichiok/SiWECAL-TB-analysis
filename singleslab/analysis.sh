@@ -1,13 +1,10 @@
 #!/bin/bash
-#sleep 3h
-source pedestal.sh
-cd macros_pedestal/
-root -l -q Analysis_bcid.C\(\"dif_1_1_1\"\)
-root -l -q Analysis_bcid.C\(\"dif_1_1_2\"\)
-root -l -q Analysis_bcid.C\(\"dif_1_1_3\"\)
-root -l -q Analysis_bcid.C\(\"dif_1_1_4\"\)
-root -l -q Analysis_bcid.C\(\"dif_1_1_5\"\)
-root -l -q Analysis_bcid.C\(\"dif_1_2_1\"\)
-root -l -q Analysis_bcid.C\(\"dif_1_2_2\"\)
-cd ../
-source signal.sh
+
+
+
+for angle in {10,20,30,40}
+do
+    root -l PedAnalysis.cc\(\"/home/irles/WorkAreaECAL/2018/TB201807/data_converted/LongSlab/angle_sunday8/longslab_angle${angle}_ASU8_dif_1_1_1.raw.root\",\"dif_1_1_1\",\"ASU8_angle${angle}\"\)
+    root -l SigAnalysis.cc\(\"/home/irles/WorkAreaECAL/2018/TB201807/data_converted/LongSlab/angle_sunday8/longslab_angle${angle}_ASU8_dif_1_1_1.raw.root\",\"dif_1_1_1\",\"ASU8_angle${angle}\"\)
+done
+
