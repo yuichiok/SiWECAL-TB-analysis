@@ -132,7 +132,7 @@ int MIP_LS(){
   gStyle->SetTitleX(0.2);
   gStyle->SetTitleY(1.0);
   gStyle->SetTitleStyle(0);
-  gStyle->SetMarkerSize(0.8);
+  gStyle->SetMarkerSize(1.2);
 
   TString angle = "angle0";
   int channel[16]= {4,11,15,18,20,23,27,30,33,36,37,40,42,45,48,49};
@@ -144,13 +144,15 @@ int MIP_LS(){
 
   for(int ichn=0; ichn<16; ichn++) {
 
-    double x[8], y[8], ey[8], entries[8];
+    double x[8], y[8], ey[8], y2[8], ey2[8], entries[8];
     
     for(int iasu=1; iasu<9; iasu++) {
       
       x[iasu-1]=iasu;
       y[iasu-1]=0;
       ey[iasu-1]=0;
+      y2[iasu-1]=0;
+      ey2[iasu-1]=0;
       entries[iasu-1]=0;
 
       //open file
@@ -185,7 +187,10 @@ int MIP_LS(){
 	
 	if(hmip_good->GetEntries()>50) {
 	  y[iasu-1]=fitsnr_temp->GetParameter(1);
-	  ey[iasu-1]=fitsnr_temp->GetParameter(0);
+	  ey[iasu-1]=fitsnr_temp->GetParError(1);
+	  y2[iasu-1]=fitsnr_temp->GetParameter(0);
+	  ey2[iasu-1]=fitsnr_temp->GetParError(0);
+
 	}
       }
       f->Close();
@@ -193,7 +198,7 @@ int MIP_LS(){
     }//iasu
 
     position_channel[ichn]=new TGraphErrors(8,x,y,0,ey);
-    width_channel[ichn]=new TGraphErrors(8,x,ey,0,0);
+    width_channel[ichn]=new TGraphErrors(8,x,y2,0,0);
     entries_channel[ichn]=new TGraphErrors(8,x,entries,0,0);
 
 
@@ -226,8 +231,8 @@ int MIP_LS(){
 	position_channel[ichn]->GetXaxis()->SetTitle("ASU");
 	position_channel[ichn]->GetYaxis()->SetTitle("MPV [ADC]");
 	position_channel[ichn]->GetYaxis()->SetRangeUser(40,80);
-	position_channel[ichn]->Draw("alp");
-      } else position_channel[ichn]->Draw("lp");
+	position_channel[ichn]->Draw("ap");
+      } else position_channel[ichn]->Draw("p");
       
   }//ichn
 
@@ -251,8 +256,8 @@ int MIP_LS(){
 	width_channel[ichn]->GetXaxis()->SetTitle("ASU");
 	width_channel[ichn]->GetYaxis()->SetTitle("width landau [ADC]");
 	width_channel[ichn]->GetYaxis()->SetRangeUser(0,20);
-	width_channel[ichn]->Draw("alp");
-      } else width_channel[ichn]->Draw("lp");
+	width_channel[ichn]->Draw("ap");
+      } else width_channel[ichn]->Draw("p");
       if(ichn<8) leg1->AddEntry(width_channel[ichn],TString::Format("channel=%i",channel[ichn]),"lp");
       else leg2->AddEntry(width_channel[ichn],TString::Format("channel=%i",channel[ichn]),"lp");
       
@@ -281,8 +286,8 @@ int MIP_LS(){
 	entries_channel[ichn]->GetXaxis()->SetTitle("ASU");
 	entries_channel[ichn]->GetYaxis()->SetTitle("Ntriggers");
 	entries_channel[ichn]->GetYaxis()->SetRangeUser(0,20000);
-	entries_channel[ichn]->Draw("alp");
-      } else entries_channel[ichn]->Draw("lp");
+	entries_channel[ichn]->Draw("ap");
+      } else entries_channel[ichn]->Draw("p");
   }
   
     canvas->Print(TString::Format("mip_allasu_canvas_%s.png",angle.Data()));
