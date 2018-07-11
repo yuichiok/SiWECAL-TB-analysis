@@ -56,6 +56,126 @@ public:
     chipIds.push_back(0x000D);//chip
     chipIds.push_back(0x000E);//chip
     chipIds.push_back(0x000F);//chip
+
+    chipIds.push_back(0x0010);//chip 2
+    chipIds.push_back(0x0011);//chip 4
+    chipIds.push_back(0x0012);//chip 3
+    chipIds.push_back(0x0013);//chip 1
+    chipIds.push_back(0x0014);//chip
+    chipIds.push_back(0x0015);//chip
+    chipIds.push_back(0x0016);//chip
+    chipIds.push_back(0x0017);//chip
+    chipIds.push_back(0x0018);//chip
+    chipIds.push_back(0x0019);//chip
+    chipIds.push_back(0x001A);//chip
+    chipIds.push_back(0x001B);//chip
+    chipIds.push_back(0x001C);//chip
+    chipIds.push_back(0x001D);//chip
+    chipIds.push_back(0x001E);//chip
+    chipIds.push_back(0x001F);//chip
+
+    chipIds.push_back(0x0020);//chip 2
+    chipIds.push_back(0x0021);//chip 4
+    chipIds.push_back(0x0022);//chip 3
+    chipIds.push_back(0x0023);//chip 1
+    chipIds.push_back(0x0024);//chip
+    chipIds.push_back(0x0025);//chip
+    chipIds.push_back(0x0026);//chip
+    chipIds.push_back(0x0027);//chip
+    chipIds.push_back(0x0028);//chip
+    chipIds.push_back(0x0029);//chip
+    chipIds.push_back(0x002A);//chip
+    chipIds.push_back(0x002B);//chip
+    chipIds.push_back(0x002C);//chip
+    chipIds.push_back(0x002D);//chip
+    chipIds.push_back(0x002E);//chip
+    chipIds.push_back(0x002F);//chip
+
+    chipIds.push_back(0x0030);//chip 2
+    chipIds.push_back(0x0031);//chip 4
+    chipIds.push_back(0x0032);//chip 3
+    chipIds.push_back(0x0033);//chip 1
+    chipIds.push_back(0x0034);//chip
+    chipIds.push_back(0x0035);//chip
+    chipIds.push_back(0x0036);//chip
+    chipIds.push_back(0x0037);//chip
+    chipIds.push_back(0x0038);//chip
+    chipIds.push_back(0x0039);//chip
+    chipIds.push_back(0x003A);//chip
+    chipIds.push_back(0x003B);//chip
+    chipIds.push_back(0x003C);//chip
+    chipIds.push_back(0x003D);//chip
+    chipIds.push_back(0x003E);//chip
+    chipIds.push_back(0x003F);//chip
+
+    chipIds.push_back(0x0040);//chip 2
+    chipIds.push_back(0x0041);//chip 4
+    chipIds.push_back(0x0042);//chip 3
+    chipIds.push_back(0x0043);//chip 1
+    chipIds.push_back(0x0044);//chip
+    chipIds.push_back(0x0045);//chip
+    chipIds.push_back(0x0046);//chip
+    chipIds.push_back(0x0047);//chip
+    chipIds.push_back(0x0048);//chip
+    chipIds.push_back(0x0049);//chip
+    chipIds.push_back(0x004A);//chip
+    chipIds.push_back(0x004B);//chip
+    chipIds.push_back(0x004C);//chip
+    chipIds.push_back(0x004D);//chip
+    chipIds.push_back(0x004E);//chip
+    chipIds.push_back(0x004F);//chip
+
+    chipIds.push_back(0x0040);//chip 2
+    chipIds.push_back(0x0041);//chip 4
+    chipIds.push_back(0x0042);//chip 3
+    chipIds.push_back(0x0043);//chip 1
+    chipIds.push_back(0x0044);//chip
+    chipIds.push_back(0x0045);//chip
+    chipIds.push_back(0x0046);//chip
+    chipIds.push_back(0x0047);//chip
+    chipIds.push_back(0x0048);//chip
+    chipIds.push_back(0x0049);//chip
+    chipIds.push_back(0x004A);//chip
+    chipIds.push_back(0x004B);//chip
+    chipIds.push_back(0x004C);//chip
+    chipIds.push_back(0x004D);//chip
+    chipIds.push_back(0x004E);//chip
+    chipIds.push_back(0x004F);//chip
+
+    chipIds.push_back(0x0050);//chip 2
+    chipIds.push_back(0x0051);//chip 4
+    chipIds.push_back(0x0052);//chip 3
+    chipIds.push_back(0x0053);//chip 1
+    chipIds.push_back(0x0054);//chip
+    chipIds.push_back(0x0055);//chip
+    chipIds.push_back(0x0056);//chip
+    chipIds.push_back(0x0057);//chip
+    chipIds.push_back(0x0058);//chip
+    chipIds.push_back(0x0059);//chip
+    chipIds.push_back(0x005A);//chip
+    chipIds.push_back(0x005B);//chip
+    chipIds.push_back(0x005C);//chip
+    chipIds.push_back(0x005D);//chip
+    chipIds.push_back(0x005E);//chip
+    chipIds.push_back(0x005F);//chip
+
+    chipIds.push_back(0x0060);//chip 2
+    chipIds.push_back(0x0061);//chip 4
+    chipIds.push_back(0x0062);//chip 3
+    chipIds.push_back(0x0063);//chip 1
+    chipIds.push_back(0x0064);//chip
+    chipIds.push_back(0x0065);//chip
+    chipIds.push_back(0x0066);//chip
+    chipIds.push_back(0x0067);//chip
+    chipIds.push_back(0x0068);//chip
+    chipIds.push_back(0x0069);//chip
+    chipIds.push_back(0x006A);//chip
+    chipIds.push_back(0x006B);//chip
+    chipIds.push_back(0x006C);//chip
+    chipIds.push_back(0x006D);//chip
+    chipIds.push_back(0x006E);//chip
+    chipIds.push_back(0x006F);//chip
+
 	
     info = new InfoChip(); R2Rstate=-1;
 
@@ -64,14 +184,14 @@ public:
     delete info;
   };
   
-    void ReadFile(TString inputFileName, bool overwrite=false, TString outFileName = "default", int bcidthres=15, int maxevt=99999999);
+  void ReadFile(TString inputFileName, bool overwrite=false, TString outFileName = "default", int bcidthres=15, int maxevt=99999999);
 
 protected:
 
   enum {
     MEMDEPTH=15,
     NCHANNELS=64,
-    NCHIP=128,
+    NCHIP=8*16,
     CHIPHEAD=4,
     CHIPENDTAG=2,
     NEGDATA_THR=11 //event with data below are tagged badbcid+=32
