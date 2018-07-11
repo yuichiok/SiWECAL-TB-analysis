@@ -3,9 +3,9 @@
 
 using namespace std;
 
-int ConvertData(TString filename, bool overwrite,bool gener_rms){
+int ConvertData(TString filename){
     RAW2ROOT ss;
-    ss.ReadFile(filename, overwrite);//, 10, 4);
+    ss.ReadFile(filename, true);//, 10, 4);
     /*    if (gener_rms) {
       TString filename2=filename;
       filename2+=".root";

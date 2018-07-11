@@ -36,7 +36,7 @@ class RAW2ROOT {
 public:
   RAW2ROOT(){
     recordEvent = false;
-    _savelog = true;
+    _savelog = false;
     _debug = false;
     if(_debug==true) _savelog=true;
 
