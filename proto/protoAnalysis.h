@@ -94,7 +94,6 @@ public :
 
    //Service functions
    virtual void     ReadMap(TString filename);
-   virtual void     ReadCalibrated(TString filename);
    virtual bool     IsHit(int ihit);
    virtual bool     IsPedestal(int ihit);
    virtual bool     ShowerBasicSelection(double mipcut, int bcid_max, int nslabs_selection);
@@ -104,16 +103,7 @@ public :
    virtual TF1 *langaufit(TH1F *his, Double_t *fitrange, Double_t *startvalues, Double_t *parlimitslo, Double_t *parlimitshi, Double_t *fitparams, Double_t *fiterrors, Double_t *ChiSqr, Int_t *NDF);
    
    //TrackAnalysisFunctions
-   virtual void     SimpleMIPAnalysis(TString outputname, int nin, int nout, int bcid_max);
-   virtual void     SimpleDistributionsTrack(TString outputname);
-   
-   //ShowerAnalysisFunctions
-   virtual void     SimpleDistributionsShower(TString outputname);
-   virtual void     ShowerDistributions(TString folder, TString configuration, TString energy, TString gridpoint, double mipcut, int bcid_max, int nslabs_selection, bool RMIsolatedHits);
-   virtual void     ShowerNoiseDistributions(TString folder, TString configuration, double mipcut, int bcid_max, int nslabs_selection, bool RMIsolatedHits);
-   virtual void     ShowerDistributions_pedestal(TString folder, TString configuration, TString energy, TString gridpoint, double mipcut, int bcid_max, int nslabs_selection, bool RMIsolatedHits);
-   virtual void     PedestalAnalysis_showers(TString folder, TString configuration, TString energy, TString gridpoint, double mipcut, int bcid_max, int nslabs_selection, bool RMIsolatedHits, int analyze_chip, int analyze_layer);
-
+   virtual void     ShowerDistributions(TString folder, TString energy, double mipcut, int bcid_max, int nslabs_selection, bool RMIsolatedHits);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
 
@@ -121,7 +111,6 @@ private :
 
    Float_t map_pointX[16][64];
    Float_t map_pointY[16][64];
-   Int_t calibrated[7][16][64];
    
 
 };

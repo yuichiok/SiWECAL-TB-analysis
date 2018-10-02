@@ -20,7 +20,7 @@ using namespace std;
 void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputname="", bool readpedestal=false, TString map_filename="../fev10_chip_channel_x_y_mapping.txt")
 {
 
-  int maxnhit=1; // plane event threshold
+  int maxnhit=5; // plane event threshold
 
   //Read the channel/chip -- x/y mapping
   ReadMap(map_filename);
@@ -77,11 +77,11 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
   TH1F* MPV_chip[16];
   TH1F* S_N_chip[16];
   for(int ichip=0; ichip<16; ichip++) {
-    MPV_chip[ichip]= new TH1F(TString::Format("MPV_%s_chip%i",dif.Data(),ichip),TString::Format("MPV_%s_chip%i",dif.Data(),ichip),1500,0.05,150.05);
+    MPV_chip[ichip]= new TH1F(TString::Format("MPV_%s_chip%i",dif.Data(),ichip),TString::Format("MPV_%s_chip%i",dif.Data(),ichip),2000,0.05,200.05);
     S_N_chip[ichip]= new TH1F(TString::Format("S_N_%s_chip%i",dif.Data(),ichip),TString::Format("S_N_%s_chip%i",dif.Data(),ichip),500,0.05,50.05);
   }
 
-  TH1F* MPV_slab= new TH1F(TString::Format("MPV_%s",dif.Data()),TString::Format("MPV_%s",dif.Data()),1500,0.05,150.05);
+  TH1F* MPV_slab= new TH1F(TString::Format("MPV_%s",dif.Data()),TString::Format("MPV_%s",dif.Data()),2000,0.05,200.05);
   TH1F* S_N_slab= new TH1F(TString::Format("S_N_%s",dif.Data()),TString::Format("S_N_%s",dif.Data()),1000,0.05,100.05);
  
   // -----------------------------------------------------------------------------------------------------   
@@ -125,7 +125,7 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
   Double_t fr[2];
   Double_t sv[4], pllo[4], plhi[4], fp[4], fpe[4];   
   pllo[0]=0.; pllo[1]=0.0; pllo[2]=10.0; pllo[3]=0.;
-  plhi[0]=100.0; plhi[1]=200.0; plhi[2]=100000000.0; plhi[3]=20.0;
+  plhi[0]=100.0; plhi[1]=300.0; plhi[2]=100000000.0; plhi[3]=20.0;
   sv[0]=15.0;
   Double_t chisqr;
   Int_t    ndf;
@@ -141,7 +141,7 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
   for(int ichip=0; ichip<16; ichip++) {
     for(int ichn=0; ichn<64; ichn++) {
             
-      if(mip_histo.at(ichip).at(ichn)->GetEntries()> 1000 && mip_histo.at(ichip).at(ichn)->GetMean()>20){
+      if(mip_histo.at(ichip).at(ichn)->GetEntries()> 100 && mip_histo.at(ichip).at(ichn)->GetMean()>20){
 
 	fr[0]=mip_histo.at(ichip).at(ichn)->GetMean()-0.8*mip_histo.at(ichip).at(ichn)->GetRMS();
 	fr[1]=mip_histo.at(ichip).at(ichn)->GetMean();//+0.1*mip_histo.at(ichip).at(ichn)->GetRMS();
@@ -654,7 +654,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
 
   
   bool global = true;
-  int maxnhit=1;
+  int maxnhit=5;
 
   if (fChain == 0) return;
 
@@ -833,7 +833,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString dif,TString grid="",TString ma
 	ped_error.at(ichip).at(ichn).push_back(0.);
 	ped_width.at(ichip).at(ichn).push_back(0.);
 
-	if(ped_sca.at(ichip).at(ichn).at(isca)->GetEntries()> 1000 ){ //max_entries/2 ) {
+	if(ped_sca.at(ichip).at(ichn).at(isca)->GetEntries()> 1 ){ //max_entries/2 ) {
 	  TSpectrum *s = new TSpectrum();
 	  int npeaks = s->Search(ped_sca.at(ichip).at(ichn).at(isca),2,"",0.2); 
 	  pedestal_npeaks_map[isca] -> Fill( map_pointX[ichip][ichn] , map_pointY[ichip][ichn] , npeaks);
@@ -2177,21 +2177,32 @@ void singleSlabAnalysis::Retriggers(TString dif, TString sufix="")
   //should be used for root files that contain a full position scan, in order to provide meaninful list of masked channels.
  
   bool global = true;
-  int maxnhit=3;
+  int maxnhit=5;
 
   if (fChain == 0) return;
   Long64_t nentries = fChain->GetEntriesFast();
+
+  //summary
+  TH1F* h_total_triggers = new TH1F("total_triggers_"+dif,"total_triggers_"+dif,16,-0.5,15.5);
+  TH1F* h_total_retriggers = new TH1F("total_retriggers_"+dif,"total_retriggers_"+dif,16,-0.5,15.5);
+  TH1F* h_total_retriggers_trains = new TH1F("total_retriggers_trains_"+dif,"total_retriggers_trains_"+dif,16,-0.5,15.5);
+  TH2F* h_total_triggers_2d = new TH2F("total_triggers_2d_"+dif,"total_triggers_2d_"+dif,16,-0.5,15.5,3,-0.5,2.5);
+  TH1F* h_signal = new TH1F("signal_"+dif,"signal_"+dif,4000,50.5,4050.5);
+
   
   // --------------------
-  // all sca
+  // per sca
   TH2F* h_first_retriggering = new TH2F("first_retriggering_"+dif,"first_retriggering_"+dif,16,-0.5,15.5,64,-0.5,63.5);
+  TH2F* h_all_retriggering = new TH2F("all_retriggering_"+dif,"all_retriggering_"+dif,16,-0.5,15.5,64,-0.5,63.5);
+
   TH2F* h_retrigger_train[16];
   TH1F* h_retrigger_train_length[16];
   TH1F* h_retrigger_n_trains[16];
   TH1F* h_signal_n_events[16];
 
   TH2F* h_bcid_correlation[16];
-  
+  TH2F* h_bcid2_correlation[16];
+
   TH1F* good[16];
   TH1F* bad[16];
   TH2F* good_vs_bad[16];
@@ -2203,11 +2214,26 @@ void singleSlabAnalysis::Retriggers(TString dif, TString sufix="")
     h_signal_n_events[ichip] = new TH1F(TString::Format("signal_n_events_chip%i_",ichip)+dif,TString::Format("signal_n_events_chip%i_",ichip)+dif,5,-0.5,4.5);
 
     h_bcid_correlation[ichip]
-      = new TH2F(TString::Format("bcid_correlation_chip%i_",ichip)+dif,TString::Format("bcid_correlation_chip%i_",ichip)+dif,50,0,5000,1000,0.5,1000.5);
+      = new TH2F(TString::Format("bcid_rettriggers_correlation_chip%i_",ichip)+dif,TString::Format("bcid_rettriggers_correlation_chip%i_",ichip)+dif,50,0,5000,1000,0.5,1000.5);
+
+    h_bcid2_correlation[ichip]
+      = new TH2F(TString::Format("bcid_triggers_correlation_chip%i_",ichip)+dif,TString::Format("bcid_triggers_correlation_chip%i_",ichip)+dif,500,5,5005,1000,0.5,1000.5);
     
     good[ichip]= new TH1F(TString::Format("good_chip%i_%s",ichip,dif.Data()),TString::Format("good_chip%i_%s",ichip,dif.Data()),15,0.5,15.5);
     bad[ichip]= new TH1F(TString::Format("bad_chip%i_%s",ichip,dif.Data()),TString::Format("bad_chip%i_%s",ichip,dif.Data()),15,0.5,15.5);
     good_vs_bad[ichip]= new TH2F(TString::Format("good_vs_bad_chip%i_%s",ichip,dif.Data()),TString::Format("good_vs_bad_chip%i_%s",ichip,dif.Data()),15,0.5,15.5,15,0.5,15.5);
+  }
+
+  double n_total_triggers[16];
+  double n_total_retriggers[16];
+  double n_total_retriggers_trains[16];
+
+  for(int ichip=0; ichip<16; ichip++) {
+    
+    n_total_triggers[ichip]=0;
+    n_total_retriggers[ichip]=0;
+    n_total_retriggers_trains[ichip]=0;
+
   }
 
   // -----------------------------------------------------------------------------------------------------   
@@ -2218,6 +2244,17 @@ void singleSlabAnalysis::Retriggers(TString dif, TString sufix="")
     if (ientry < 0) break;
     nb = fChain->GetEntry(jentry);   nbytes += nb;
 
+    for(int ichip=0; ichip<16; ichip++) {
+
+      bool retrig=false;
+      for(int isca=0; isca<15; isca++) {
+	if(badbcid[ichip][isca]!=0 && retrig==false) retrig=true;
+	if(badbcid[ichip][isca]!=0 && retrig==true) {
+	  h_bcid2_correlation[ichip]->Fill(bcid[ichip][isca-1],bcid[ichip][isca]-bcid[ichip][isca-1]);
+	}
+      }
+    }
+    
     for(int ichip=0; ichip<16; ichip++) {
 
       double good_triggers=0;
@@ -2231,7 +2268,7 @@ void singleSlabAnalysis::Retriggers(TString dif, TString sufix="")
 
       float bcid_signal=0;
       float bcid_retrigger=0;
-      
+            
       for(int isca=0; isca<15; isca++) {
 
 	if(badbcid[ichip][isca]==0) {
@@ -2240,12 +2277,18 @@ void singleSlabAnalysis::Retriggers(TString dif, TString sufix="")
 	  n_events++;
 	}
 
+	if( badbcid[ichip][isca]>2 && first_retrig==false && bcid[ichip][isca]>1260) n_total_retriggers_trains[ichip]++;
+	if( badbcid[ichip][isca]>2 && bcid[ichip][isca]>1260 ) n_total_retriggers[ichip]++;
+	if( badbcid[ichip][isca]==0 && bcid[ichip][isca]>1260) {
+	  n_total_triggers[ichip]++;
+	  for(int ichn=0;ichn<64;ichn++) if(gain_hit_high[ichip][isca][ichn]==1) h_signal->Fill(charge_hiGain[ichip][isca][ichn]);
+	}
+
 	if(badbcid[ichip][isca]>2 && first_retrig==true && badbcid[ichip][isca-1]==0) {
 	  first_retrig=false;
 	  length=0;
 	  n_trains++;
 	  bcid_retrigger=bcid[ichip][isca];
-
 	}
 
 	//train
@@ -2257,13 +2300,21 @@ void singleSlabAnalysis::Retriggers(TString dif, TString sufix="")
 	  h_retrigger_train[ichip]->Fill(isca-first_sca_retrig,ntriggers);
 	  length++;
 	}
-
+	
+	if(badbcid[ichip][isca]>2) {
+	  for(int ichn=0; ichn<64; ichn++) {
+	    if(gain_hit_high[ichip][isca][ichn]==1) {
+	      h_all_retriggering -> Fill(ichip,ichn);
+	    }
+	  }
+	}
+	
 	if(badbcid[ichip][isca]>2 && first_retrig==false) {
-	  bcid_retrigger=bcid[ichip][isca];
+	  //bcid_retrigger=bcid[ichip][isca];
 	  bad_triggers++;
 	  first_retrig=true;
 	  first_sca_retrig=isca;
-	  n_trains++;
+	  //n_trains++;
 
 	  for(int ichn=0; ichn<64; ichn++) {
 	    if(gain_hit_high[ichip][isca][ichn]==1) {
@@ -2277,7 +2328,7 @@ void singleSlabAnalysis::Retriggers(TString dif, TString sufix="")
 	  bcid_signal=0;
 	  bcid_retrigger=0;
 	}
-      
+
       }
 
       
@@ -2292,16 +2343,84 @@ void singleSlabAnalysis::Retriggers(TString dif, TString sufix="")
     }
   }
 
+
+  for(int ichip=0; ichip<16; ichip++) {
+
+    h_total_triggers->Fill(ichip, n_total_triggers[ichip]);
+    if(n_total_triggers[ichip]>0) {
+      h_total_retriggers->Fill(ichip, n_total_retriggers[ichip]/n_total_triggers[ichip]);
+      h_total_retriggers_trains->Fill(ichip, n_total_retriggers_trains[ichip]/n_total_triggers[ichip]);
+    } else {
+      if(n_total_retriggers[ichip]>0) h_total_retriggers->Fill(ichip, 1);
+      else h_total_retriggers->Fill(ichip, 0);
+      if(n_total_retriggers_trains[ichip]>0) h_total_retriggers_trains->Fill(ichip, 1);
+      else h_total_retriggers_trains->Fill(ichip, 0);
+    }
+
+    h_total_triggers_2d->Fill(ichip,0.,n_total_triggers[ichip]);
+    h_total_triggers_2d->Fill(ichip,1.,n_total_retriggers_trains[ichip]);
+    h_total_triggers_2d->Fill(ichip,2.,n_total_retriggers[ichip]);
+  }
+  
   TFile *summary = new TFile("results_retriggers/Retriggers_"+dif+"_"+sufix+".root" , "RECREATE");
   summary->cd();
 
   h_first_retriggering->Write();
+  h_all_retriggering->Write();
+    
+  h_total_triggers->Write();
   
+  h_total_retriggers->Write();
+  h_total_retriggers_trains->Write();
+  h_total_triggers_2d->Write();
+  h_signal->Write();
+  
+  TCanvas *canvas0 = new TCanvas("retriggers_map","retriggers_map",1200,600);
+  canvas0->Divide(2,1);
+  canvas0->cd(1);
+  gPad->SetLogz();
+  h_first_retriggering->GetZaxis()->SetRangeUser(1,15000);
+  h_first_retriggering->GetXaxis()->SetTitle("chip");
+  h_first_retriggering->GetXaxis()->SetTitle("channel");
+  h_first_retriggering->Draw("colz");
+
+  canvas0->cd(2);
+  gPad->SetLogz();
+  h_all_retriggering->GetZaxis()->SetRangeUser(1,15000);
+  h_all_retriggering->GetXaxis()->SetTitle("chip");
+  h_all_retriggering->GetXaxis()->SetTitle("channel");
+  h_all_retriggering->Draw("colz");
+  canvas0->Write();
+  
+  //  h_total_trig
+  TCanvas *canvas = new TCanvas("summary","summary",600,600);
+  canvas->cd();
+  //  h_total_triggers->Draw("histo");
+  h_total_retriggers->GetYaxis()->SetRangeUser(0,1.1);
+    h_total_retriggers->GetYaxis()->SetTitle("Nretrig/Ntrig");
+  h_total_retriggers->SetLineColor(2);
+  h_total_retriggers->SetLineWidth(2);
+  h_total_retriggers->SetLineStyle(2);
+  h_total_retriggers->Draw("histo");
+  h_total_retriggers_trains->SetLineColor(2);
+  h_total_retriggers_trains->SetLineWidth(2);
+  h_total_retriggers_trains->Draw("histosame");
+  //h_total_retriggers->GetYaxis()->SetRangeUser(0,1);
+  //h_total_retriggers->SetLineColor(2);
+  //h_total_retriggers->SetLineWidth(2);
+  //h_total_retriggers->SetLineStyle(2);
+  //h_total_retriggers->Draw("same");
+
+  canvas->Write();
+				
   for(int ichip=0; ichip<16; ichip++) {
     h_bcid_correlation[ichip]->GetXaxis()->SetTitle("bcid trigger");
     h_bcid_correlation[ichip]->GetYaxis()->SetTitle("bcid retrigger - bcid trigger");
-
     h_bcid_correlation[ichip]->Write();
+
+    h_bcid2_correlation[ichip]->GetXaxis()->SetTitle("bcid trigger");
+    h_bcid2_correlation[ichip]->GetYaxis()->SetTitle("bcid next trigger - bcid trigger");
+    h_bcid2_correlation[ichip]->Write();
     
     h_retrigger_train[ichip]->Write();
     h_retrigger_train_length[ichip]->Write();

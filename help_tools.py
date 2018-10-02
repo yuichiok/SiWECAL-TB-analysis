@@ -20,14 +20,16 @@ pos_z = []
 pos_xzero = []
 
 slab_map = {
-    0: '_dif_1_1_1',
-    1: '_dif_1_1_2',
-    2: '_dif_1_1_3',
-    3: '_dif_1_1_4',
-    4: '_dif_1_1_5',
-    5: '_dif_1_2_1',
-    6: '_dif_1_2_2'
+    0: '_dif_1_1_2',
+    1: '_dif_1_2_2',
+    2: '_dif_1_2_1',
+    3: '_dif_1_2_5',
+    4: '_dif_1_1_3',
+    5: '_dif_1_1_4',
+    6: '_dif_1_1_1',
 }
+
+
 
 class EcalHit:
     def __init__(self,slab,chip,chan,sca,hg,lg,isHit):
@@ -59,42 +61,36 @@ class EcalHit:
             ped_average=ped_average/ped_norm
         else:
             if self.isMasked == 0:
-                print("ERROR: channel without pedestal info but not tagged as masked, ASSIGN MASKED TAG -->")
-                print("slab=%i chip=%i chan=%i"%(self.slab,self.chip,self.chan))
-            self.isMasked = 1
+                #print("ERROR: channel without pedestal info but not tagged as masked, ASSIGN MASKED TAG -->")
+                #print("slab=%i chip=%i chan=%i"%(self.slab,self.chip,self.chan))
+                self.isMasked = 1
 
         # if pedestal info is there, use it for subtraction, if not, use the average of the other SCAs
         if ped_map[self.slab][self.chip][self.chan][self.sca] > 10:
             self.hg -= ped_map[self.slab][self.chip][self.chan][self.sca]
         else:
-            #if self.isMasked==0:
+            if self.isMasked==0:
                 #print("Warning: SCA without pedestal info, use ped_aver instead --> ")
                 #print("slab=%i chip=%i chan=%i sca=%i ped_aver=%f n=%i"%(self.slab,self.chip,self.chan,self.sca,ped_average,ped_norm))
-            self.hg -= ped_average
+                self.hg -= ped_average
             
         # MIP calibration
-        if mip_map[self.slab][self.chip][self.chan] > 20:
+        if mip_map[self.slab][self.chip][self.chan] > 45:
             self.energy = self.hg / mip_map[self.slab][self.chip][self.chan]
         else:
             self.energy = 0
-            self.isMaked = 1
+            self.isMasked = 1
 
 def build_w_config(config = 1):
 
     global pos_z, pos_xzero
     # SLAB positions
-    pos_z = [0,1,2,3,4,5,9] * 15#mm gap
+    pos_z = [0,1,2,4,7,8,9] * 15#mm gap
 
     ## Tungsten / W configuration
     if config == 1:
         # Config 1
-        abs_thick = [2.1,2.1,2.1,2.1,4.2,4.2,6.3]
-    elif config == 2:
-        # Config 2
-        abs_thick = [4.2,2.1,2.1,4.2,4.2,6.3,6.3]
-    elif config == 3:
-        # Config 3
-        abs_thick = [6.3,2.1,4.2,4.2,6.3,6.3,6.3]
+        abs_thick = [6.3,6.3,6.3,12.6,18.9,6.3,6.3]
     elif config == 0:
         # No absorber runs, use 0
         abs_thick = [0,0,0,0,0,0,0]

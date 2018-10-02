@@ -83,7 +83,10 @@ def get_hits(entry,bcid_map):
             for sca in xrange(NSCA):
 
                 sca_indx = (slab * NCHIP + chip) * NSCA + sca
-                bcid = get_corr_bcid(entry_bcids[sca_indx])
+                if slab >0:
+                    bcid = get_corr_bcid(entry_bcids[sca_indx])
+                else:
+                    bcid = get_corr_bcid(entry_bcids[sca_indx])/2.-2
                 
                 # filter bad bcids
                 if bcid not in bcid_map: continue
@@ -98,7 +101,7 @@ def get_hits(entry,bcid_map):
                     
                     #if not entry.gain_hit_low[chan_indx]: continue
                     isHit = gain_hit_high[chan_indx]
-                    #if not isHit: continue
+                    if not isHit: continue
                     
                     hg_ene = charge_hiGain[chan_indx]
                     lg_ene = charge_lowGain[chan_indx]
@@ -258,7 +261,7 @@ if __name__ == "__main__":
 
     filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_9__merge.root"
     maxEntries = -1
-    w_config = 0
+    w_config = 1
 
     if len(sys.argv) < 3:
         filename = sys.argv[1]
