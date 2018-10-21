@@ -110,11 +110,10 @@ bool protoAnalysis::IsPedestal(int ihit) {
 
 bool protoAnalysis::ShowerBasicSelection(double mipcut=0.5, int bcid_max=99999999, int nslabs_selection=3) {
 
-  if(bcid<1250)  return false;
   if(bcid>bcid_max) return false;
   
 
-  bool bool_hit_slab[7];
+  bool bool_hit_slab[10];
   bool_hit_slab[0] = false;
   bool_hit_slab[1] = false;
   bool_hit_slab[2] = false;
@@ -122,11 +121,12 @@ bool protoAnalysis::ShowerBasicSelection(double mipcut=0.5, int bcid_max=9999999
   bool_hit_slab[4] = false;
   bool_hit_slab[5] = false;
   bool_hit_slab[6] = false;
+  bool_hit_slab[7] = false;
+  bool_hit_slab[8] = false;
+  bool_hit_slab[9] = false;
 
   for(int ihit=0; ihit< nhit_chan; ihit ++) {
     int z=hit_z[ihit];
-    if(z==4) z=3;
-    if(z>6) z=z-3;
 
     if(hit_energy[ihit]>mipcut && IsHit(ihit)==true ) {
       bool_hit_slab[z]=true;
@@ -136,7 +136,7 @@ bool protoAnalysis::ShowerBasicSelection(double mipcut=0.5, int bcid_max=9999999
 
   int nslabhitted =0;
   
-  for(int i=0; i<7; i++ ){
+  for(int i=0; i<10; i++ ){
     if( bool_hit_slab[i]==true) nslabhitted++;
   }
   
@@ -148,12 +148,9 @@ bool protoAnalysis::ShowerBasicSelection(double mipcut=0.5, int bcid_max=9999999
 
 bool protoAnalysis::ShowerAntiSelection(double mipcut=0.5, int bcid_max=99999999, int nslabs_selection=3) {
 
-  if(bcid<1250)  return false;
   if(bcid>bcid_max) return false;
-  
-
  
-  bool bool_hit_slab[7];
+  bool bool_hit_slab[10];
   bool_hit_slab[0] = false;
   bool_hit_slab[1] = false;
   bool_hit_slab[2] = false;
@@ -161,11 +158,12 @@ bool protoAnalysis::ShowerAntiSelection(double mipcut=0.5, int bcid_max=99999999
   bool_hit_slab[4] = false;
   bool_hit_slab[5] = false;
   bool_hit_slab[6] = false;
+  bool_hit_slab[7] = false;
+  bool_hit_slab[8] = false;
+  bool_hit_slab[9] = false;
 
   for(int ihit=0; ihit< nhit_chan; ihit ++) {
     int z=hit_z[ihit];
-    if(z==4) z=3;
-    if(z>6) z=z-3;
 
     if(hit_energy[ihit]>mipcut && IsHit(ihit)==true ) {
       bool_hit_slab[z]=true;
@@ -174,7 +172,7 @@ bool protoAnalysis::ShowerAntiSelection(double mipcut=0.5, int bcid_max=99999999
 
   int nslabhitted =0;
   
-  for(int i=0; i<7; i++ ){
+  for(int i=0; i<10; i++ ){
     if( bool_hit_slab[i]==true) nslabhitted++;
   }
   
@@ -187,16 +185,20 @@ bool protoAnalysis::ShowerAntiSelection(double mipcut=0.5, int bcid_max=99999999
 
 double protoAnalysis::MinDistCalc(int ihit, double mipcut) {
 
-  double xi=hit_x[ihit];
-  double yi=hit_y[ihit];
+  double xorient=1;
+  if(hit_z[ihit]>2 && hit_z[ihit]<7) xorient=-1;
+  double xi=-hit_x[ihit];
+  double yi=-xorient * hit_y[ihit];
   double zi=hit_z[ihit];
   
   double mindist=1000.;
   double dist=-10;
   for(int jhit=0; jhit< nhit_chan; jhit ++) {
     if(hit_energy[jhit]>mipcut && IsHit(ihit)==true && ihit!=jhit) {
-      double xj=hit_x[jhit];
-      double yj=hit_y[jhit];
+      double xorient=1;
+      if(hit_z[ihit]>2 && hit_z[ihit]<7) xorient=-1;
+      double xj=-hit_x[jhit];
+      double yj=-xorient * hit_y[jhit];
       double zj=hit_z[jhit];
       dist= sqrt( (xi-xj)*(xi-xj) + (yi-yj)*(yi-yj) + 150*150*(zi-zj)*(zi-zj) );
       if(dist < mindist) mindist = dist;
@@ -217,30 +219,33 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString energy_string
   //-----------------
 
   Float_t w[10];
-  Float_t thickness[7];
-  thickness[0]=6.2;
-  thickness[1]=6.2;
-  thickness[2]=6.2;
-  thickness[3]=2*6.2;
-  thickness[4]=3*6.2;
-  thickness[5]=6.2;
-  thickness[6]=6.2;
+  Float_t thickness[10];
+  thickness[0]=6.3;
+  thickness[1]=6.3;
+  thickness[2]=6.3;
+  thickness[3]=6.3;
+  thickness[4]=6.3;
+  thickness[5]=6.3;
+  thickness[6]=6.3;
+  thickness[7]=6.3;
+  thickness[8]=6.3;
+  thickness[9]=6.3;
 
   w[0]=(1/3.5)*thickness[0];
   w[1]=(1/3.5)*thickness[1];
   w[2]=(1/3.5)*thickness[2];
-  w[3]=(1/3.5)*0;
-  w[4]=(1/3.5)*thickness[3];
-  w[5]=(1/3.5)*0;
-  w[6]=(1/3.5)*0;
-  w[7]=(1/3.5)*thickness[4];
-  w[8]=(1/3.5)*thickness[5];
-  w[9]=(1/3.5)*thickness[6];
+  w[3]=(1/3.5)*thickness[3];
+  w[4]=(1/3.5)*thickness[4];
+  w[5]=(1/3.5)*thickness[5];
+  w[6]=(1/3.5)*thickness[6];
+  w[7]=(1/3.5)*thickness[7];
+  w[8]=(1/3.5)*thickness[8];
+  w[9]=(1/3.5)*thickness[9];
   
   
   Float_t edge =0.0001;
 
-  Float_t bins[] = { 0, w[0]+edge, w[0]+edge+w[1], w[0]+edge+w[1]+w[2], w[0]+edge+w[1]+w[2]+w[4], w[0]+edge+w[1]+w[2]+w[3]+w[4]+w[7],  w[0]+edge+w[1]+w[2]+w[3]+w[4]+w[7]+w[8],  w[0]+edge+w[1]+w[2]+w[3]+w[4]+w[7]+w[8]+w[9]};
+  Float_t bins[] = { 0, w[0]+edge, w[0]+edge+w[1], w[0]+edge+w[1]+w[2], w[0]+edge+w[1]+w[2]+w[3], w[0]+edge+w[1]+w[2]+w[3]+w[4],  w[0]+edge+w[1]+w[2]+w[3]+w[4]+w[5],  w[0]+edge+w[1]+w[2]+w[3]+w[4]+w[5]+w[6], w[0]+edge+w[1]+w[2]+w[3]+w[4]+w[5]+w[6]+w[7], w[0]+edge+w[1]+w[2]+w[3]+w[4]+w[5]+w[6]+w[7]+w[8], w[0]+edge+w[1]+w[2]+w[3]+w[4]+w[5]+w[6]+w[7]+w[8]+w[9]};
   Int_t  binnum = sizeof(bins)/sizeof(Float_t) - 1; 
 
   Float_t binsx[33];
@@ -366,8 +371,11 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString energy_string
 	  energy_X0_sum_tmp += w[int(hit_z[ihit])] * (hit_energy[ihit]);
 	  weight_X0_sum_tmp += w[int(hit_z[ihit])];
 	  
+	  double xorient=1;
+	  if(hit_z[ihit]>2 && hit_z[ihit]<7) xorient=-1;
+
 	  xm +=  - hit_x[ihit] * (hit_energy[ihit]) * w[int(hit_z[ihit])];
-	  ym +=  - hit_y[ihit] * (hit_energy[ihit]) * w[int(hit_z[ihit])];
+	  ym +=  - xorient * hit_y[ihit] * (hit_energy[ihit]) * w[int(hit_z[ihit])];
 	  zm +=    hit_z[ihit] * (hit_energy[ihit]) * w[int(hit_z[ihit])];
 	}
       }
@@ -393,12 +401,15 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString energy_string
 	energy_profile_z->Fill(zlayer,hit_energy[ihit]/energy_sum_tmp);
 	energy_profile_X0->Fill(hit_x0[ihit],hit_energy[ihit]/energy_sum_tmp);
 	
-	energy_xy->Fill(-hit_x[ihit],-hit_y[ihit],hit_energy[ihit]/energy_sum_tmp );
+	double xorient=1;
+	if(hit_z[ihit]>2 && hit_z[ihit]<7) xorient=-1;
+
+	energy_xy->Fill(-hit_x[ihit],-xorient * hit_y[ihit],hit_energy[ihit]/energy_sum_tmp );
 	energy_xz->Fill(-hit_x[ihit],hit_z[ihit],hit_energy[ihit]/energy_sum_tmp );
-	energy_yz->Fill(-hit_y[ihit],hit_z[ihit],hit_energy[ihit]/energy_sum_tmp );     
+	energy_yz->Fill(-xorient * hit_y[ihit],hit_z[ihit],hit_energy[ihit]/energy_sum_tmp );     
 	
 	energy_xX0->Fill(-hit_x[ihit],hit_x0[ihit],hit_energy[ihit]/energy_sum_tmp);
-	energy_yX0->Fill(-hit_y[ihit],hit_x0[ihit],hit_energy[ihit]/energy_sum_tmp);
+	energy_yX0->Fill(-xorient * hit_y[ihit],hit_x0[ihit],hit_energy[ihit]/energy_sum_tmp);
       }
 
     }
@@ -551,8 +562,11 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString energy_string
 	  energy_sum_tmp += (hit_energy[ihit]);
 	  energy_X0_sum_tmp += w[int(hit_z[ihit])] * (hit_energy[ihit]);
 	  weight_X0_sum_tmp += w[int(hit_z[ihit])];
+	  double xorient=1;
+	  if(hit_z[ihit]>2 && hit_z[ihit]<7) xorient=-1;
+
 	  xm +=  - hit_x[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
-	  ym +=  - hit_y[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
+	  ym +=  - xorient * hit_y[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
 	  zm +=  hit_z[ihit] * hit_energy[ihit] * w[int(hit_z[ihit])];
 	}
       }

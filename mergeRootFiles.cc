@@ -58,10 +58,14 @@ public:
             if(i == 0) dif = "dif_1_1_2";
             if(i == 1) dif = "dif_1_2_2";
             if(i == 2) dif = "dif_1_2_1";
-            if(i == 3) dif = "dif_1_2_5";
-            if(i == 4) dif = "dif_1_1_3";
-            if(i == 5) dif = "dif_1_1_4";
-            if(i == 6) dif = "dif_1_1_1";
+            if(i == 3) dif = "dif_1_1_5";
+            if(i == 4) dif = "dif_1_2_5";
+            if(i == 5) dif = "dif_1_2_4";
+            if(i == 6) dif = "dif_1_2_3";
+	    if(i == 7) dif = "dif_1_1_3";
+	    if(i == 8) dif = "dif_1_1_4";
+	    if(i == 9) dif = "dif_1_1_1";
+	    
 	    //	    if(i == 7) dif = "dif_1_2_4";
 
             TString filename = rootname;
@@ -314,7 +318,7 @@ protected:
         NCHANNELS=64,
         NCHIP=16,
         MIN_BCID=5,
-        NSLABS=7
+        NSLABS=10
     };
 
 

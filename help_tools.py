@@ -2,7 +2,7 @@
 import os
 import numpy as np
 
-NSLAB = 7
+NSLAB = 10
 NCHIP = 16
 NSCA = 15
 NCHAN = 64
@@ -23,10 +23,13 @@ slab_map = {
     0: '_dif_1_1_2',
     1: '_dif_1_2_2',
     2: '_dif_1_2_1',
-    3: '_dif_1_2_5',
-    4: '_dif_1_1_3',
-    5: '_dif_1_1_4',
-    6: '_dif_1_1_1',
+    3: '_dif_1_2_5',#4th slab is 1_1_5, but as we don't have data, we use 1_2_5 
+    4: '_dif_1_2_5',
+    5: '_dif_1_2_2',#6th slab, 1_2_4... is dead? for the moment we use one of the FEV11's since they have the same thickness wafers
+    6: '_dif_1_2_3',#7th slab is 1_2_3, but as we don't have data, we use 1_2_5 
+    7: '_dif_1_1_3',#7th slab is 1_1_3, but as we don't have data, we use 1_2_5 
+    8: '_dif_1_1_4',
+    9: '_dif_1_1_1',
 }
 
 
@@ -85,15 +88,15 @@ def build_w_config(config = 1):
 
     global pos_z, pos_xzero
     # SLAB positions
-    pos_z = [0,1,2,4,7,8,9] * 15#mm gap
+    pos_z = [0,1,2,3,4,5,6,7,8,9] * 15#mm gap
 
     ## Tungsten / W configuration
     if config == 1:
         # Config 1
-        abs_thick = [6.3,6.3,6.3,12.6,18.9,6.3,6.3]
+        abs_thick = [6.3,6.3,6.3,6.3,6.3,6.3,6.3,6.3,6.3,6.3]
     elif config == 0:
         # No absorber runs, use 0
-        abs_thick = [0,0,0,0,0,0,0]
+        abs_thick = [0,0,0,0,0,0,0,0,0,0]
 
     ## sum up thickness
     w_xzero = 1/3.5#0.56#Xo per mm of W

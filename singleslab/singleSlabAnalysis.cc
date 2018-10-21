@@ -141,7 +141,7 @@ void singleSlabAnalysis::SignalAnalysis(TString dif="dif_1_1_1", TString outputn
   for(int ichip=0; ichip<16; ichip++) {
     for(int ichn=0; ichn<64; ichn++) {
             
-      if(mip_histo.at(ichip).at(ichn)->GetEntries()> 100 && mip_histo.at(ichip).at(ichn)->GetMean()>20){
+      if(mip_histo.at(ichip).at(ichn)->GetEntries()> 50 && mip_histo.at(ichip).at(ichn)->GetMean()>20){
 
 	fr[0]=mip_histo.at(ichip).at(ichn)->GetMean()-0.8*mip_histo.at(ichip).at(ichn)->GetRMS();
 	fr[1]=mip_histo.at(ichip).at(ichn)->GetMean();//+0.1*mip_histo.at(ichip).at(ichn)->GetRMS();
