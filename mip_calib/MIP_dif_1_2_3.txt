@@ -1,0 +1,2 @@
+#mip results dif_1_2_3
+#chip channel mpv empv widthmpv chi2ndf nentries
