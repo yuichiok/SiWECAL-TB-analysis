@@ -209,7 +209,7 @@ double protoAnalysis::MinDistCalc(int ihit, double mipcut) {
 }
 
 
-void protoAnalysis::ShowerDistributions(TString folder="", TString energy_string="40GeV", double mipcut=0.5, int bcid_max=99999999, int nslabs_selection=3, bool RMIsolatedHits=false)
+void protoAnalysis::ShowerDistributions(TString folder="", TString energy_string="40GeV", double mipcut=0.5, int bcid_max=99999999, int nslabs_selection=4, bool RMIsolatedHits=false)
 {
 
 
@@ -269,6 +269,8 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString energy_string
   TH1F* energy_profile_z_center_05 = new TH1F("energy_profile_z_center_05","energy_profile_z_center_05",11,-0.5,10.5);//binnumz,binsz);
   TH1F* energy_profile_z_center_1 = new TH1F("energy_profile_z_center_1","energy_profile_z_center_1",11,-0.5,10.5);//binnumz,binsz);
   TH1F* energy_profile_z_center_2 = new TH1F("energy_profile_z_center_2","energy_profile_z_center_2",11,-0.5,10.5);//binnumz,binsz);
+
+  TH1F* time_dist = new TH1F("time_dist","time_dist",2500,0,25000);
 
   energy_profile_z->Sumw2();
   energy_profile_z_center_05->Sumw2();
@@ -332,7 +334,8 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString energy_string
     nb = fChain->GetEntry(jentry);   nbytes += nb;
 
     if(ShowerBasicSelection(mipcut,bcid_max,nslabs_selection)==false) continue;
-       
+
+    time_dist->Fill(bcid*0.2);
 
     // ---------------------------------------------
     //   the energy and other variables,
@@ -340,7 +343,6 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString energy_string
     double weight_X0_sum_tmp=0, energy_X0_sum_tmp_dist=0;
     double energy_X0_sum_tmp=0;
     double xm=0, ym=0., zm=0.;
-
 
     for(int ihit=0; ihit< nhit_chan; ihit ++) {
       if(hit_energy[ihit]>mipcut && IsHit(ihit)==true) {
@@ -472,7 +474,7 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString energy_string
   TGraphErrors * E_xbarycenter = new TGraphErrors(32,x,rawE_x,0,erawE_x);
   TGraphErrors * E_ybarycenter = new TGraphErrors(32,y,rawE_y,0,erawE_y);
   TGraphErrors * E_zbarycenter = new TGraphErrors(10,z,rawE_z,0,erawE_z);
-
+  /*
   energy_profile_z->Scale(1./number_hits);
   energy_profile_X0->Scale(1./number_hits);
 
@@ -482,7 +484,7 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString energy_string
 
   energy_xX0->Scale(1./number_hits);
   energy_yX0->Scale(1./number_hits);
-
+  */
   xbarycenter->Scale(1./number_hits);
   ybarycenter->Scale(1./number_hits);
   zbarycenter->Scale(1./number_hits);
@@ -616,6 +618,9 @@ void protoAnalysis::ShowerDistributions(TString folder="", TString energy_string
   TFile *file = new TFile(TString::Format("%s/%s_mipcut%0.1f_showers.root",folder.Data(),energy_string.Data(),mipcut) , "RECREATE");
   file->cd();
 
+  time_dist->GetXaxis()->SetTitle("#mu s");
+  time_dist->Write();
+  
   energy->Write();
   energy_center_05->Write();
   energy_center_1->Write();
