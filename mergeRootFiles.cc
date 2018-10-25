@@ -28,12 +28,11 @@ public:
     }
     ~mergeRootFiles(){}
 
-    void Merge(TString rootname, TString outfilename = "default", bool filterEvents = false){
+    void Merge(TString rootname, TString outfilename = "default"){
 
 	if ( outfilename == "default"){
 	    //TString outfilename = rootname;
 	    outfilename = rootname;
-	    if(filterEvents) outfilename += "_filtered";
 	    outfilename += "_merge.root";
 	}
 	cout << "Merging into output file: " << outfilename << endl;
@@ -86,7 +85,7 @@ public:
                 //acqNumber_in[i]= acq;
 
                 tree[i]->SetBranchAddress("corrected_bcid" , corrected_bcid_in[i]);
-                tree[i]->SetBranchAddress("bcid"           , bcid_in[i]);
+		tree[i]->SetBranchAddress("bcid"           , bcid_in[i]);
                 tree[i]->SetBranchAddress("nhits"          , nhits_in[i]);
                 tree[i]->SetBranchAddress("badbcid"        , badbcid_in[i]);
                 tree[i]->SetBranchAddress("nColumns"       , numCol_in[i]);
@@ -126,15 +125,15 @@ public:
         name+=NCHIP; name+="][";name+=MEMDEPTH; name+="]/I";
         treeout->Branch("nhits",nhits,name);
 
-        name = "bcid[";
+	name = "bcid[";
         name+=NSLABS; name+="][";
         name+=NCHIP; name+="][";name+=MEMDEPTH; name+="]/I";
         treeout->Branch("bcid",bcid,name);
 
-        name = "corrected_bcid[";
-        name+=NSLABS; name+="][";
-        name+=NCHIP; name+="][";name+=MEMDEPTH; name+="]/I";
-        treeout->Branch("corrected_bcid",corrected_bcid,name);
+        //name = "corrected_bcid[";
+        //name+=NSLABS; name+="][";
+        //name+=NCHIP; name+="][";name+=MEMDEPTH; name+="]/I";
+        //treeout->Branch("corrected_bcid",corrected_bcid,name);
 
         name = "badbcid[";
         name+=NSLABS; name+="][";
@@ -194,42 +193,58 @@ public:
 
 
                     for (int k=0; k<NCHIP; k++) {
-                        int i =0;
-                        int loopBCID = 0;
+		      //                        int i =0;
+			int loopBCID = 0;
                         for (int iraw=0; iraw<MEMDEPTH; iraw++) {
-                            if(filterEvents){
-                                if(iraw==0) i = iraw;
-                                else if(bcid_in[slab][k][iraw] - bcid_in[slab][k][iraw-1]>5) i = iraw;
-                                else if(bcid_in[slab][k][iraw] - bcid_in[slab][k][iraw-1]<0 && bcid_in[slab][k][iraw]+4096 - bcid_in[slab][k][iraw-1]>5){
-                                    i = iraw;
-                                    loopBCID++;
-                                }
-                                else continue;
-                            }
-                            else i = iraw;
+			  
+			  if(bcid_in[slab][k][iraw]<0) continue;
+			  
+			  bcid[slab][k][iraw] = bcid_in[slab][k][iraw]; 
+                           
+			  //offsets from XXXXX elog                                                                                                                                    
+			  if(slab==0) bcid[slab][k][iraw]=bcid[slab][k][iraw] - 8; //dif_1_1_2                                                                                    
+			  else if(slab >2 && slab < 7) bcid[slab][k][iraw]=bcid[slab][k][iraw]-2259;
+                          else  bcid[slab][k][iraw]*=2;
+                          //offsets from https://twiki.cern.ch/twiki/bin/view/CALICE/SiWEcalBT201809Analysis                                                         
+			  //if(slab==0) bcid[slab][k][iraw]=bcid[slab][k][iraw]-8; //dif_1_1_2
+			  //else if(slab >2 && slab < 7) bcid[slab][k][iraw]=bcid[slab][k][iraw]-1840;
+			  //else  bcid[slab][k][iraw]*=2;    
 
-			    bcid[slab][k][i] = bcid_in[slab][k][i];//bcid_in[slab][k][i]+loopBCID*4096;
-                            //bcid[slab][k][i] = corrected_bcid_in[slab][k][i];//bcid_in[slab][k][i]+loopBCID*4096;
-                            //cout<<bcid[slab][k][i]<<"  "<<slab<<"  "<<k<<"  "<<i<<endl;
-//            if(bcid_in[slab][k][i]!=1) cout<<slab<<"  "<<k<<"  "<<i<<"  "<<bcid_in[slab][k][i]<<endl;
-//            if(badbcid_in[slab][k][i]!=-999) cout<<slab<<"  "<<k<<"  "<<i<<"  "<<badbcid_in[slab][k][i]<<endl;
-
-                            badbcid[slab][k][i]=badbcid_in[slab][k][i];
-                            corrected_bcid[slab][k][i]=corrected_bcid_in[slab][k][i];
-                            nhits[slab][k][i]=nhits_in[slab][k][i];
-
-                            for (int j=0; j<NCHANNELS; j++) {
-                                charge_low[slab][k][i][j]=charge_low_in[slab][k][i][j];
-                                charge_high[slab][k][i][j]=charge_high_in[slab][k][i][j];
-                                gain_hit_low[slab][k][i][j]=gain_hit_low_in[slab][k][i][j];
-                                gain_hit_high[slab][k][i][j]=gain_hit_high_in[slab][k][i][j];
-                                //if(charge_high_in[slab][k][i][j]>1000)cout<<" "<<slab<<"  "<<k<<"  "<<i<<"  "<<j<<"  "<<charge_high_in[slab][k][i][j]  <<endl;
-                            }
+			  //run overloop
+			  if(iraw==0) {
+			    if(bcid_in[slab][k][iraw] <1245 ){
+			      if(slab == 0 || ( slab >2 && slab < 7) )bcid[slab][k][iraw]=bcid[slab][k][iraw]+4096;
+			      else  bcid[slab][k][iraw]=bcid[slab][k][iraw]+4096*2;
+			      loopBCID++;
+			    }
+			  } else {
+                            if(bcid_in[slab][k][iraw] - bcid_in[slab][k][iraw-1]<0 ){
+			      loopBCID++;
+			      if(slab == 0 || (slab >2 && slab < 7) ) bcid[slab][k][iraw]=bcid[slab][k][iraw]+loopBCID*4096;
+			      else  bcid[slab][k][iraw]=bcid[slab][k][iraw]+loopBCID*4096*2;
+			    }
+                            if(bcid_in[slab][k][iraw] <1245 && loopBCID==0){ 
+                              if(slab == 0 || ( slab >2 && slab < 7) ) bcid[slab][k][iraw]=bcid[slab][k][iraw]+4096;
+                              else  bcid[slab][k][iraw]=bcid[slab][k][iraw]+4096*2;
+			      loopBCID++;
+			    }
+			  }
+			    
+			  nhits[slab][k][iraw]=nhits_in[slab][k][iraw];
+			  
+			  for (int j=0; j<NCHANNELS; j++) {
+			    charge_low[slab][k][iraw][j]=charge_low_in[slab][k][iraw][j];
+			    charge_high[slab][k][iraw][j]=charge_high_in[slab][k][iraw][j];
+			    gain_hit_low[slab][k][iraw][j]=gain_hit_low_in[slab][k][iraw][j];
+			    gain_hit_high[slab][k][iraw][j]=gain_hit_high_in[slab][k][iraw][j];
+			    //if(charge_high_in[slab][k][iraw][j]>1000)cout<<" "<<slab<<"  "<<k<<"  "<<i<<"  "<<j<<"  "<<charge_high_in[slab][k][iraw][j]  <<endl;
+			  }
                         }
-                        //if(numCol_in[slab][k]>1000) cout<<slab<<"  "<<k<<"  "<<numCol_in[slab][k]<<endl;
+                        
+			//if(numCol_in[slab][k]>1000) cout<<slab<<"  "<<k<<"  "<<numCol_in[slab][k]<<endl;
                         chipID[slab][k]=chipID_in[slab][k];
                         numCol[slab][k]=numCol_in[slab][k];
-
+			
                     }
                     acqNumber=currentSpill;
 
@@ -275,7 +290,7 @@ public:
                     badbcid[slab][k][i]= 0;
                     bcid_in[slab][k][i]= -999;
                     badbcid_in[slab][k][i]= 0;
-                    corrected_bcid[slab][k][i]= -999;
+		    //                    corrected_bcid[slab][k][i]= -999;
                     nhits[slab][k][i]= -999;
                     corrected_bcid_in[slab][k][i]= -999;
                     nhits_in[slab][k][i]= -999;

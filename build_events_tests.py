@@ -7,9 +7,8 @@ from help_tools import *
 
 def get_corr_bcid(bcid):
     if bcid < 0: return bcid
-    #if bcid > BCID_VALEVT: return bcid
-    #else: return bcid + 4096
-    return bcid
+    if bcid > BCID_VALEVT: return bcid
+    else: return bcid + 4096
 
 def merge_bcids(bcid_cnts):
     ## Set of BCIDs present in this entry
@@ -24,7 +23,7 @@ def merge_bcids(bcid_cnts):
     ## Do BCID matching
     for i,bcid in enumerate(bcids_unique):
 
-        for bcid_close in [bcid-1,bcid+1,bcid-2,bcid+2,bcid+3,bcid-3,bcid+4,bcid-4]:
+        for bcid_close in [bcid-1,bcid+1,bcid-2,bcid+2,bcid-3,bcid+3]:
             if bcid_close in new_bcid_cnts:
                 #print "Found nearby", bcid, bcid_close
                 #if bcids_cnts[bcid_close] < 1: continue
@@ -47,7 +46,8 @@ def get_good_bcids(entry):
     all_bcids = {}
     entry_badbcid = entry.badbcid
     entry_nhits = entry.nhits
-
+    
+    n_bcid_loops=0
     for i,bcid in enumerate(entry.bcid):
         if bcid < 0: continue
 
@@ -56,8 +56,10 @@ def get_good_bcids(entry):
         if entry_badbcid[i] > 1 or entry_badbcid[i] < 0: bcid_flag = 1
         #if entry_nhits[i] > 20: bcid_flag = 1
 
-        bcid = get_corr_bcid(bcid)
-
+        if i>0 and entry.bcid[i-1]>entry.bcid[i]: 
+            n_bcid_loops= n_bcid_loops + 1
+            bcid = 4096*n_bcid_loops+bcid#get_corr_bcid(bcid)
+            
         if bcid in all_bcids: all_bcids[bcid].append(bcid_flag)
         else: all_bcids[bcid] = [bcid_flag]
 
@@ -81,11 +83,27 @@ def get_hits(entry,bcid_map):
 
     for slab in xrange(NSLAB):
         for chip in xrange(NCHIP):
+            n_bcid_loops=0
             for sca in xrange(NSCA):
 
                 sca_indx = (slab * NCHIP + chip) * NSCA + sca
-                bcid = get_corr_bcid(entry_bcids[sca_indx])
-                                
+
+                #if i>0 and entry.bcid[i-1]>entry.bcid[i]:
+                #    n_bcid_loops= n_bcid_loops + 1
+                #    bcid = 4096*n_bcid_loops+bcid#get_corr_bcid(bcid) 
+                #if slab == 1 or slab == 2 or slab == 7 or slab == 8 or slab == 9:
+                    #bcid = get_corr_bcid(entry_bcids[sca_indx])
+                if sca_indx>0 and entry_bcids[sca_indx-1]>entry_bcids[sca_indx]:
+                    n_bcid_loops = n_bcid_loops + 1
+                    bcid = 4096*n_bcid_loops+entry_bcids[sca_indx]
+                else:
+                    bcid = entry_bcids[sca_indx]
+
+                if slab == 0:
+                    bcid = bcid/2 - 5
+                if slab == 3 or slab==4 or slab ==5 or slab ==6:
+                    bcid = bcid/2 - 1129 
+                
                 # filter bad bcids
                 if bcid not in bcid_map: continue
                 # get assigned bcid
@@ -175,7 +193,7 @@ def build_events(filename, maxEntries = -1, w_config = -1):
     if maxEntries < 0: maxEntries = tree.GetEntries()
     #else: maxEntries = 1000
 
-    #spill_cnt = 0
+    spill_cnt = 0
 
     print("# Going to analyze %i entries..." %maxEntries )
     for ientry,entry in enumerate(tree):#.GetEntries():
@@ -189,8 +207,8 @@ def build_events(filename, maxEntries = -1, w_config = -1):
         bcids = get_good_bcids(entry)
         bcid_map = merge_bcids(bcids)
 
-        spill[0] = entry.acqNumber #spill_cnt
-        #spill_cnt += 1
+        spill[0] = spill_cnt
+        spill_cnt += 1
 
         ## Collect hits in bcid container
         ev_hits = get_hits(entry,bcid_map)
@@ -203,7 +221,7 @@ def build_events(filename, maxEntries = -1, w_config = -1):
             if len(hits) == 0: continue
 
             ## each bcid -- single event
-            corr_bcid = get_corr_bcid(bcid)
+            corr_bcid = bcid#get_corr_bcid(bcid)
             global event_counter
             event_counter = event_counter+1
             event[0] = event_counter#int(spill[0]*10000 + corr_bcid)
@@ -212,13 +230,13 @@ def build_events(filename, maxEntries = -1, w_config = -1):
             ## store distance to previous bcid
             if ibc > 0:
                 prev_bcid = sorted(ev_hits)[ibc -1]
-                prev_bcid_b[0] = get_corr_bcid(prev_bcid)
+                prev_bcid_b[0] = prev_bcid#get_corr_bcid(prev_bcid)
             else:
                 prev_bcid_b[0] = -1
 
             if ibc + 1 < len(ev_hits):
                 next_bcid = sorted(ev_hits)[ibc +1]
-                next_bcid_b[0] = get_corr_bcid(next_bcid)
+                next_bcid_b[0] = next_bcid#get_corr_bcid(next_bcid)
                 #print("ibc=%i length=%i bcid=%i spill=%i"%(ibc,len(ev_hits),next_bcid_b[0],spill[0]))
             else:
                 next_bcid_b[0] = -1

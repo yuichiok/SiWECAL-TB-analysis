@@ -26,8 +26,8 @@ slab_map = {
     3: '_dif_1_2_5',#4th slab is 1_1_5, but as we don't have data, we use 1_2_5 
     4: '_dif_1_2_5',
     5: '_dif_1_2_2',#6th slab, 1_2_4... is dead? for the moment we use one of the FEV11's since they have the same thickness wafers
-    6: '_dif_1_2_3',#7th slab is 1_2_3, but as we don't have data, we use 1_2_5 
-    7: '_dif_1_1_3',#7th slab is 1_1_3, but as we don't have data, we use 1_2_5 
+    6: '_dif_1_2_5',#7th slab is 1_2_3, but as we don't have data, we use 1_2_5 
+    7: '_dif_1_1_3',
     8: '_dif_1_1_4',
     9: '_dif_1_1_1',
 }
@@ -117,7 +117,7 @@ def read_mapping(fname = "fev10_chip_channel_x_y_mapping.txt"):
             items = line.split()
 
             chip = int(items[0]); chan = int(items[3])
-            x = float(items[4]); y = float(items[5])
+            x = -float(items[4]); y = -float(items[5])
 
             chan_map[(chip,chan)] = (x,y)
 
