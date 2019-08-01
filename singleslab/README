@@ -33,3 +33,7 @@ Main Function.
 Same arguments that the PedestalAnalysis but it uses as input a pedestal txt file.
 Reads the files and subtract the pedestal to signal and calculates mip positions and signal over noie ratios for all channels.
 
+6) Retriggers (TString slboard, TString outputname, TString map_filename, int maxnhit)
+Funtion under construction.
+Only the first 5 histograms saved are been used so far...
+

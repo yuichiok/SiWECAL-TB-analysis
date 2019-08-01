@@ -1256,7 +1256,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString slboard,TString sufix="",TStri
 
 }
  
-void singleSlabAnalysis::Retriggers(TString slboard, TString sufix="",TString mapfile="/home/calice/TB201906/tpecal/mapping/tb-2019/fev11_cob_chip_channel_x_y_mapping.txt")
+void singleSlabAnalysis::Retriggers(TString slboard, TString sufix="",TString mapfile="/home/calice/TB201906/tpecal/mapping/tb-2019/fev11_cob_chip_channel_x_y_mapping.txt", int maxnhit=10)
 {
 
   ReadMap(mapfile);
@@ -1264,7 +1264,6 @@ void singleSlabAnalysis::Retriggers(TString slboard, TString sufix="",TString ma
   //should be used for root files that contain a full position scan, in order to provide meaninful list of masked channels.
  
   bool global = true;
-  int maxnhit=10;
 
   if(sufix!="") slboard=slboard+sufix;
 
@@ -1341,8 +1340,8 @@ void singleSlabAnalysis::Retriggers(TString slboard, TString sufix="",TString ma
 
       bool retrig=false;
       for(int isca=0; isca<15; isca++) {
-	if(badbcid[ichip][isca]!=0 && retrig==false && bcid[ichip][isca]>20 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915)) retrig=true;
-	if(badbcid[ichip][isca]!=0 && retrig==true && bcid[ichip][isca]>20 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915) ) {
+	if(badbcid[ichip][isca]!=0 && retrig==false && bcid[ichip][isca]>20 && (bcid[ichip][isca]<890 || bcid[ichip][isca]>915)) retrig=true;
+	if(badbcid[ichip][isca]!=0 && retrig==true && bcid[ichip][isca]>20 && (bcid[ichip][isca]<890 || bcid[ichip][isca]>915) ) {
 	  h_bcid2_correlation[ichip]->Fill(bcid[ichip][isca-1],bcid[ichip][isca]-bcid[ichip][isca-1]);
 	}
 
@@ -1385,7 +1384,7 @@ void singleSlabAnalysis::Retriggers(TString slboard, TString sufix="",TString ma
 	  n_events++;
 	}
 
-	if( badbcid[ichip][isca]>2 && first_retrig==false && bcid[ichip][isca]>20 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915))n_total_retriggers_trains[ichip]++;
+	if( badbcid[ichip][isca]>2 && first_retrig==false && bcid[ichip][isca]>20 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915)) n_total_retriggers_trains[ichip]++;
 	if( badbcid[ichip][isca]>2 && bcid[ichip][isca]>20 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915)) n_total_retriggers[ichip]++;
 	if( badbcid[ichip][isca]==0 && bcid[ichip][isca]>20 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915)) {
 	  n_total_triggers[ichip]++;
