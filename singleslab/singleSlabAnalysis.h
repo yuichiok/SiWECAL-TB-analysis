@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
 // Tue Apr 18 11:06:32 2017 by ROOT version 5.34/34
-// from TTree fev10/fev10
+// from TTree slboard/slboard
 // found on file: cosmics_dif_1_1_commissioning.raw.root
 //////////////////////////////////////////////////////////
 
@@ -25,13 +25,13 @@
 
 class singleSlabAnalysis {
 public :
+
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
    Int_t           fCurrent; //!current Tree number in a TChain
    TString         datadir;
 
    // Declaration of leaf types
    Int_t           event;
-   Int_t           thr;
    Int_t           acqNumber;
    Int_t           chipid[16];
    Int_t           nColumns[16];
@@ -46,7 +46,6 @@ public :
 
    // List of branches
    TBranch        *b_event;   //!
-   TBranch        *b_thr;   //!
    TBranch        *b_acqNumber;   //!
    TBranch        *b_chipid;   //!
    TBranch        *b_nColumns;   //!
@@ -60,8 +59,8 @@ public :
    TBranch        *b_gain_hit_high;   //!
 
    //singleSlabAnalysis(TTree *tree=0);
-   singleSlabAnalysis(TString tree_s);
-   singleSlabAnalysis(TList *f=0);
+   singleSlabAnalysis(TString tree_s, TString treename);
+   // singleSlabAnalysis(TList *f=0);
 
    virtual ~singleSlabAnalysis();
    // int     main(int argc, char* argv[2]);
@@ -72,20 +71,17 @@ public :
    // write file with masked channels
    virtual void     FindMasked(TString dif);
    // analysis of pedestal and writting of the file with pedestals per chi/channel/sca
-   virtual void     PedestalAnalysis(TString dif,TString grid,TString map_filename);
-   virtual void     PedestalAnalysis_gridpoints(TString dif,TString grid,TString map_filename);
-   virtual void     PedestalAnalysis_bcid(TString dif,TString grid,TString map_filename);
+   virtual void     PedestalAnalysis(TString dif,TString grid,TString map_filename, int nmaxhits);
    // read pedestals, maps, masked channels
    virtual void     ReadMap(TString filename);
    virtual void     ReadMasked(TString filename);
    virtual void     ReadPedestals(TString filename);
    //signal analysis: MIP fitt and signal/noise 
-   virtual void     SimpleMaps(TString dif, TString outputname, TString map_filename);
-   virtual void     SignalAnalysis(TString dif, TString outputname, bool readpedestal, TString map_filename);
+   virtual void     SignalAnalysis(TString dif, TString outputname, TString map_filename, int nmaxhits);
    virtual TF1 *langaufit(TH1F *his, Double_t *fitrange, Double_t *startvalues, Double_t *parlimitslo, Double_t *parlimitshi, Double_t *fitparams, Double_t *fiterrors, Double_t *ChiSqr, Int_t *NDF);
    //   virtual Double_t langaufun(Double_t *x, Double_t *par);
    // bcid correlations of retriggers (good vs bad events)
-   virtual void     BcidCorrelations(TString filename);
+   virtual void     Retriggers(TString dif, TString sufix, TString mapfile);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
 
@@ -105,17 +101,18 @@ private :
 #endif
 
 #ifdef singleSlabAnalysis_cxx
-singleSlabAnalysis::singleSlabAnalysis(TString tree_s) : fChain(0) 
+singleSlabAnalysis::singleSlabAnalysis(TString tree_s, TString treename) : fChain(0) 
 {
 
   
   TFile *f = new TFile(tree_s);
-  TTree *tree = (TTree*)f->Get("fev10");
+  TTree *tree = (TTree*)f->Get(treename);
   //  tree->Print();
   Init(tree);
   
 }
 
+/*
 singleSlabAnalysis::singleSlabAnalysis(TList *f) : fChain(0) 
 {
 // if parameter tree is not specified (or zero), use a list of of files provided as input
@@ -127,13 +124,13 @@ singleSlabAnalysis::singleSlabAnalysis(TList *f) : fChain(0)
       fname = file->GetName();
       TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject(fname);
       TTree *tree=0;
-      f->GetObject("fev10",tree);
+      f->GetObject(treename,tree);
       Init(tree);
   }
 
 
 }
-
+*/
 singleSlabAnalysis::~singleSlabAnalysis()
 {
    if (!fChain) return;
@@ -178,7 +175,6 @@ void singleSlabAnalysis::Init(TTree *tree)
    fChain->SetMakeClass(1);
 
    fChain->SetBranchAddress("event", &event, &b_event);
-   fChain->SetBranchAddress("thr", &thr, &b_thr);
    fChain->SetBranchAddress("acqNumber", &acqNumber, &b_acqNumber);
    fChain->SetBranchAddress("chipid", chipid, &b_chipid);
    fChain->SetBranchAddress("nColumns", nColumns, &b_nColumns);
