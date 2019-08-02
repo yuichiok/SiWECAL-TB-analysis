@@ -23,9 +23,9 @@ void CommissioningAnalysis(TString filename_in, TString output="", TString slboa
   }
 
   singleSlabAnalysis ss(filename_in,treename_st);
-  ss.PedestalAnalysis(slboard,output,map);
-  ss.SignalAnalysis(slboard,output,true,map);
-  ss.Retriggers(slboard,output,map);
+  ss.PedestalAnalysis(slboard,output,map,4);
+  ss.SignalAnalysis(slboard,output,map,4);
+  ss.Retriggers(slboard,output,map,10);
   gSystem->Exit(0);
 
 }

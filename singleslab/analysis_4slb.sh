@@ -12,7 +12,6 @@
 run=$1
 convert=$2
 
-echo $convert
 if (( $convert == 1));
 then
     for path in ../../SLB_data/run_"${run}"*i
@@ -32,7 +31,8 @@ then
 fi
 
 root -l CommissioningAnalysis.cc\(\"../../SLB_data/run_${run}\",\"_run_${run}\",\"_SLB_0\"\) &
-root -l CommissioningAnalysis.cc\(\"../../SLB_data/run_${run}\",\"_run_${run}\",\"_SLB_1\"\) &
+root -l CommissioningAnalysis.cc\(\"../../SLB_data/run_${run}\",\"_run_${run}\",\"_SLB_1\"\) 
 
 root -l CommissioningAnalysis.cc\(\"../../SLB_data/run_${run}\",\"_run_${run}\",\"_SLB_2\"\) &
-root -l CommissioningAnalysis.cc\(\"../../SLB_data/run_${run}\",\"_run_${run}\",\"_SLB_3\"\) &
+root -l CommissioningAnalysis.cc\(\"../../SLB_data/run_${run}\",\"_run_${run}\",\"_SLB_3\"\)
+

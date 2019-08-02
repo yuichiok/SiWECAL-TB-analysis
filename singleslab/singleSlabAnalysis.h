@@ -81,7 +81,7 @@ public :
    virtual TF1 *langaufit(TH1F *his, Double_t *fitrange, Double_t *startvalues, Double_t *parlimitslo, Double_t *parlimitshi, Double_t *fitparams, Double_t *fiterrors, Double_t *ChiSqr, Int_t *NDF);
    //   virtual Double_t langaufun(Double_t *x, Double_t *par);
    // bcid correlations of retriggers (good vs bad events)
-   virtual void     Retriggers(TString dif, TString sufix, TString mapfile);
+   virtual void     Retriggers(TString dif, TString sufix, TString mapfile, int maxnhits);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
 
