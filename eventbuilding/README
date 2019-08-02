@@ -1,0 +1,21 @@
+## merge files and do event building
+## A. Irles, 1st August 2019
+## irles NOT SPAM @lal.in2p3.fr
+
+Example of running in build.sh
+
+> mergeRootFiles.cc
+Merges all 9 files in one (adding one extra dimension to the arrays).
+It does also the inversion between high gain and tdc if this is the case.
+It also makes the bcid-offset correction between fev13s and slbs
+
+To do: what about the auto gain ? This bit is not included in the standard RAW2ROOT output, so I did not used it here.
+
+
+> build_events.py
+It uses the output from the previous macro and applies, for the moment,
+
+dummy pedestal + masked channels + mip calibration
+Time Event building (+-3 bcids)
+
+
