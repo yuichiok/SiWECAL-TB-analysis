@@ -1,23 +1,12 @@
-#for i in {31014..31021}
-#do
-#    source analysis_4slb.sh $i 1
-#done
+source runs21.sh
 
+for i in {31004..31033}
+do
+    source analysis_4slb.sh $i 0
+done
 
-#source analysis_4slb.sh 31032 1
-source analysis_4slb.sh 31033 1
-source analysis_4slb.sh 31034 1
+source runs32.sh
 
-#for i in {31024..31029}
-#do
-#    source analysis_4slb.sh $i 1
-#done
-
-#source analysis_4slb.sh 31022 1
-#source analysis_4slb.sh 31023 1
-
-
-#source runs21.sh
-#source runs41.sh
-#source runs42.sh
+source runs41.sh
+source runs42.sh
 

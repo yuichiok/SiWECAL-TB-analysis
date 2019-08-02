@@ -5,7 +5,7 @@
 #include "TFile.h"
 #include "singleSlabAnalysis.cc"
 
-void CommissioningAnalysis(TString filename_in, TString output="", TString slboard="SLB_2"){
+void CommissioningAnalysis(TString filename_in, TString output="", TString slboard="_SLB_2"){
 
   TString map="/home/irles/WorkAreaECAL/2019/TB201906/SiWECAL-TB-analysis/mapping/fev10_chip_channel_x_y_mapping.txt";  
   if(slboard=="_SLB_0") map="/home/irles/WorkAreaECAL/2019/TB201906/SiWECAL-TB-analysis/mapping/fev11_cob_chip_channel_x_y_mapping.txt";
@@ -21,8 +21,8 @@ void CommissioningAnalysis(TString filename_in, TString output="", TString slboa
     filename_in=filename_in+slboard+".raw.root";
     treename_st="fev10";
   }
-  singleSlabAnalysis ss(filename_in);
-  ss.treename=treename_st;
+
+  singleSlabAnalysis ss(filename_in,treename_st);
   ss.PedestalAnalysis(slboard,output,map);
   ss.SignalAnalysis(slboard,output,true,map);
   ss.Retriggers(slboard,output,map);

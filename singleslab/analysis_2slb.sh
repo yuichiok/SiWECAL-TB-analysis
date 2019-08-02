@@ -17,15 +17,15 @@ then
     for path in /home/calice/TB201906/SLB_data/run_"${run}"*i
     do
 	echo $path
-	root -l /home/calice/TB201906/converter/ConvertDirectorySL.cc\(\"${path}/\",0,2\) 
-	root -l /home/calice/TB201906/converter/ConvertDirectorySL.cc\(\"${path}/\",3,2\)
+	root -l ../converter_SLB/ConvertDirectorySL.cc\(\"${path}/\",0,2\) 
+	root -l ../converter_SLB/ConvertDirectorySL.cc\(\"${path}/\",3,2\)
 	
     done
 
-    hadd -f /home/calice/TB201906/SLB_data/run_${run}_SLB_0.root /home/calice/TB201906/SLB_data/run_${run}*/*dat_SLB_0.root /home/calice/TB201906/SLB_data/run_${run}*/*dat_0*SLB_0.root &
-    hadd -f /home/calice/TB201906/SLB_data/run_${run}_SLB_3.root /home/calice/TB201906/SLB_data/run_${run}*/*dat_SLB_3.root /home/calice/TB201906/SLB_data/run_${run}*/*dat_0*SLB_3.root
+    hadd -f ../../SLB_data/run_${run}_SLB_0.root ../../SLB_data/run_${run}*/*dat_SLB_0.root ../../SLB_data/run_${run}*/*dat_0*SLB_0.root &
+    hadd -f ../../SLB_data/run_${run}_SLB_3.root ../../SLB_data/run_${run}*/*dat_SLB_3.root ../../SLB_data/run_${run}*/*dat_0*SLB_3.root
 
 fi
 
-root -l CommissioningAnalysis.cc\(\"/home/calice/TB201906/SLB_data/run_${run}\",\"_run_${run}\",\"_SLB_0\"\) &
-root -l CommissioningAnalysis.cc\(\"/home/calice/TB201906/SLB_data/run_${run}\",\"_run_${run}\",\"_SLB_3\"\)
+root -l CommissioningAnalysis.cc\(\"../../SLB_data/run_${run}\",\"_run_${run}\",\"_SLB_0\"\) &
+root -l CommissioningAnalysis.cc\(\"../../SLB_data/run_${run}\",\"_run_${run}\",\"_SLB_3\"\)

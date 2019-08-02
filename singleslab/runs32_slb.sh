@@ -1,9 +1,13 @@
-for i in {32001..32002}
+for i in {32001..32004}
 do
-    source analysis_4slb.sh $i 1
+    source analysis_4slb.sh $i 0
 done
 
-source analysis_4slb.sh 32004 1
+for i in {32014..32015}
+do
+    source analysis_4slb.sh $i 0
+done
+
 
 
 

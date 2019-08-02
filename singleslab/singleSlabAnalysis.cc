@@ -109,7 +109,7 @@ void singleSlabAnalysis::SignalAnalysis(TString slboard="testname", TString outp
 	    bool selection=false;
 	    if(charge_hiGain[ichip][isca][ichn]>0 && gain_hit_high[ichip][isca][ichn]==1 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 ) {
 	      if ( (slboard=="_SLB_0" || slboard=="_SLB_1" || slboard=="_SLB_2" || slboard=="_SLB_3")  &&
-		   bcid[ichip][isca]>15 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915)  ) selection=true;
+		   bcid[ichip][isca]>30 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915)  ) selection=true;
 	    } else {
 	      if( (slboard!="_SLB_0" && slboard!="_SLB_1" && slboard!="_SLB_2" && slboard!="_SLB_3")  &&
 		  bcid[ichip][isca]>800 ) selection=true;
@@ -472,12 +472,12 @@ void singleSlabAnalysis::FindMasked(TString slboard)
 	  bool selection=false;
 	  if( badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 ) {
 	    if ( (slboard=="_SLB_0" || slboard=="_SLB_1" || slboard=="_SLB_2" || slboard=="_SLB_3")  &&
-		 bcid[ichip][isca]>15 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915)  ) selection=true;
+		 bcid[ichip][isca]>30 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915)  ) selection=true;
 	  } else {
 	    if( (slboard!="_SLB_0" && slboard!="_SLB_1" && slboard!="_SLB_2" && slboard!="_SLB_3")  &&
 		bcid[ichip][isca]>800 ) selection=true;
 	  }
-	  if(charge_hiGain[ichip][isca][ichn]>15 && gain_hit_high[ichip][isca][ichn]==1 && selection==true)
+	  if(charge_hiGain[ichip][isca][ichn]>30 && gain_hit_high[ichip][isca][ichn]==1 && selection==true)
 	    h_charge_channel.at(ichip).at(ichn)->Fill(charge_hiGain[ichip][isca][ichn]);
 	}//ichn
            
@@ -808,9 +808,9 @@ void singleSlabAnalysis::PedestalAnalysis(TString slboard,TString sufix="",TStri
 	  //good events
 	  bool selection=false;
 
-	  if( charge_lowGain[ichip][isca][ichn]>15 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 ) {
+	  if( charge_lowGain[ichip][isca][ichn]>30 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 ) {
 	    if ( (slboard=="_SLB_0" || slboard=="_SLB_1" || slboard=="_SLB_2" || slboard=="_SLB_3")  &&
-		 bcid[ichip][isca]>15 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915)  ) selection=true;
+		 bcid[ichip][isca]>30 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915)  ) selection=true;
 	  } else {
 	    if( (slboard!="_SLB_0" && slboard!="_SLB_1" && slboard!="_SLB_2" && slboard!="_SLB_3")  &&
 		bcid[ichip][isca]>800 ) selection=true;
