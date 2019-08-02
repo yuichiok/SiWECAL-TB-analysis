@@ -8,6 +8,11 @@ uses the output of RAW2ROOT.cc and SLBdecoded2ROOT.cc
 The tree names are different and need to be passed as an argument.
 Examples of how to run the different functions are in CommissioningAnalysis.cc
 
+To run it you need to create the following folders:
+
+results_mipcalibration
+results_pedestal
+results_retriggers
 // ---------------------------------
 
 1)    PedestalAnalysis(TString slboard,TString sufix,TString map_filename, int maxnhit);
