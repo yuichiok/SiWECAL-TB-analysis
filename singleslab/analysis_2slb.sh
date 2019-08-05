@@ -12,19 +12,28 @@
 run=$1
 convert=$2
 
+data_folder= "../../SLB_data/"
+
 if (( $convert == 1));
 then
-    for path in /home/calice/TB201906/SLB_data/run_"${run}"*i
+    for path in ${data_folder}/run_"${run}"*i
     do
 	echo $path
 	root -l ../converter_SLB/ConvertDirectorySL.cc\(\"${path}/\",2,2\) 
 	root -l ../converter_SLB/ConvertDirectorySL.cc\(\"${path}/\",3,2\)
 	
     done
-
-    hadd -f ../../SLB_data/run_${run}_SLB_2.root ../../SLB_data/run_${run}*/*dat_SLB_2.root ../../SLB_data/run_${run}*/*dat_0*SLB_2.root &
-    hadd -f ../../SLB_data/run_${run}_SLB_3.root ../../SLB_data/run_${run}*/*dat_SLB_3.root ../../SLB_data/run_${run}*/*dat_0*SLB_3.root
-
+    if ( ls ${data_folder}/run_${run}*/*dat_0*SLB_2.root )
+    then
+	echo "more than one file "
+	hadd -f ${data_folder}/run_${run}_SLB_2.root ${data_folder}/run_${run}*/*dat_SLB_2.root ${data_folder}/run_${run}*/*dat_0*SLB_2.root &
+	hadd -f ${data_folder}/run_${run}_SLB_3.root ${data_folder}/run_${run}*/*dat_SLB_3.root ${data_folder}/run_${run}*/*dat_0*SLB_3.root 
+    else
+	echo "only one file "
+	hadd -f ${data_folder}/run_${run}_SLB_2.root ${data_folder}/run_${run}*/*dat_SLB_2.root &
+	hadd -f ${data_folder}/run_${run}_SLB_3.root ${data_folder}/run_${run}*/*dat_SLB_3.root 
+    fi
+    
 fi
 
 root -l CommissioningAnalysis.cc\(\"../../SLB_data/run_${run}\",\"_run_${run}\",\"_SLB_2\"\) &

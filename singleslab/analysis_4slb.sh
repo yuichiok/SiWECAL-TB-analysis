@@ -12,6 +12,7 @@
 run=$1
 convert=$2
 
+data_folder= "/home/calice/TB201906/SLB_data/"
 if (( $convert == 1));
 then
     for path in ../../SLB_data/run_"${run}"*i
@@ -23,11 +24,23 @@ then
 	root -l ../converter_SLB/ConvertDirectorySL.cc\(\"${path}/\",3,4\)
 	sleep 30
     done
-    hadd -f ../../SLB_data/run_${run}_SLB_0.root ../../SLB_data/run_${run}*/*dat_SLB_0.root ../../SLB_data/run_${run}*/*dat_0*SLB_0.root &
-    hadd -f ../../SLB_data/run_${run}_SLB_1.root ../../SLB_data/run_${run}*/*dat_SLB_1.root ../../SLB_data/run_${run}*/*dat_0*SLB_1.root
-    hadd -f ../../SLB_data/run_${run}_SLB_2.root ../../SLB_data/run_${run}*/*dat_SLB_2.root ../../SLB_data/run_${run}*/*dat_0*SLB_2.root &
-    hadd -f ../../SLB_data/run_${run}_SLB_3.root ../../SLB_data/run_${run}*/*dat_SLB_3.root ../../SLB_data/run_${run}*/*dat_0*SLB_3.root
-    sleep 20
+    
+    if ( ls ${data_folder}/run_${run}*/*dat_0*SLB_2.root )
+    then
+	echo "more than one file "
+	hadd -f ${data_folder}/run_${run}_SLB_0.root ${data_folder}/run_${run}*/*dat_SLB_0.root ${data_folder}/run_${run}*/*dat_0*SLB_0.root &
+	hadd -f ${data_folder}/run_${run}_SLB_1.root ${data_folder}/run_${run}*/*dat_SLB_1.root ${data_folder}/run_${run}*/*dat_0*SLB_1.root 
+	hadd -f ${data_folder}/run_${run}_SLB_2.root ${data_folder}/run_${run}*/*dat_SLB_2.root ${data_folder}/run_${run}*/*dat_0*SLB_2.root &
+	hadd -f ${data_folder}/run_${run}_SLB_3.root ${data_folder}/run_${run}*/*dat_SLB_3.root ${data_folder}/run_${run}*/*dat_0*SLB_3.root
+	sleep 20
+    else
+	echo "only one file "
+	hadd -f ${data_folder}/run_${run}_SLB_0.root ${data_folder}/run_${run}*/*dat_SLB_0.root &
+	hadd -f ${data_folder}/run_${run}_SLB_1.root ${data_folder}/run_${run}*/*dat_SLB_1.root &
+	hadd -f ${data_folder}/run_${run}_SLB_2.root ${data_folder}/run_${run}*/*dat_SLB_2.root &
+	hadd -f ${data_folder}/run_${run}_SLB_3.root ${data_folder}/run_${run}*/*dat_SLB_3.root
+	sleep 20
+    fi
 fi
 
 root -l CommissioningAnalysis.cc\(\"../../SLB_data/run_${run}\",\"_run_${run}\",\"_SLB_0\"\) &
