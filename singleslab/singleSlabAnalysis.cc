@@ -109,10 +109,10 @@ void singleSlabAnalysis::SignalAnalysis(TString slboard="testname", TString outp
 	    bool selection=false;
 	    if(charge_hiGain[ichip][isca][ichn]>0 && gain_hit_high[ichip][isca][ichn]==1 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 ) {
 	      if ( (slboard=="_SLB_0" || slboard=="_SLB_1" || slboard=="_SLB_2" || slboard=="_SLB_3")  &&
-		   bcid[ichip][isca]>30 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915)  ) selection=true;
-	    } else {
+		   bcid[ichip][isca]>50 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>930)  ) selection=true;
+
 	      if( (slboard!="_SLB_0" && slboard!="_SLB_1" && slboard!="_SLB_2" && slboard!="_SLB_3")  &&
-		  bcid[ichip][isca]>800 ) selection=true;
+	      	  bcid[ichip][isca]>0 ) selection=true;
 	    }
 
 	    if(selection==true) {
@@ -157,7 +157,7 @@ void singleSlabAnalysis::SignalAnalysis(TString slboard="testname", TString outp
   for(int ichip=0; ichip<16; ichip++) {
     for(int ichn=0; ichn<65; ichn++) {
             
-      if(mip_histo.at(ichip).at(ichn)->GetEntries()>50){
+      if(mip_histo.at(ichip).at(ichn)->GetEntries()>100){
 
 	fr[0]=mip_histo.at(ichip).at(ichn)->GetMean()-0.8*mip_histo.at(ichip).at(ichn)->GetRMS();
 	if(fr[0]<30) fr[0]=30;
@@ -472,10 +472,10 @@ void singleSlabAnalysis::FindMasked(TString slboard)
 	  bool selection=false;
 	  if( badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 ) {
 	    if ( (slboard=="_SLB_0" || slboard=="_SLB_1" || slboard=="_SLB_2" || slboard=="_SLB_3")  &&
-		 bcid[ichip][isca]>30 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915)  ) selection=true;
-	  } else {
+		 bcid[ichip][isca]>50 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>930)  ) selection=true;
 	    if( (slboard!="_SLB_0" && slboard!="_SLB_1" && slboard!="_SLB_2" && slboard!="_SLB_3")  &&
-		bcid[ichip][isca]>800 ) selection=true;
+	    	bcid[ichip][isca]>0 )
+	    selection=true;
 	  }
 	  if(charge_hiGain[ichip][isca][ichn]>30 && gain_hit_high[ichip][isca][ichn]==1 && selection==true)
 	    h_charge_channel.at(ichip).at(ichn)->Fill(charge_hiGain[ichip][isca][ichn]);
@@ -810,10 +810,10 @@ void singleSlabAnalysis::PedestalAnalysis(TString slboard,TString sufix="",TStri
 
 	  if( charge_hiGain[ichip][isca][ichn]>30 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 ) {
 	    if ( (slboard=="_SLB_0" || slboard=="_SLB_1" || slboard=="_SLB_2" || slboard=="_SLB_3")  &&
-		 bcid[ichip][isca]>30 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915)  ) selection=true;
-	  } else {
+		 bcid[ichip][isca]>50 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>930)  ) selection=true;
+	 
 	    if( (slboard!="_SLB_0" && slboard!="_SLB_1" && slboard!="_SLB_2" && slboard!="_SLB_3")  &&
-		bcid[ichip][isca]>800 ) selection=true;
+	    	bcid[ichip][isca]>0 ) selection=true;
 	  }
 		  
 	  // if(masked[ichip][ichn]==1) selection=false;
@@ -1271,63 +1271,34 @@ void singleSlabAnalysis::Retriggers(TString slboard, TString sufix="",TString ma
   Long64_t nentries = fChain->GetEntriesFast();
 
   //summary
-  TH1F* h_total_triggers = new TH1F("total_triggers"+slboard,"total_triggers"+slboard,16,-0.5,15.5);
-  TH1F* h_total_retriggers = new TH1F("total_retriggers"+slboard,"total_retriggers"+slboard,16,-0.5,15.5);
-  TH1F* h_total_retriggers_trains = new TH1F("total_retriggers_trains"+slboard,"total_retriggers_trains"+slboard,16,-0.5,15.5);
-  TH2F* h_total_triggers_2d = new TH2F("total_triggers_2d"+slboard,"total_triggers_2d"+slboard,16,-0.5,15.5,3,-0.5,2.5);
-  TH1F* h_signal = new TH1F("signal"+slboard,"signal"+slboard,4000,50.5,4050.5);
-
   TH2F* h_total_planeE = new TH2F("total_planeE"+slboard,"total_planeE"+slboard,16,-0.5,15.5,15,-0.5,14.5);
   TH2F* h_total_negE = new TH2F("total_negE"+slboard,"total_negE"+slboard,16,-0.5,15.5,15,-0.5,14.5);
   TH2F* h_total_negE_nohit = new TH2F("total_negE_nohit"+slboard,"total_negE_nohit"+slboard,16,-0.5,15.5,15,-0.5,14.5);
+  TH2F* h_total_burst = new TH2F("total_burst"+slboard,"total_burst"+slboard,16,-0.5,15.5,15,-0.5,14.5);
+  TH2F* h_total_retrig = new TH2F("total_retrig"+slboard,"total_retrig"+slboard,16,-0.5,15.5,15,-0.5,14.5);
+  TH2F* h_total_retrig_trains = new TH2F("total_retrig_trains"+slboard,"total_retrig_trains"+slboard,16,-0.5,15.5,15,-0.5,14.5);
+  TH2F* h_total_trig = new TH2F("total_trig"+slboard,"total_trig"+slboard,16,-0.5,15.5,15,-0.5,14.5);
 
+  TH1F* h_signal = new TH1F("signal"+slboard,"signal"+slboard,4000,50.5,4050.5);
+  TH2F* h_trig = new TH2F("trig"+slboard,"trig"+slboard,16,-0.5,15.5,64,-0.5,63.5);
+  TH2F* h_trig_xy = new TH2F("trig_xy"+slboard,"trig_xy"+slboard,32,-90,90,32,-90,90);
   
-  // --------------------
-  // per sca
+  TH1F* h_bad = new TH1F("bad"+slboard,"bad"+slboard,4000,50.5,4050.5);
+
   TH2F* h_first_retriggering = new TH2F("first_retriggering"+slboard,"first_retriggering"+slboard,16,-0.5,15.5,64,-0.5,63.5);
   TH2F* h_all_retriggering = new TH2F("all_retriggering"+slboard,"all_retriggering"+slboard,16,-0.5,15.5,64,-0.5,63.5);
+  TH2F* h_first_retriggering_xy = new TH2F("first_retriggering_xy"+slboard,"first_retriggering_xy"+slboard,32,-90,90,32,-90,90);
+  TH2F* h_all_retriggering_xy = new TH2F("all_retriggering_xy"+slboard,"all_retriggering_xy"+slboard,32,-90,90,32,-90,90);
 
-  TH2F* h_retrigger_train[16];
-  TH1F* h_retrigger_train_length[16];
-  TH1F* h_retrigger_n_trains[16];
-  TH1F* h_signal_n_events[16];
+  TH2F* h_dist_sca15[16];
+  for(int ichip=0; ichip<16; ichip++) h_dist_sca15[ichip] = new TH2F(TString::Format("h_dist_sca15_chip%i",ichip),TString::Format("h_dist_sca15_chip%i",ichip),16,-0.5,15.5,401,-200.5,200.5);
 
-  TH2F* h_bcid_correlation[16];
-  TH2F* h_bcid2_correlation[16];
+  TH2F* h_dist_trig_retrig[16];
+  for(int ichip=0; ichip<16; ichip++) h_dist_trig_retrig[ichip] = new TH2F(TString::Format("h_dist_trig_retrig_chip%i",ichip),TString::Format("h_dist_trig_retrig_chip%i",ichip),16,-0.5,15.5,401,-200.5,200.5);
 
-  TH1F* good[16];
-  TH1F* bad[16];
-  TH2F* good_vs_bad[16];
-
-  for(int ichip=0; ichip<16; ichip++) {
-    h_retrigger_train[ichip] = new TH2F(TString::Format("retrigger_train_chip%i_",ichip)+slboard,TString::Format("retrigger_train_chip%i_",ichip)+slboard,15,-0.5,14.5,64,-0.5,63.5);
-    h_retrigger_train_length[ichip] = new TH1F(TString::Format("retrigger_train_length_chip%i_",ichip)+slboard,TString::Format("retrigger_train_length_chip%i_",ichip)+slboard,15,0.5,15.5);
-    h_retrigger_n_trains[ichip] = new TH1F(TString::Format("retrigger_n_trains_chip%i_",ichip)+slboard,TString::Format("retrigger_n_trains_chip%i_",ichip)+slboard,5,-0.5,4.5);
-    h_signal_n_events[ichip] = new TH1F(TString::Format("signal_n_events_chip%i_",ichip)+slboard,TString::Format("signal_n_events_chip%i_",ichip)+slboard,5,-0.5,4.5);
-
-    h_bcid_correlation[ichip]
-      = new TH2F(TString::Format("bcid_rettriggers_correlation_chip%i_",ichip)+slboard,TString::Format("bcid_rettriggers_correlation_chip%i_",ichip)+slboard,50,0,5000,1000,0.5,1000.5);
-
-    h_bcid2_correlation[ichip]
-      = new TH2F(TString::Format("bcid_triggers_correlation_chip%i_",ichip)+slboard,TString::Format("bcid_triggers_correlation_chip%i_",ichip)+slboard,500,5,5005,1000,0.5,1000.5);
-    
-    good[ichip]= new TH1F(TString::Format("good_chip%i_%s",ichip,slboard.Data()),TString::Format("good_chip%i_%s",ichip,slboard.Data()),15,0.5,15.5);
-    bad[ichip]= new TH1F(TString::Format("bad_chip%i_%s",ichip,slboard.Data()),TString::Format("bad_chip%i_%s",ichip,slboard.Data()),15,0.5,15.5);
-    good_vs_bad[ichip]= new TH2F(TString::Format("good_vs_bad_chip%i_%s",ichip,slboard.Data()),TString::Format("good_vs_bad_chip%i_%s",ichip,slboard.Data()),15,0.5,15.5,15,0.5,15.5);
-  }
-
-  double n_total_triggers[16];
-  double n_total_retriggers[16];
-  double n_total_retriggers_trains[16];
-
-  for(int ichip=0; ichip<16; ichip++) {
-    
-    n_total_triggers[ichip]=0;
-    n_total_retriggers[ichip]=0;
-    n_total_retriggers_trains[ichip]=0;
-
-  }
-
+  TH2F* h_dist_retrig_all[16];
+  for(int ichip=0; ichip<16; ichip++) h_dist_retrig_all[ichip] = new TH2F(TString::Format("h_dist_retrig_all_chip%i",ichip),TString::Format("h_dist_retrig_all_chip%i",ichip),16,-0.5,15.5,401,-200.5,200.5); 
+  
   // -----------------------------------------------------------------------------------------------------   
   // SCA analysis
   Long64_t nbytes = 0, nb = 0;
@@ -1338,242 +1309,170 @@ void singleSlabAnalysis::Retriggers(TString slboard, TString sufix="",TString ma
 
     for(int ichip=0; ichip<16; ichip++) {
 
-      bool retrig=false;
+      bool first_retrig=false;
+      
       for(int isca=0; isca<15; isca++) {
-	if(badbcid[ichip][isca]!=0 && retrig==false && bcid[ichip][isca]>20 && (bcid[ichip][isca]<890 || bcid[ichip][isca]>915)) retrig=true;
-	if(badbcid[ichip][isca]!=0 && retrig==true && bcid[ichip][isca]>20 && (bcid[ichip][isca]<890 || bcid[ichip][isca]>915) ) {
-	  h_bcid2_correlation[ichip]->Fill(bcid[ichip][isca-1],bcid[ichip][isca]-bcid[ichip][isca-1]);
-	}
+	bool retrig=false;
+	bool burst=false;
+	if(bcid[ichip][isca]<0) continue;
+	
+	if(badbcid[ichip][isca]>2 &&  bcid[ichip][isca]>50) && (bcid[ichip][isca]<890 || bcid[ichip][isca]>930)) {
+	  retrig=true;
+	  if(first_retrig==false) {
+	    first_retrig=true;
+	    h_total_retrig_trains->Fill(ichip,isca);
+	  }
+	  h_total_retrig->Fill(ichip,isca);
 
+	}
+	if(bcid[ichip][isca]<50  || (bcid[ichip][isca]>890 && bcid[ichip][isca]<930)) {
+	  burst=true;
+	  h_total_burst->Fill(ichip,isca);
+	}
+	
 	int hits_plane=0;
 	int hits_negative=0;
 	int nohits_negative=0;
-
 	for(int ichn=0;ichn<64;ichn++) {
-	  if(gain_hit_high[ichip][isca][ichn]==1) hits_plane++;
-	  if(gain_hit_high[ichip][isca][ichn]==1 && charge_hiGain[ichip][isca][ichn]<100) hits_negative++;
-	  if(gain_hit_high[ichip][isca][ichn]==0 && charge_hiGain[ichip][isca][ichn]<100) nohits_negative++;
+	    if(gain_hit_high[ichip][isca][ichn]==1) hits_plane++; 
+	    if(gain_hit_high[ichip][isca][ichn]==1 && charge_hiGain[ichip][isca][ichn]<100) hits_negative++;
+	    if(gain_hit_high[ichip][isca][ichn]==0 && charge_hiGain[ichip][isca][ichn]<100)  nohits_negative++;
 	}
+	
+	if( burst == false && retrig == false) {
+	  bool bad = false;
+	  
+	  if(hits_plane>(maxnhit-1)) { bad=true; h_total_planeE->Fill(ichip,isca);}
+	  if(hits_negative>(maxnhit-1)) { bad=true; h_total_negE->Fill(ichip,isca);}
+	  if(nohits_negative>(maxnhit-1)) { bad=true; h_total_negE_nohit->Fill(ichip,isca);}
+	
 
-	if(hits_plane>(maxnhit-1)) h_total_planeE->Fill(ichip,isca);
-	if(hits_negative>(maxnhit-1)) h_total_negE->Fill(ichip,isca);
-	if(nohits_negative>(maxnhit-1)) h_total_negE_nohit->Fill(ichip,isca);
+	  if(bad==false) {
+	    h_total_trig->Fill(ichip,isca);
+	    for(int ichn=0;ichn<64;ichn++)
+	      if(gain_hit_high[ichip][isca][ichn]==1) {
+		h_signal->Fill(charge_hiGain[ichip][isca][ichn]);
+		h_trig -> Fill(ichip,ichn);
+		h_trig_xy -> Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn]);    
 
+	      }
+	  } else {
+	    for(int ichn=0;ichn<64;ichn++) if(gain_hit_high[ichip][isca][ichn]==1) h_bad->Fill(charge_hiGain[ichip][isca][ichn]);
+	  }
+	  
+	} else {
+	  for(int ichn=0;ichn<64;ichn++) if(gain_hit_high[ichip][isca][ichn]==1) h_bad->Fill(charge_hiGain[ichip][isca][ichn]);
+	}
       }
     }
-    
+       
+    //channels starting retriggers
     for(int ichip=0; ichip<16; ichip++) {
 
-      double good_triggers=0;
-      double bad_triggers=0;
-
       bool first_retrig=false;
-      int first_sca_retrig=0;
-      int length=0;
-      int n_trains=0;
-      int n_events=0;
-
-      float bcid_signal=0;
-      float bcid_retrigger=0;
-            
+      
       for(int isca=0; isca<15; isca++) {
+	if(bcid[ichip][isca]<50 || (bcid[ichip][isca]>890 && bcid[ichip][isca]<930)) continue;
 
-	if(badbcid[ichip][isca]==0) {
-	  bcid_signal=bcid[ichip][isca];
-	  good_triggers++;
-	  n_events++;
-	}
-
-	if( badbcid[ichip][isca]>2 && first_retrig==false && bcid[ichip][isca]>20 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915)) n_total_retriggers_trains[ichip]++;
-	if( badbcid[ichip][isca]>2 && bcid[ichip][isca]>20 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915)) n_total_retriggers[ichip]++;
-	if( badbcid[ichip][isca]==0 && bcid[ichip][isca]>20 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915)) {
-	  n_total_triggers[ichip]++;
-	  for(int ichn=0;ichn<64;ichn++) if(gain_hit_high[ichip][isca][ichn]==1) h_signal->Fill(charge_hiGain[ichip][isca][ichn]);
-	}
-
-	if(badbcid[ichip][isca]>2 && first_retrig==true && badbcid[ichip][isca-1]==0) {
-	  first_retrig=false;
-	  length=0;
-	  n_trains++;
-	  bcid_retrigger=bcid[ichip][isca];
-	}
-
-	//train
-	if(badbcid[ichip][isca]>2 && first_retrig==true && bcid[ichip][isca]>20 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915)) {
-	  int ntriggers=0;
-	  for(int ichn=0; ichn<64; ichn++) 
-	    if(gain_hit_high[ichip][isca][ichn]==1) ntriggers++;
-	  
-	  h_retrigger_train[ichip]->Fill(isca-first_sca_retrig,ntriggers);
-	  length++;
-	}
-	
-	if(badbcid[ichip][isca]>2 && bcid[ichip][isca]>20 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915) ) {
-	  for(int ichn=0; ichn<64; ichn++) {
-	    if(gain_hit_high[ichip][isca][ichn]==1) {
-	      h_all_retriggering -> Fill(ichip,ichn);
-	    }
-	  }
-	}
-	
-	if(badbcid[ichip][isca]>2 && first_retrig==false && bcid[ichip][isca]>20 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915)) {
-	  //bcid_retrigger=bcid[ichip][isca];
-	  bad_triggers++;
-	  first_retrig=true;
-	  first_sca_retrig=isca;
-	  //n_trains++;
-
+	if(isca==0) {
+	  if(badbcid[ichip][isca]>2) first_retrig=true;
 	  for(int ichn=0; ichn<64; ichn++) {
 	    if(gain_hit_high[ichip][isca][ichn]==1) {
 	      h_first_retriggering -> Fill(ichip,ichn);
+	      h_all_retriggering -> Fill(ichip,ichn);
+
+	      h_first_retriggering_xy -> Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn]);
+	      h_all_retriggering_xy -> Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn]);     
 	    }
 	  }
-	}// first retrigg
+	}
+	
+	if(isca > 0 && badbcid[ichip][isca]>2 && first_retrig==false) {
+	  first_retrig=true;
+	  for(int ichn=0; ichn<64; ichn++) {
+	    if(gain_hit_high[ichip][isca][ichn]==1) {
+	      h_first_retriggering -> Fill(ichip,ichn);
+	      h_all_retriggering -> Fill(ichip,ichn);
 
-	if(bcid_signal>0 && bcid_retrigger>0 && bcid[ichip][isca]>20 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915)) {
-	  h_bcid_correlation[ichip]->Fill(bcid_signal,bcid_retrigger-bcid_signal);
-	  bcid_signal=0;
-	  bcid_retrigger=0;
+	      h_first_retriggering_xy -> Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn]);
+	      h_all_retriggering_xy -> Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn]);    
+	    }
+	  }
 	}
 
+	if(badbcid[ichip][isca]>2 && first_retrig==true){
+	  for(int ichn=0; ichn<64; ichn++) {
+	    if(gain_hit_high[ichip][isca][ichn]==1) {
+	      h_all_retriggering -> Fill(ichip,ichn);
+	      h_all_retriggering_xy -> Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn]);    
+
+	    }
+	  }
+	}
+
+      }//end isca
+    }//end chip
+
+
+     //if sca = 15, retrigger distance?
+    for(int ichip=0; ichip<16; ichip++) {
+      int sca=14;
+      if(bcid[ichip][sca]<0) continue;
+
+      for(int ichip2=0; ichip2<16; ichip2++) {
+	for(int isca=0; isca<15; isca++) {
+	  if(badbcid[ichip2][isca]>2 && ichip2!=ichip) h_dist_sca15[ichip]->Fill(ichip2,bcid[ichip][sca]-bcid[ichip2][isca]);
+	}
       }
+    }
 
+    //if a trigger is recorded... when appears the next retrigger?
+    for(int ichip=0; ichip<16; ichip++) {
+      for(int isca=0; isca<15; isca++) {
+	if(bcid[ichip][isca]<50 || (bcid[ichip][isca]>890 && bcid[ichip][isca]<930)) continue;
+	
+	if(badbcid[ichip][isca]==0) {
+	  
+	  for(int ichip2=0; ichip2<16; ichip2++) {
+	    for(int isca2=0; isca2<15; isca2++) {
+	      if(bcid[ichip2][isca2]<50  || (bcid[ichip2][isca2]>890 && bcid[ichip2][isca2]<930)) continue;
+	      
+	      if(badbcid[ichip2][isca]>2 && ichip2!=ichip) h_dist_trig_retrig[ichip]->Fill(ichip2,bcid[ichip][isca]-bcid[ichip2][isca]);
+	    }
+	  }
+	  
+	}
+      }
+    }
+
+	  
       
-      h_retrigger_train_length[ichip]->Fill(length);
-      h_retrigger_n_trains[ichip]->Fill(n_trains);
-      h_signal_n_events[ichip]->Fill(n_events);
-
-      good[ichip]->Fill(good_triggers);
-      bad[ichip]->Fill(bad_triggers);
-      good_vs_bad[ichip]->Fill(good_triggers,bad_triggers);
-
-    }
   }
-
-
-  for(int ichip=0; ichip<16; ichip++) {
-
-    h_total_triggers->Fill(ichip, n_total_triggers[ichip]);
-    if(n_total_triggers[ichip]>0) {
-      h_total_retriggers->Fill(ichip, n_total_retriggers[ichip]/n_total_triggers[ichip]);
-      h_total_retriggers_trains->Fill(ichip, n_total_retriggers_trains[ichip]/n_total_triggers[ichip]);
-    } else {
-      if(n_total_retriggers[ichip]>0) h_total_retriggers->Fill(ichip, 1);
-      else h_total_retriggers->Fill(ichip, 0);
-      if(n_total_retriggers_trains[ichip]>0) h_total_retriggers_trains->Fill(ichip, 1);
-      else h_total_retriggers_trains->Fill(ichip, 0);
-    }
-
-    h_total_triggers_2d->Fill(ichip,0.,n_total_triggers[ichip]);
-    h_total_triggers_2d->Fill(ichip,1.,n_total_retriggers_trains[ichip]);
-    h_total_triggers_2d->Fill(ichip,2.,n_total_retriggers[ichip]);
-  }
-  
+  //end loop
   TFile *summary = new TFile("results_retriggers/Retriggers"+slboard+".root" , "RECREATE");
   summary->cd();
 
   h_total_planeE->Write();
   h_total_negE->Write();
   h_total_negE_nohit->Write();
-	
+  h_total_burst->Write();
+  h_total_retrig->Write();
+  h_total_retrig_trains->Write();
+  h_total_trig->Write();
+
+  
   h_first_retriggering->Write();
   h_all_retriggering->Write();
-    
-  h_total_triggers->Write();
-  
-  h_total_retriggers->Write();
-  h_total_retriggers_trains->Write();
-  h_total_triggers_2d->Write();
+  h_first_retriggering_xy->Write();
+  h_all_retriggering_xy->Write();
   h_signal->Write();
-  
-  TCanvas *canvas0 = new TCanvas("retriggers_map","retriggers_map",1200,600);
-  canvas0->Divide(2,3);
-  canvas0->cd(1);
-  gPad->SetLogz();
-  h_total_planeE->SetTitle("Plane events (>4hits)" +slboard);
-  h_total_planeE->GetXaxis()->SetTitle("chip");
-  h_total_planeE->GetXaxis()->SetTitle("sca");
-  h_total_planeE->Draw("colz");
+  h_trig->Write();
+  h_trig_xy->Write();
+  h_bad->Write();
 
-  canvas0->cd(2);
-  gPad->SetLogz();
-  h_total_negE->SetTitle("Negative hits (>4hits)" +slboard);
-  h_total_negE->GetXaxis()->SetTitle("chip");
-  h_total_negE->GetXaxis()->SetTitle("sca");
-  h_total_negE->Draw("colz");
-    
-  canvas0->cd(3);
-  gPad->SetLogz();
-  h_total_negE_nohit->SetTitle("Negative no-hits (>4)" +slboard);
-  h_total_negE_nohit->GetXaxis()->SetTitle("chip");
-  h_total_negE_nohit->GetXaxis()->SetTitle("sca");
-  h_total_negE_nohit->Draw("colz");
-  
-  canvas0->cd(4);
-  h_first_retriggering->SetTitle("Starting retriggers " +slboard);
-  // h_first_retriggering->GetZaxis()->SetRangeUser(1,15000);
-  h_first_retriggering->GetXaxis()->SetTitle("chip");
-  h_first_retriggering->GetXaxis()->SetTitle("channel");
-  h_first_retriggering->Draw("colz");
+  for(int ichip=0; ichip<16; ichip++) h_dist_sca15[ichip] ->Write();
+  for(int ichip=0; ichip<16; ichip++) h_dist_trig_retrig[ichip] ->Write();
 
-  canvas0->cd(5);
-  gPad->SetLogz();
-  h_all_retriggering->SetTitle("All retrigger cells " +slboard);
-  // h_all_retriggering->GetZaxis()->SetRangeUser(1,15000);
-  h_all_retriggering->GetXaxis()->SetTitle("chip");
-  h_all_retriggering->GetXaxis()->SetTitle("channel");
-  h_all_retriggering->Draw("colz");
-
-  canvas0->cd(6);
-  h_total_triggers->SetTitle("Good+Ill Triggers " +slboard);
-  //  h_total_triggers_2d->GetZaxis()->SetRangeUser(1,15000);
-  h_total_triggers->GetXaxis()->SetTitle("chip");
-  h_total_triggers->Draw("histo");
-  
-  canvas0->Write();
-  
-  //  h_total_trig
-  TCanvas *canvas = new TCanvas("summary","summary",600,600);
-  canvas->cd();
-  //  h_total_triggers->Draw("histo");
-  h_total_retriggers->GetYaxis()->SetRangeUser(0,1.1);
-    h_total_retriggers->GetYaxis()->SetTitle("Nretrig/Ntrig");
-  h_total_retriggers->SetLineColor(2);
-  h_total_retriggers->SetLineWidth(2);
-  h_total_retriggers->SetLineStyle(2);
-  h_total_retriggers->Draw("histo");
-  h_total_retriggers_trains->SetLineColor(2);
-  h_total_retriggers_trains->SetLineWidth(2);
-  h_total_retriggers_trains->Draw("histosame");
-  //h_total_retriggers->GetYaxis()->SetRangeUser(0,1);
-  //h_total_retriggers->SetLineColor(2);
-  //h_total_retriggers->SetLineWidth(2);
-  //h_total_retriggers->SetLineStyle(2);
-  //h_total_retriggers->Draw("same");
-
-  canvas->Write();
-				
-  for(int ichip=0; ichip<16; ichip++) {
-    h_bcid_correlation[ichip]->GetXaxis()->SetTitle("bcid trigger");
-    h_bcid_correlation[ichip]->GetYaxis()->SetTitle("bcid retrigger - bcid trigger");
-    h_bcid_correlation[ichip]->Write();
-
-    h_bcid2_correlation[ichip]->GetXaxis()->SetTitle("bcid trigger");
-    h_bcid2_correlation[ichip]->GetYaxis()->SetTitle("bcid next trigger - bcid trigger");
-    h_bcid2_correlation[ichip]->Write();
-    
-    h_retrigger_train[ichip]->Write();
-    h_retrigger_train_length[ichip]->Write();
-    h_retrigger_n_trains[ichip]->Write();
-    h_signal_n_events[ichip]->Write();
-
-    good[ichip]->Write();
-    bad[ichip]->Write();
-    good_vs_bad[ichip]->Write();
-  }
-
-
-  
 }
 
 
