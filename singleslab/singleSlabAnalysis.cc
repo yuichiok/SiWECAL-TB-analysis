@@ -808,7 +808,7 @@ void singleSlabAnalysis::PedestalAnalysis(TString slboard,TString sufix="",TStri
 	  //good events
 	  bool selection=false;
 
-	  if( charge_lowGain[ichip][isca][ichn]>30 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 ) {
+	  if( charge_hiGain[ichip][isca][ichn]>30 && badbcid[ichip][isca]==0 && nhits[ichip][isca]<maxnhit+1 ) {
 	    if ( (slboard=="_SLB_0" || slboard=="_SLB_1" || slboard=="_SLB_2" || slboard=="_SLB_3")  &&
 		 bcid[ichip][isca]>30 && (bcid[ichip][isca]<890 ||bcid[ichip][isca]>915)  ) selection=true;
 	  } else {
@@ -817,15 +817,15 @@ void singleSlabAnalysis::PedestalAnalysis(TString slboard,TString sufix="",TStri
 	  }
 		  
 	  // if(masked[ichip][ichn]==1) selection=false;
- 	  if(gain_hit_low[ichip][isca][ichn]==0 && selection==true && gooddata==true)
-	    ped_sca.at(ichip).at(ichn).at(isca)->Fill(charge_lowGain[ichip][isca][ichn]);
+ 	  if(gain_hit_high[ichip][isca][ichn]==0 && selection==true && gooddata==true)
+	    ped_sca.at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[ichip][isca][ichn]);
 
 	  //bad events
 	  //	  selection=false;
 	  //	  if( ( badbcid[ichip][isca]!=0  || nhits[ichip][isca]>maxnhit || gooddata==false) ) selection=true;
 	  //	  if(masked[ichip][ichn]==1) selection=false;
- 	  if(gain_hit_low[ichip][isca][ichn]==0 && (selection==false || gooddata==false) )
-	    ped_sca_tagged.at(ichip).at(ichn).at(isca)->Fill(charge_lowGain[ichip][isca][ichn]);
+ 	  if(gain_hit_high[ichip][isca][ichn]==0 && (selection==false || gooddata==false) )
+	    ped_sca_tagged.at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[ichip][isca][ichn]);
 
 	}
            
