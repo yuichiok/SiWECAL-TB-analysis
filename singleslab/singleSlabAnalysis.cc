@@ -1316,7 +1316,7 @@ void singleSlabAnalysis::Retriggers(TString slboard, TString sufix="",TString ma
 	bool burst=false;
 	if(bcid[ichip][isca]<0) continue;
 	
-	if(badbcid[ichip][isca]>2 &&  bcid[ichip][isca]>50) && (bcid[ichip][isca]<890 || bcid[ichip][isca]>930)) {
+	if(badbcid[ichip][isca]>2   bcid[ichip][isca]>50 && (bcid[ichip][isca]<890 || bcid[ichip][isca]>930)) {
 	  retrig=true;
 	  if(first_retrig==false) {
 	    first_retrig=true;
@@ -1372,6 +1372,7 @@ void singleSlabAnalysis::Retriggers(TString slboard, TString sufix="",TString ma
       bool first_retrig=false;
       
       for(int isca=0; isca<15; isca++) {
+	if(bcid[ichip][isca]<0) continue;
 	if(bcid[ichip][isca]<50 || (bcid[ichip][isca]>890 && bcid[ichip][isca]<930)) continue;
 
 	if(isca==0) {
@@ -1429,14 +1430,15 @@ void singleSlabAnalysis::Retriggers(TString slboard, TString sufix="",TString ma
     //if a trigger is recorded... when appears the next retrigger?
     for(int ichip=0; ichip<16; ichip++) {
       for(int isca=0; isca<15; isca++) {
+	if(bcid[ichip][isca]<0) continue;
 	if(bcid[ichip][isca]<50 || (bcid[ichip][isca]>890 && bcid[ichip][isca]<930)) continue;
-	
+
 	if(badbcid[ichip][isca]==0) {
 	  
 	  for(int ichip2=0; ichip2<16; ichip2++) {
 	    for(int isca2=0; isca2<15; isca2++) {
+	      if(bcid[ichip2][isca2]<0) continue;
 	      if(bcid[ichip2][isca2]<50  || (bcid[ichip2][isca2]>890 && bcid[ichip2][isca2]<930)) continue;
-	      
 	      if(badbcid[ichip2][isca]>2 && ichip2!=ichip) h_dist_trig_retrig[ichip]->Fill(ichip2,bcid[ichip][isca]-bcid[ichip2][isca]);
 	    }
 	  }
