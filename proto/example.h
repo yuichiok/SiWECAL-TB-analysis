@@ -96,6 +96,7 @@ public :
    virtual bool     IsHit(int ihit);
    virtual bool     IsPedestal(int ihit);
    virtual bool     TrackBasicSelection(int);
+   virtual bool     TrackTightSelection(int,int);
 
    //AnalysisFunctions
    virtual void SimpleDistributionsTrack(TString );

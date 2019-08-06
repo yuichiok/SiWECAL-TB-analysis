@@ -4,7 +4,7 @@
 
 void run_example(){
 
-  TString run="run_32002";
+  TString run="run_32015";
   TString filename = "/home/irles/WorkAreaECAL/2019/TB201906/EvBuilt/"+run+"_build.root";
   example ss(filename);
   ss.SimpleDistributionsTrack("_"+run);
