@@ -238,10 +238,17 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
   std::getline(reading_file, strheader);
   std::getline(reading_file, strheader);
   std::getline(reading_file, strheader);
+  //std::getline(reading_file, strheader);
   std::getline(reading_file, strheader);
-  std::getline(reading_file, strheader);
-  std::getline(reading_file, strheader);
-  if(nslboards==4){
+  if(nslboards==1) {
+    std::getline(reading_file, strheader);
+  }
+  if(nslboards==2){
+    std::getline(reading_file, strheader);
+    std::getline(reading_file, strheader);
+  }
+  if(nslboards==3){
+    std::getline(reading_file, strheader);
     std::getline(reading_file, strheader);
     std::getline(reading_file, strheader);
   }

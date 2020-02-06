@@ -36,9 +36,9 @@ vector<TString>* list_files(const char *dirname, const char *ext=".dat")
 	return filenames;
 }
 
-void ConvertDirectorySL(string dirname, int slboard=2, int nslboards=4, bool zerosupression=false)
+void ConvertDirectorySL(string dirname, int slboard=-1, int nslboards=1, bool zerosupression=false)
 {
-  for(int j=0; j<200; j++) {
+  for(int j=0; j<999; j++) {
     
     TString filen=".dat";
     if(j>0 && j<10) filen=TString::Format(".dat_000%i",j);
