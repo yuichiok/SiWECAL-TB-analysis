@@ -39,11 +39,12 @@ public:
 
   };
   
-  void ReadFile(TString inputFileName, bool overwrite=false, TString outFileName = "default", int slboard_index=2, int nslboards=4,bool zerosupression=false);
+  void ReadFile(TString inputFileName, bool overwrite=false, TString outFileName = "default",bool zerosupression=false);
 
 protected:
 
   enum {
+    SLBDEPTH=15,
     MEMDEPTH=15,
     NCHANNELS=64,
     NCHIP=16,
@@ -64,18 +65,20 @@ protected:
   TFile *finroot;
   TTree* slboardread;
 
-  int bcid[NCHIP][MEMDEPTH];
-  int corrected_bcid[NCHIP][MEMDEPTH];
-  int badbcid[NCHIP][MEMDEPTH];
-  int nhits[NCHIP][MEMDEPTH];
-  int charge_low[NCHIP][MEMDEPTH][NCHANNELS];
-  int charge_high[NCHIP][MEMDEPTH][NCHANNELS];
-  int gain_hit_low[NCHIP][MEMDEPTH][NCHANNELS];
-  int gain_hit_high[NCHIP][MEMDEPTH][NCHANNELS];
+  int bcid[SLBDEPTH][NCHIP][MEMDEPTH];
+  int corrected_bcid[SLBDEPTH][NCHIP][MEMDEPTH];
+  int badbcid[SLBDEPTH][NCHIP][MEMDEPTH];
+  int nhits[SLBDEPTH][NCHIP][MEMDEPTH];
+  int charge_low[SLBDEPTH][NCHIP][MEMDEPTH][NCHANNELS];
+  int charge_high[SLBDEPTH][NCHIP][MEMDEPTH][NCHANNELS];
+  int gain_hit_low[SLBDEPTH][NCHIP][MEMDEPTH][NCHANNELS];
+  int gain_hit_high[SLBDEPTH][NCHIP][MEMDEPTH][NCHANNELS];
   int event;
   //int numbcid;
-  int numCol[NCHIP];
-  int chipID[NCHIP];
+  int numCol[SLBDEPTH][NCHIP];
+  int chipID[SLBDEPTH][NCHIP];
+  int slot[SLBDEPTH];
+  int slboard_id[SLBDEPTH];
   int acqNumber;
 
 
@@ -87,41 +90,46 @@ protected:
 void SLBdecoded2ROOT::Initialisation() {
   fout->cd(); R2Rstate=-1;
 
-  tree = new TTree("slboard","slboard");
+  tree = new TTree("siwecaldecoded","siwecaldecoded");
 
   tree->Branch("event",&event,"event/I");
   tree->Branch("acqNumber",&acqNumber,"acqNumber/I");
 
   TString name;
-
-  name= TString::Format("chipid[%i]/I",NCHIP);
+  name= TString::Format("slot[%i][%i]/I",SLBDEPTH,NCHIP);
+  tree->Branch("slot",slot,name);
+  
+  name= TString::Format("slboard_id[%i][%i]/I",SLBDEPTH,NCHIP);
+  tree->Branch("slboard_id",slboard_id,name);
+  
+  name= TString::Format("chipid[%i][%i]/I",SLBDEPTH,NCHIP);
   tree->Branch("chipid",chipID,name);
 
-  name= TString::Format("nColumns[%i]/I",NCHIP);
+  name= TString::Format("nColumns[%i][%i]/I",SLBDEPTH,NCHIP);
   tree->Branch("nColumns",numCol,name);
 
-  name= TString::Format("bcid[%i][%i]/I",NCHIP,MEMDEPTH);
+  name= TString::Format("bcid[%i][%i][%i]/I",SLBDEPTH,NCHIP,MEMDEPTH);
   tree->Branch("bcid",bcid,name);
 
-  name= TString::Format("corrected_bcid[%i][%i]/I",NCHIP,MEMDEPTH);
+  name= TString::Format("corrected_bcid[%i][%i][%i]/I",SLBDEPTH,NCHIP,MEMDEPTH);
   tree->Branch("corrected_bcid",corrected_bcid,name);
 
-  name= TString::Format("badbcid[%i][%i]/I",NCHIP,MEMDEPTH);
+  name= TString::Format("badbcid[%i][%i][%i]/I",SLBDEPTH,NCHIP,MEMDEPTH);
   tree->Branch("badbcid",badbcid,name);
 
-  name= TString::Format("nhits[%i][%i]/I",NCHIP,MEMDEPTH);
+  name= TString::Format("nhits[%i][%i][%i]/I",SLBDEPTH,NCHIP,MEMDEPTH);
   tree->Branch("nhits",nhits,name);
 
-  name= TString::Format("lowGain[%i][%i][%i]/I",NCHIP,MEMDEPTH,NCHANNELS);
+  name= TString::Format("lowGain[%i][%i][%i][%i]/I",SLBDEPTH,NCHIP,MEMDEPTH,NCHANNELS);
   tree->Branch("charge_lowGain",charge_low,name);
 
-  name= TString::Format("highGain[%i][%i][%i]/I",NCHIP,MEMDEPTH,NCHANNELS);
+  name= TString::Format("highGain[%i][%i][%i][%i]/I",SLBDEPTH,NCHIP,MEMDEPTH,NCHANNELS);
   tree->Branch("charge_hiGain",charge_high,name);
 
-  name= TString::Format("gain_hit_low[%i][%i][%i]/I",NCHIP,MEMDEPTH,NCHANNELS);
+  name= TString::Format("gain_hit_low[%i][%i][%i][%i]/I",SLBDEPTH,NCHIP,MEMDEPTH,NCHANNELS);
   tree->Branch("gain_hit_low",gain_hit_low,name);
 
-  name= TString::Format("gain_hit_high[%i][%i][%i]/I",NCHIP,MEMDEPTH,NCHANNELS);
+  name= TString::Format("gain_hit_high[%i][%i][%i][%i]/I",SLBDEPTH,NCHIP,MEMDEPTH,NCHANNELS);
   tree->Branch("gain_hit_high",gain_hit_high,name);
 
   return;
@@ -136,43 +144,26 @@ void SLBdecoded2ROOT::Initialisation() {
 
 void SLBdecoded2ROOT::treeInit(bool zerosupression=false) { //init data for a single SPILL ?
 
-  if(zerosupression == true) {
+  for (int isl=0; isl<SLBDEPTH; isl++) {
     for (int k=0; k<NCHIP; k++) {
       for (int i=0; i<MEMDEPTH; i++) {
-	bcid[k][i]=1;
-	badbcid[k][i]=1;
-	corrected_bcid[k][i]=1;
-	nhits[k][i]=1;
+	bcid[isl][k][i]=-999;
+	badbcid[isl][k][i]=-999;
+	corrected_bcid[isl][k][i]=-999;
+	nhits[isl][k][i]=-999;
 	for (int j=0; j<NCHANNELS; j++) {
-	  charge_low[k][i][j]=1;
-	  charge_high[k][i][j]=1;
-	  gain_hit_low[k][i][j]=0;
-	  gain_hit_high[k][i][j]=0;
-	}
-      }
-      chipID[k]=-1;
-      numCol[k]=1;
-    }
-  } else {
-      for (int k=0; k<NCHIP; k++) {
-      for (int i=0; i<MEMDEPTH; i++) {
-	bcid[k][i]=-999;
-	badbcid[k][i]=-999;
-	corrected_bcid[k][i]=-999;
-	nhits[k][i]=-999;
-	for (int j=0; j<NCHANNELS; j++) {
-	  charge_low[k][i][j]=-999;
-	  charge_high[k][i][j]=-999;
-	  gain_hit_low[k][i][j]=-999;
-	  gain_hit_high[k][i][j]=-999;
+	  charge_low[isl][k][i][j]=-999;
+	  charge_high[isl][k][i][j]=-999;
+	  gain_hit_low[isl][k][i][j]=-999;
+	  gain_hit_high[isl][k][i][j]=-999;
 	}
       }
       
-      chipID[k]=-999;
-      numCol[k]=0; 
+      chipID[isl][k]=-999;
+      numCol[isl][k]=0; 
     }
   }
-
+  
 
   return;
 }
@@ -183,13 +174,13 @@ void SLBdecoded2ROOT::treeInit(bool zerosupression=false) { //init data for a si
 
 //******************************************************************************************************************
 
-void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString outFileName, int slboard_index, int nslboards, bool zerosupression) {
+void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString outFileName, bool zerosupression) {
 
   event=0;
   acqNumber=0;
   
   if(outFileName == "default"){
-    outFileName = TString::Format("%s_SLB_%i.root",inputFileName.Data(),slboard_index);
+    outFileName = TString::Format("%s.root",inputFileName.Data());
     cout<<outFileName<<endl;
   }
   
@@ -214,10 +205,11 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
     return 0;
   } else {
     cout<<" Read File "<<inputFileName<<endl;
-    cout<<" slb= " <<slboard_index<<endl;
+    //cout<<" slb= " <<slboard_index<<endl;
   }
 
 
+  /*
   TH1F *bcid_diff[16];
   TH2F *bcid_correl[16];
   TH1F *bcid_4coinc[16];
@@ -227,74 +219,46 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
     bcid_diff[ichip]=new TH1F(TString::Format("bcid_diff_chip%i",ichip),TString::Format("bcid_diff_chip%i",ichip),4001,-2000.5,2000.5);
     bcid_correl[ichip]=new TH2F(TString::Format("bcid_correl_chip%i",ichip),TString::Format("bcid_correl_chip%i",ichip),4096,-0.5,4095.5,4001,-2000.5,2000.5);
   }
-
+  */
 
   
   int cycleID=-1;
   std::string strheader;
   std::getline(reading_file, strheader);
   std::getline(reading_file, strheader);
+  TString tmpst;
+  int nslboards=0;
+  reading_file >> tmpst >> tmpst >> tmpst  >> tmpst >>  tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst  >> tmpst >> nslboards >> tmpst;
+  cout<<" NB OF CONNECTED SLABs = " << nslboards <<endl;
+
   std::getline(reading_file, strheader);
   std::getline(reading_file, strheader);
   std::getline(reading_file, strheader);
   std::getline(reading_file, strheader);
-  //std::getline(reading_file, strheader);
   std::getline(reading_file, strheader);
-  if(nslboards==1) {
+
+  for(int islboard=0; islboard<nslboards; islboard++) 
     std::getline(reading_file, strheader);
-  }
-  if(nslboards==2){
-    std::getline(reading_file, strheader);
-    std::getline(reading_file, strheader);
-  }
-  if(nslboards==3){
-    std::getline(reading_file, strheader);
-    std::getline(reading_file, strheader);
-    std::getline(reading_file, strheader);
-  }
 
   std::string str;
 
-  int bcid_cycle[20][16][15];
+  // int bcid_cycle[20][16][15];
   
   while (reading_file) {
     // output the line
     TString tmpst;
     int size=0;
     int chip=-1;
-    int slabid=-1;
-    reading_file >> tmpst >> tmpst >> size >> tmpst >> chip >> tmpst >>  tmpst >> tmpst >> tmpst >> tmpst >> slabid >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst >> cycleID >> tmpst >> tmpst >> tmpst >> tmpst;
-
-    if(acqNumber!=cycleID && acqNumber>0 ) {
-	
-      for(int i=0; i<16;i++) 
-	for(int k=0;k<20; k++) 
-	  for(int j=0;j<15; j++) 
-	    for(int k2=k+1;k2<20; k2++) 
-	      for(int j2=0;j2<15; j2++) 
-		if(bcid_cycle[k][i][j]>0 && bcid_cycle[k2][i][j2]>0 ) {
-		  bcid_diff[i]->Fill(bcid_cycle[k][i][j]-bcid_cycle[k2][i][j2]);
-		  bcid_correl[i]->Fill(bcid_cycle[k][i][j],bcid_cycle[k][i][j]-bcid_cycle[k2][i][j2]);
-		}
-		
-    }
-  
-    if(acqNumber!=cycleID) {
-      for(int k=0; k<20;k++)
-	for(int i=0; i<16;i++)
-	  for(int j=0; j<15;j++) bcid_cycle[k][i][j]=-1;
-    }
+    int slabidx=-1;
+    int slabadd=-1;
+    reading_file >> tmpst >> tmpst >> size >> tmpst >> chip >> tmpst >>  tmpst >> tmpst >> slabidx >> tmpst >> slabadd >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst >> cycleID >> tmpst >> tmpst >> tmpst >> tmpst;
+    
     //std::cout << " -----" <<size<< " "<<chip<<" "<<slabid<<" "<<cycleID <<" "<<acqNumber<< std::endl;
 
     if(acqNumber==0) treeInit(zerosupression);
      if(acqNumber>0 && acqNumber!=cycleID) {
       GetBadBCID();
-      // if(slabid==slboard_index) {
-	tree->Fill();
-	//	std::cout << " Filling trees, cycleId=" <<cycleID << std::endl;
-
-	//	BuildTimeEvents(outFileName);
-	//  }
+      tree->Fill();
       treeInit(zerosupression);
     }
 
@@ -304,6 +268,9 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
     event++;
     int previousBCID=-1000;
     int loopBCID=0;
+
+    slot[slabidx]=slabidx;
+    slboard_id[slabidx]=slabadd;
     
     for(int i=0; i<size; i++) {
       //##0 BCID 1627 SCA 1 #Hits 49
@@ -311,25 +278,25 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
       int sca=-1;
       int nhits_tmp=-1;
       reading_file >> tmpst >> tmpst >> bcid_tmp >> tmpst >> sca >>  tmpst  >>  nhits_tmp ;
-      bcid_cycle[slabid][chip][sca]=bcid_tmp;
+      //      bcid_cycle[slabid][chip][sca]=bcid_tmp;
       // cout<<bcid_tmp<<endl;
-      if(slabid==slboard_index) {
-	sca=size-(sca+1);
-	bcid[chip][sca]=bcid_tmp;
-	nhits[chip][sca]=nhits_tmp;
-	numCol[chip]++;
+      //      if(slabid==slboard_index) {
+      sca=size-(sca+1);
+      bcid[slabidx][chip][sca]=bcid_tmp;
+      nhits[slabidx][chip][sca]=nhits_tmp;
+      numCol[slabidx][chip]++;
       
-	if(bcid[chip][sca] > 0 && bcid[chip][sca]-previousBCID < 0) loopBCID++;
-	if(bcid[chip][sca] > 0 ) corrected_bcid[chip][sca] = bcid[chip][sca]+loopBCID*4096;
-	previousBCID=bcid_tmp;
-	
-	if(chip>-1 && chip<16) {
-	  chipID[chip]=chip;
-	} else {
-	  cout<<"Wrong chipID = "<<chip<<endl;
-	  break;
-	}
+      if(bcid[slabidx][chip][sca] > 0 && bcid[slabidx][chip][sca]-previousBCID < 0) loopBCID++;
+      if(bcid[slabidx][chip][sca] > 0 ) corrected_bcid[slabidx][chip][sca] = bcid[slabidx][chip][sca]+loopBCID*4096;
+      previousBCID=bcid_tmp;
+      
+      if(chip>-1 && chip<16) {
+	chipID[slabidx][chip]=chip;
+      } else {
+	cout<<"Wrong chipID = "<<chip<<endl;
+	break;
       }
+      //      }
       int nchn=0;
       if(zerosupression==false) nchn=NCHANNELS;
       else nchn = nhits_tmp;
@@ -342,12 +309,12 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
 	int hg_bit=-1;
 	reading_file >> tmpst >> chn >> tmpst >> lg >>  lg_bit >> tmpst >>  tmpst >> hg >> hg_bit >> tmpst;
 	//	cout << chn << " "<< hg <<" " <<hg_bit<<endl;
-	if(slabid==slboard_index) {
-	  charge_low[chip][sca][chn]=lg;
-	  gain_hit_low[chip][sca][chn]=lg_bit;
-	  charge_high[chip][sca][chn]=hg;
-	  gain_hit_high[chip][sca][chn]=hg_bit;
-	}
+	//	if(slabid==slboard_index) {
+	  charge_low[slabidx][chip][sca][chn]=lg;
+	  gain_hit_low[slabidx][chip][sca][chn]=lg_bit;
+	  charge_high[slabidx][chip][sca][chn]=hg;
+	  gain_hit_high[slabidx][chip][sca][chn]=hg_bit;
+	  //}
       }//end channel  
     }//end events of the chi
 
@@ -355,10 +322,10 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
   
   fout->cd(); 
   fout->Write(0);
-  for(int ichip=0; ichip<16; ichip++) {
-    bcid_diff[ichip]->Write();
-    bcid_correl[ichip]->Write();
-  }
+//  for(int ichip=0; ichip<16; ichip++) {
+//   bcid_diff[ichip]->Write();
+//    bcid_correl[ichip]->Write();
+//  }
   fout->Close();
     
   return;
@@ -367,100 +334,103 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
 void SLBdecoded2ROOT::GetBadBCID() {
 
   //add tags
-  int  count_negdata=0;
+  //  int count_negdata[SLBDEPTH];
+  //  for(int i=0; i<SLBDEPTH; i++) count_negdata[i]=0;
 
+  for(int i=0; i<SLBDEPTH; i++) {
   for (int k=0; k<NCHIP; k++) {
     //only for valid chips in this spill
-    if (chipID[k]>=0) {
-      for (int ibc=0; ibc<numCol[k]; ibc++) {
+    if (chipID[i][k]>=0) {
+      for (int ibc=0; ibc<numCol[i][k]; ibc++) {
 
 	// if sca+1 is filled with consec bcid, but sca+2 not, then badbcid[sca]==1 && badbcid[sca+1]==2 (bcid+1 issue, events are not bad, just the next sca trigger is empty)
 	// if sca+1 is filled with consec bcid, and sca+2 also, then badbcid[sca]==3 && badbcid[sca+1]==3 (retriggering)
 	// if sca+1 is not filled with consec bcid,  badbcid==0
 
 	if(ibc==0) {
-	  badbcid[k][ibc]=0;
-	  int corr_bcid=corrected_bcid[k][ibc];
+	  badbcid[i][k][ibc]=0;
+	  int corr_bcid=corrected_bcid[i][k][ibc];
 	  int corr_bcid1=0;
 	  int corr_bcid2=0;
 
-	  if(corrected_bcid[k][ibc+1]>0 && corrected_bcid[k][ibc]>0 && (corrected_bcid[k][ibc+1]-corrected_bcid[k][ibc])>0) 
-	    corr_bcid1=corrected_bcid[k][ibc+1];
+	  if(corrected_bcid[i][k][ibc+1]>0 && corrected_bcid[i][k][ibc]>0 && (corrected_bcid[i][k][ibc+1]-corrected_bcid[i][k][ibc])>0) 
+	    corr_bcid1=corrected_bcid[i][k][ibc+1];
 
-	  if(corrected_bcid[k][ibc+2]>0 && (corrected_bcid[k][ibc+2]-corrected_bcid[k][ibc+1])>0) 
-	    corr_bcid2=corrected_bcid[k][ibc+2];
+	  if(corrected_bcid[i][k][ibc+2]>0 && (corrected_bcid[i][k][ibc+2]-corrected_bcid[i][k][ibc+1])>0) 
+	    corr_bcid2=corrected_bcid[i][k][ibc+2];
 
 	  if(corr_bcid2>0) {
 	    //empty events
 	    if( ( corr_bcid2-corr_bcid1) >(BCIDTHRES - 1) && (corr_bcid1-corr_bcid) ==1) {
-	      badbcid[k][ibc]=1;
-	      badbcid[k][ibc+1]=2;
+	      badbcid[i][k][ibc]=1;
+	      badbcid[i][k][ibc+1]=2;
 	    }
 	    // pure retriggers
 	    if( ( corr_bcid2-corr_bcid1) < BCIDTHRES && (corr_bcid1-corr_bcid) < BCIDTHRES) {
-	      badbcid[k][ibc]=3;
-	      badbcid[k][ibc+1]=3;
-	      badbcid[k][ibc+2]=3;
+	      badbcid[i][k][ibc]=3;
+	      badbcid[i][k][ibc+1]=3;
+	      badbcid[i][k][ibc+2]=3;
 	    }
     	  }
 
 	  if( corr_bcid1 > 0 && (corr_bcid1-corr_bcid) > 1 && (corr_bcid1-corr_bcid) <BCIDTHRES) {
-	    badbcid[k][ibc]=3;
-	    badbcid[k][ibc+1]=3;
+	    badbcid[i][k][ibc]=3;
+	    badbcid[i][k][ibc+1]=3;
 	  }  
 	} //ibc==0 if 
 
-	if(ibc>0 && badbcid[k][ibc]<0 && corrected_bcid[k][ibc] >0 &&  (corrected_bcid[k][ibc]-corrected_bcid[k][ibc-1])>0 ) {
-	  badbcid[k][ibc]=0;
-	  int corr_bcid=corrected_bcid[k][ibc];
-	  int corr_bcidminus=corrected_bcid[k][ibc-1];
+	if(ibc>0 && badbcid[i][k][ibc]<0 && corrected_bcid[i][k][ibc] >0 &&  (corrected_bcid[i][k][ibc]-corrected_bcid[i][k][ibc-1])>0 ) {
+	  badbcid[i][k][ibc]=0;
+	  int corr_bcid=corrected_bcid[i][k][ibc];
+	  int corr_bcidminus=corrected_bcid[i][k][ibc-1];
 
-	  if(corrected_bcid[k][ibc+1]>0 && (corrected_bcid[k][ibc+1]-corrected_bcid[k][ibc])>0) {
-	    int corr_bcid1=corrected_bcid[k][ibc+1];
+	  if(corrected_bcid[i][k][ibc+1]>0 && (corrected_bcid[i][k][ibc+1]-corrected_bcid[i][k][ibc])>0) {
+	    int corr_bcid1=corrected_bcid[i][k][ibc+1];
 
-	    if(corrected_bcid[k][ibc+2]>0 && (corrected_bcid[k][ibc+2]-corrected_bcid[k][ibc+1])>0) {
-	      int corr_bcid2=corrected_bcid[k][ibc+2];
+	    if(corrected_bcid[i][k][ibc+2]>0 && (corrected_bcid[i][k][ibc+2]-corrected_bcid[i][k][ibc+1])>0) {
+	      int corr_bcid2=corrected_bcid[i][k][ibc+2];
 	      if( ( corr_bcid2-corr_bcid1) < BCIDTHRES && (corr_bcid1-corr_bcid) < BCIDTHRES) {
-		badbcid[k][ibc]=3;
-		badbcid[k][ibc+1]=3;
-		badbcid[k][ibc+2]=3;
+		badbcid[i][k][ibc]=3;
+		badbcid[i][k][ibc+1]=3;
+		badbcid[i][k][ibc+2]=3;
 	      }
-	      if( (corr_bcid1-corr_bcid) < BCIDTHRES && (corr_bcid-corr_bcidminus) < BCIDTHRES ) badbcid[k][ibc]=3;
+	      if( (corr_bcid1-corr_bcid) < BCIDTHRES && (corr_bcid-corr_bcidminus) < BCIDTHRES ) badbcid[i][k][ibc]=3;
 
-	      if( badbcid[k][ibc]!=3 && ( corr_bcid2-corr_bcid1) >(BCIDTHRES - 1) && (corr_bcid1-corr_bcid) ==1) {
-		badbcid[k][ibc]=1;
-		badbcid[k][ibc+1]=2;
+	      if( badbcid[i][k][ibc]!=3 && ( corr_bcid2-corr_bcid1) >(BCIDTHRES - 1) && (corr_bcid1-corr_bcid) ==1) {
+		badbcid[i][k][ibc]=1;
+		badbcid[i][k][ibc+1]=2;
 	      }
-	      if( badbcid[k][ibc]!=3 && ( corr_bcid2-corr_bcid1) >(BCIDTHRES - 1) && (corr_bcid1-corr_bcid) > 1 && (corr_bcid1-corr_bcid) <BCIDTHRES) {
-		badbcid[k][ibc]=3;
-		badbcid[k][ibc+1]=3;
+	      if( badbcid[i][k][ibc]!=3 && ( corr_bcid2-corr_bcid1) >(BCIDTHRES - 1) && (corr_bcid1-corr_bcid) > 1 && (corr_bcid1-corr_bcid) <BCIDTHRES) {
+		badbcid[i][k][ibc]=3;
+		badbcid[i][k][ibc+1]=3;
 	      }
-	      if( (corr_bcid-corr_bcidminus) < BCIDTHRES ) badbcid[k][ibc]=3;
+	      if( (corr_bcid-corr_bcidminus) < BCIDTHRES ) badbcid[i][k][ibc]=3;
 
-	      //if( badbcid[k][ibc-1]==1 && (corr_bcid1-corr_bcid) > (BCIDTHRES - 1)) badbcid[k][ibc]=2;
+	      //if( badbcid[i][k][ibc-1]==1 && (corr_bcid1-corr_bcid) > (BCIDTHRES - 1)) badbcid[i][k][ibc]=2;
 	    } else {
-	      if( (corr_bcid1-corr_bcid) < BCIDTHRES ) badbcid[k][ibc]=3;
-	      if( (corr_bcid-corr_bcidminus) < BCIDTHRES ) badbcid[k][ibc]=3;
+	      if( (corr_bcid1-corr_bcid) < BCIDTHRES ) badbcid[i][k][ibc]=3;
+	      if( (corr_bcid-corr_bcidminus) < BCIDTHRES ) badbcid[i][k][ibc]=3;
 	    } //ibc+2 if
 	  } else {
-	    if( (corr_bcid-corr_bcidminus) < BCIDTHRES ) badbcid[k][ibc]=3;
+	    if( (corr_bcid-corr_bcidminus) < BCIDTHRES ) badbcid[i][k][ibc]=3;
 	  }//ibc+1 if
 	} //ibc>0 if 
 
       
 	//tag zero (under/over flow) data
-	count_negdata=0;
+	//	count_negdata=0;
 	
-	for (int ichan=0; ichan<NCHANNELS; ichan++) {
-	  if  (charge_high[k][ibc][ichan] < NEGDATA_THR) count_negdata++;
-	}//ichan
+	//	for (int ichan=0; ichan<NCHANNELS; ichan++) {
+	//  if  (charge_high[i][k][ibc][ichan] < NEGDATA_THR) count_negdata++;
+	//}//ichan
 
-	if (count_negdata>0) {badbcid[k][ibc]+=32;}
+	//if (count_negdata>0) {badbcid[i][k][ibc]+=32;}
 
       }//ibc
 
     }//chipID
   }//k
+  }//i   slboard
   
 }
 
@@ -471,7 +441,7 @@ int SLBdecoded2ROOT::GetTree (TString rootfilename) { //from raw2root 1st pass
   //open pre-precessed data
   finroot = new TFile(rootfilename,"read");
   if (! finroot ) {return 0;}
-  slboardread = (TTree*)finroot->Get("slboard"); //rawdata
+  slboardread = (TTree*)finroot->Get("siwecaldecoded"); //rawdata
 
   //get data from file
   slboardread->SetBranchAddress("gain_hit_high",gain_hit_high );
@@ -486,8 +456,8 @@ int SLBdecoded2ROOT::GetTree (TString rootfilename) { //from raw2root 1st pass
   slboardread->SetBranchAddress("corrected_bcid",corrected_bcid);
   slboardread->SetBranchAddress("nColumns",numCol);
   slboardread->SetBranchAddress("chipid",chipID);
-
-
+  slboardread->SetBranchAddress("slot",slot);
+  slboardread->SetBranchAddress("slboard_id",slboard_id);
   R2Rstate=1;
   return 1;
 
