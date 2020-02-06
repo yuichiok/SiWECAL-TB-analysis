@@ -15,8 +15,8 @@
 
 using namespace std;
 
-Float_t value[2][30][300][64][100]; //slab, asic, chn, DAC
-Float_t error_value[2][30][300][64][100]; //slab, asic, chn, DAC
+Float_t value[2][15][300][64][100]; //slab, asic, chn, DAC
+Float_t error_value[2][15][300][64][100]; //slab, asic, chn, DAC
 Float_t x[100];
 Int_t nsteps;
 
@@ -41,7 +41,7 @@ void ReadScurves(TString filename, int slabadd, int coreadd)
   for(int k=0; k<100; k++) {
     x[k] = 0;
     for(int icore=0; icore<2; icore++) {
-      for(int islab=0; islab<30; islab++) {
+      for(int islab=0; islab<15; islab++) {
 	for(int i=0; i<300; i++) {
 	  for(int j=0; j<64; j++) {
 	    value[icore][islab][i][j][k] = 0.;
