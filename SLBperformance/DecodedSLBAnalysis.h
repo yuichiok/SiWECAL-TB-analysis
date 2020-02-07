@@ -76,6 +76,8 @@ public :
    virtual void     ReadMap(TString filename, int slboard);
    virtual void     ReadMasked(TString filename);
    virtual void     ReadPedestals(TString filename);
+   //Monitoring
+   virtual void     Monitoring(TString outputname, int freq);
    //signal analysis: MIP fitt and signal/noise 
    virtual void     SignalAnalysis(int slboard, TString outputname, int nmaxhits);
    virtual TF1 *langaufit(TH1F *his, Double_t *fitrange, Double_t *startvalues, Double_t *parlimitslo, Double_t *parlimitshi, Double_t *fitparams, Double_t *fiterrors, Double_t *ChiSqr, Int_t *NDF);
@@ -103,7 +105,7 @@ private :
 #ifdef DecodedSLBAnalysis_cxx
 DecodedSLBAnalysis::DecodedSLBAnalysis(TString tree_s, TString treename="siwecaldecoded") : fChain(0) 
 {
-  
+  cout<<tree_s<<endl;  
   TFile *f = new TFile(tree_s);
   TTree *tree = (TTree*)f->Get(treename);
   //  tree->Print();

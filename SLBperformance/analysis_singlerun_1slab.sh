@@ -20,10 +20,11 @@ runname=$run
 
 #cd -
 
+root -l Monitoring.cc\(\"${data_folder}/../${runname}\",\"${runname}\"\) 
 
-root -l SingleSlabAnalysis2.cc\(\"${data_folder}/../${runname}\",\"${runname}\",0\) &
-root -l SingleSlabAnalysis.cc\(\"${data_folder}/../${runname}\",\"${runname}\",1\) &
-root -l SingleSlabAnalysis.cc\(\"${data_folder}/../${runname}\",\"${runname}\",2\) 
+#root -l SingleSlabAnalysis.cc\(\"${data_folder}/../${runname}\",\"${runname}\",0\) 
+#root -l SingleSlabAnalysis.cc\(\"${data_folder}/../${runname}\",\"${runname}\",1\) &
+#root -l SingleSlabAnalysis.cc\(\"${data_folder}/../${runname}\",\"${runname}\",2\) 
 
 #sleep 10
 
@@ -32,4 +33,3 @@ root -l SingleSlabAnalysis.cc\(\"${data_folder}/../${runname}\",\"${runname}\",2
 #source analysis.sh $runname 1
 #source analysis.sh $runname 2
 
-#source analysis_singlerun_1slab_bis.sh

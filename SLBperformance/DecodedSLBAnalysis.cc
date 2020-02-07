@@ -17,6 +17,330 @@
 using namespace std;
 
 
+void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int freq=10)
+{
+  TH2F* bcid_diff_trig_trig[15];
+  TH2F* bcid_diff_trig_retrig_start[15];
+
+  TH2F* bcid_correl[15][15];
+
+  TH2F* hitmap_trig_xy[15];
+  TH2F* hitmap_retrig_start_xy[15];
+  TH2F* hitmap_retrig_xy[15];
+
+  TH2F* bcidmap_trig[15];
+  TH2F* bcidmap_retrig_start[15];
+  TH2F* bcidmap_retrig[15];
+
+  TH2F* hitmap_trig_chipchn[15];
+  TH2F* hitmap_retrig_start_chipchn[15];
+  TH2F* hitmap_retrig_chipchn[15];
+
+  TH2F* lastsca_trig[15];
+  TH2F* lastsca_retrig_start[15];
+  TH2F* lastsca_retrig[15];
+
+  for(int i=0; i<15; i++) {
+    bcid_diff_trig_trig[i]=new TH2F(TString::Format("bcid_diff_trig_trig_slb%i",i),TString::Format("bcid_diff_trig_trig_slb%i",i),15,-0.5,14.5,2001,-1000.5,1000.5);
+    bcid_diff_trig_retrig_start[i]=new TH2F(TString::Format("bcid_diff_trig_retrig_start_slb%i",i),TString::Format("bcid_diff_trig_retrig_start_slb%i",i),15,-0.5,14.5,2001,-100.5,100.5);
+
+    for(int j=0; j<15; j++) {
+      bcid_correl[i][j]=new TH2F(TString::Format("bcid_correl_slb%i_slb%i",i,j),TString::Format("bcid_correl_slb%i_slb%i",i,j),500,0,5000,500,0,5000);
+    }
+
+    hitmap_trig_xy[i]=new TH2F(TString::Format("hitmap_trig_xy_slb%i",i),TString::Format("hitmap_trig_xy_slb%i",i),32,-90,90,32,-90,90);
+    hitmap_retrig_start_xy[i]=new TH2F(TString::Format("hitmap_retrig_start_xy_slb%i",i),TString::Format("hitmap_retrig_start_xy_slb%i",i),32,-90,90,32,-90,90);
+    hitmap_retrig_xy[i]=new TH2F(TString::Format("hitmap_retrig_xy_slb%i",i),TString::Format("hitmap_retrig_xy_slb%i",i),32,-90,90,32,-90,90);
+
+    bcidmap_trig[i]=new TH2F(TString::Format("bcidmap_trig_slb%i",i),TString::Format("bcidmap_trig_slb%i",i),820,-2.5,4097.5,820,-2.5,4097.5);
+    bcidmap_retrig_start[i]=new TH2F(TString::Format("bcidmap_retrig_start_slb%i",i),TString::Format("bcidmap_retrig_start_slb%i",i),820,-2.5,4097.5,820,-2.5,4097.5);
+    bcidmap_retrig[i]=new TH2F(TString::Format("bcidmap_retrig_slb%i",i),TString::Format("bcidmap_retrig_slb%i",i),820,-2.5,4097.5,820,-2.5,4097.5);
+
+    hitmap_trig_chipchn[i]=new TH2F(TString::Format("hitmap_trig_chipchn_slb%i",i),TString::Format("hitmap_trig_chipchn_slb%i",i),16,-0.5,15.5,64,-0.5,63.5);
+    hitmap_retrig_start_chipchn[i]=new TH2F(TString::Format("hitmap_retrig_start_chipchn_slb%i",i),TString::Format("hitmap_retrig_start_chipchn_slb%i",i),16,-0.5,15.5,64,-0.5,63.5);
+    hitmap_retrig_chipchn[i]=new TH2F(TString::Format("hitmap_retrig_chipchn_slb%i",i),TString::Format("hitmap_retrig_chipchn_slb%i",i),16,-0.5,15.5,64,-0.5,63.5);
+
+    lastsca_trig[i]=new TH2F(TString::Format("lastsca_trig_slb%i",i),TString::Format("lastsca_trig_slb%i",i),16,-0.5,15.5,15,-0.5,14.5);
+    lastsca_retrig[i]=new TH2F(TString::Format("lastsca_retrig_slb%i",i),TString::Format("lastsca_retrig_slb%i",i),16,-0.5,15.5,15,-0.5,14.5);
+    lastsca_retrig_start[i]=new TH2F(TString::Format("FIRSTsca_retrig_start_slb%i",i),TString::Format("FIRSTsca_retrig_start_slb%i",i),16,-0.5,15.5,15,-0.5,14.5);
+
+  }
+ 
+  TH2F* trig = new TH2F("trig","trig",14,-0.5,13.5,16,-0.5,15.5);
+  TH2F* retrig_start = new TH2F("retrig_start","retrig_start",14,-0.5,13.5,16,-0.5,15.5);
+  TH2F* retrig = new TH2F("retrig","retrig",14,-0.5,13.5,16,-0.5,15.5);
+
+  /*  TH1F* trig_coinc = new TH1F("trig_coinc","trig_cinc",14,0.5,14.5);
+  TH1F* retrig_start_coinc = new TH1F("retrig_start_coinc","retrig__startcinc",14,0.5,14.5);
+  TH1F* retrig_coinc = new TH1F("retrig_coinc","retrig_cinc",14,0.5,14.5);*/
+
+  // --------------
+  if (fChain == 0) return;
+  Long64_t nentries = fChain->GetEntriesFast();
+  //-----------------
+  cout<<"Start MONITORING, read only 1 event each "<< freq<<endl;
+  // -----------------------------------------------------------------------------------------------------
+  // Signal readout
+  Long64_t nbytes = 0, nb = 0;
+  int n_SLB=0;
+  for (Long64_t jentry=0; jentry<nentries;jentry++) {
+    Long64_t ientry = LoadTree(jentry);
+    if (ientry < 0) break;
+    nb = fChain->GetEntry(jentry);   nbytes += nb;
+    if ( jentry > 1000 && jentry % 1000 ==0 ) std::cout << "Progress: " << 100.*jentry/nentries <<" %"<<endl;
+    if(jentry==0) n_SLB=n_slboards;
+
+    if(jentry % freq !=0 ) continue;
+
+    for(int islboard=0; islboard<n_slboards; islboard++) {
+      //channels starting retriggers
+      for(int ichip=0; ichip<16; ichip++) {
+	
+	bool first_retrig=false;
+	bool trigger=false;
+	int isca_trig=-1;
+	int isca_retrig=-1;
+	for(int isca=0; isca<15; isca++) {
+
+	  //first retrigger
+	  if(badbcid[islboard][ichip][isca]>2 && first_retrig==false) {
+	    first_retrig=true;
+	    for(int ichn=0; ichn<64; ichn++) {
+	     if(gain_hit_high[islboard][ichip][isca][ichn]==1) {
+	       hitmap_retrig_start_xy[islboard]->Fill(map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn]);
+	       hitmap_retrig_start_chipchn[islboard]->Fill(ichip,ichn);
+	     }
+	    }
+	    retrig_start->Fill(islboard,ichip);
+	    lastsca_retrig_start[islboard]->Fill(ichip,isca);
+	  }
+
+	  //all retriggers
+	  if(badbcid[islboard][ichip][isca]>2 && first_retrig==true) {
+	    for(int ichn=0; ichn<64; ichn++) {
+	     if(gain_hit_high[islboard][ichip][isca][ichn]==1) {
+	       hitmap_retrig_xy[islboard]->Fill(map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn]);
+	       hitmap_retrig_chipchn[islboard]->Fill(ichip,ichn);
+	     }
+	    }
+	    retrig->Fill(islboard,ichip);
+	    isca_retrig=isca;
+	  }
+
+	  //all triggers
+	  if(badbcid[islboard][ichip][isca]==0) {
+	    for(int ichn=0; ichn<64; ichn++) {
+	     if(gain_hit_high[islboard][ichip][isca][ichn]==1) {
+	       hitmap_trig_xy[islboard]->Fill(map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn]);
+	       hitmap_trig_chipchn[islboard]->Fill(ichip,ichn);
+	     }
+	    }
+	    trig->Fill(islboard,ichip);
+	    trigger=true;
+	    isca_trig=isca;
+	  }
+
+	  // search coincidences
+	  //-------------------------------------------------------
+	  for(int islboard2=0; islboard2<n_slboards; islboard2++) {
+	    //channels starting retriggers
+	    for(int ichip2=0; ichip2<16; ichip2++) {
+	      bool first_retrig2=false;
+	      for(int isca2=0; isca2<15; isca2++) {
+		  bcid_correl[islboard][islboard2]->Fill(bcid[islboard][ichip][isca],bcid[islboard2][ichip2][isca2]);
+		  if(trigger==true) {	      
+		    if(islboard2!=islboard || ichip2!=ichip || isca2>isca)  {
+		      //first retrigger
+		      if(badbcid[islboard2][ichip2][isca2]>2 && first_retrig2==false) {
+			first_retrig2=true;
+			bcid_diff_trig_retrig_start[islboard]->Fill(islboard2,bcid[islboard2][ichip2][isca2]-bcid[islboard][ichip][isca]);		      
+		      }
+		      if(badbcid[islboard2][ichip2][isca2]==0) {
+			bcid_diff_trig_trig[islboard]->Fill(islboard2,bcid[islboard2][ichip2][isca2]-bcid[islboard][ichip][isca]);
+		      }
+		    }
+		  }//trig==true
+	      }//isca2
+	    }//ichip2
+	  }//islboard2
+	    
+      }//end isca
+	lastsca_trig[islboard]->Fill(ichip,isca_trig);
+	lastsca_retrig[islboard]->Fill(ichip,isca_retrig);
+	
+    }//end chip
+  }// islboard
+  
+
+  }
+  // -----------------------------------------------------------------------------------------------------   
+  // Signal analysis
+  TFile *monitoringfile_summary = new TFile("results_monitoring/Monitoring_summary_"+outputname+".root" , "RECREATE");
+  monitoringfile_summary->cd();
+
+ for(int i=0; i<n_SLB; i++)
+   for(int j=0; j<n_SLB; j++) {
+     bcid_correl[i][j]->GetXaxis()->SetTitle(TString::Format("bcid SLB_%i",i));
+     bcid_correl[i][j]->GetYaxis()->SetTitle(TString::Format("bcid SLB_%i",j));
+     bcid_correl[i][j]->Write();
+   }
+ 
+  for(int i=0; i<n_SLB; i++) {
+
+    lastsca_trig[i]->GetXaxis()->SetTitle("CHIP");
+    lastsca_trig[i]->GetYaxis()->SetTitle("last SCA");
+    lastsca_trig[i]->Write();
+
+    lastsca_retrig[i]->GetXaxis()->SetTitle("CHIP");
+    lastsca_retrig[i]->GetYaxis()->SetTitle("last SCA");
+    lastsca_retrig[i]->Write();
+
+    lastsca_retrig_start[i]->GetXaxis()->SetTitle("CHIP");
+    lastsca_retrig_start[i]->GetYaxis()->SetTitle("last SCA");
+    lastsca_retrig_start[i]->Write();
+
+    bcid_diff_trig_trig[i]->SetTitle(TString::Format("correlations with SLB_%i triggers",i));
+    bcid_diff_trig_trig[i]->GetYaxis()->SetTitle(TString::Format("bcid_{trigger in SLB_%i}- bcid_{trigger in SLB_xaxis}",i));
+    bcid_diff_trig_trig[i]->GetXaxis()->SetTitle("SLB");
+    // bcid_diff_trig_trig[i]->GetYaxis()->SetRangeUser(-100,100);
+    bcid_diff_trig_trig[i]->Write();
+
+    bcid_diff_trig_retrig_start[i]->SetTitle(TString::Format("correlations with SLB_%i triggers",i));
+    bcid_diff_trig_retrig_start[i]->GetYaxis()->SetTitle(TString::Format("bcid_{trigger in SLB_%i}- bcid_{first REtrigger in SLB_xaxis}",i));
+    bcid_diff_trig_retrig_start[i]->GetXaxis()->SetTitle("SLB");
+    // bcid_diff_trig_retrig_start[i]->GetYaxis()->SetRangeUser(-100,100);
+    bcid_diff_trig_retrig_start[i]->Write();
+    
+    hitmap_trig_xy[i]->GetYaxis()->SetTitle("x");
+    hitmap_trig_xy[i]->GetYaxis()->SetTitle("y");
+    hitmap_trig_xy[i]->Write();
+
+    hitmap_retrig_start_xy[i]->GetYaxis()->SetTitle("x");
+    hitmap_retrig_start_xy[i]->GetYaxis()->SetTitle("y");
+    hitmap_retrig_start_xy[i]->Write();
+
+    hitmap_retrig_xy[i]->GetYaxis()->SetTitle("x");
+    hitmap_retrig_xy[i]->GetYaxis()->SetTitle("y");
+    hitmap_retrig_xy[i]->Write();
+
+    hitmap_trig_chipchn[i]->GetYaxis()->SetTitle("CHIP");
+    hitmap_trig_chipchn[i]->GetYaxis()->SetTitle("chn");
+    hitmap_trig_chipchn[i]->Write();
+
+    hitmap_retrig_start_chipchn[i]->GetYaxis()->SetTitle("CHIP");
+    hitmap_retrig_start_chipchn[i]->GetYaxis()->SetTitle("chn");
+    hitmap_retrig_start_chipchn[i]->Write();
+
+    hitmap_retrig_chipchn[i]->GetYaxis()->SetTitle("CHIP");
+    hitmap_retrig_chipchn[i]->GetYaxis()->SetTitle("chn");
+    hitmap_retrig_chipchn[i]->Write();
+   
+  }
+
+  trig->Write();
+  retrig_start->Write();
+  retrig->Write();
+
+
+  TCanvas *c1 = new TCanvas("hitmaps_xy","hitmaps_xy",1800,900);
+  c1->Divide(3,n_SLB);
+  for(int i=0; i<n_SLB; i++) {
+    c1->cd(i*n_SLB+1);
+    hitmap_trig_xy[i]->Draw("colz");
+    c1->cd(i*n_SLB+2);
+    hitmap_retrig_start_xy[i]->Draw("colz");
+    c1->cd(i*n_SLB+3);
+    hitmap_retrig_xy[i]->Draw("colz");
+  }
+  
+  c1->Write();
+  c1->Modified();
+  c1->Update();
+  c1->WaitPrimitive();
+
+   TCanvas *c2 = new TCanvas("hitmaps_chipchn","hitmaps_chipchn",1800,900);
+  c2->Divide(3,n_SLB);
+  for(int i=0; i<n_SLB; i++) {
+    c2->cd(i*n_SLB+1);
+    hitmap_trig_chipchn[i]->Draw("colz");
+    c2->cd(i*n_SLB+2);
+    hitmap_retrig_start_chipchn[i]->Draw("colz");
+    c2->cd(i*n_SLB+3);
+    hitmap_retrig_chipchn[i]->Draw("colz");
+  }
+  
+  c2->Write();
+  c2->Modified();
+  c2->Update();
+  c2->WaitPrimitive();
+
+
+  TCanvas *c1bis = new TCanvas("lastsca","lastsca",1800,900);
+  c1bis->Divide(3,n_SLB);
+  for(int i=0; i<n_SLB; i++) {
+    c1bis->cd(i*n_SLB+1);
+    lastsca_trig[i]->Draw("colz");
+    c1bis->cd(i*n_SLB+2);
+    lastsca_retrig_start[i]->Draw("colz");
+    c1bis->cd(i*n_SLB+3);
+    lastsca_retrig[i]->Draw("colz");
+  }
+  
+  c1bis->Write();
+  c1bis->Modified();
+  c1bis->Update();
+  c1bis->WaitPrimitive();
+
+  TCanvas *c3 = new TCanvas("bcid_correl","bcid_correl",1800,900);
+  c3->Divide(n_SLB,n_SLB);
+  for(int i=0; i<n_SLB; i++) {
+    for(int j=0; j<n_SLB; j++) {
+      c3->cd(i+1+j*n_SLB);
+      bcid_correl[i][j]->Draw("colz");
+    }
+  }
+
+  c3->Write();
+  c3->Modified();
+  c3->Update();
+  c3->WaitPrimitive();
+
+
+  TCanvas *c4 = new TCanvas("bcid_correl2","bcid_correl2",1800,900);
+  int ncanvas=n_SLB;
+  if(n_SLB % 2 ==0 ) ncanvas=int(n_SLB/2);
+  else ncanvas=int(n_SLB/2);
+     
+  c4->Divide(ncanvas+1,ncanvas+1);
+  for(int i=0; i<n_SLB; i++) {
+    c4->cd(i+1);
+    bcid_diff_trig_trig[i]->GetYaxis()->SetRangeUser(-100,100);
+    bcid_diff_trig_trig[i]->Draw("colz");
+  }
+
+  c4->Write();
+  c4->Modified();
+  c4->Update();
+  c4->WaitPrimitive();
+
+  TCanvas *c5 = new TCanvas("bcid_correl3","bcid_correl3",1800,900);
+  c5->Divide(int(n_SLB/2)+1,int(n_SLB/2)+1);
+  for(int i=0; i<n_SLB; i++) {
+    c5->cd(i+1);
+    bcid_diff_trig_retrig_start[i]->GetYaxis()->SetRangeUser(-100,100);
+    bcid_diff_trig_retrig_start[i]->Draw("colz");
+  }
+
+  c5->Write();
+  c5->Modified();
+  c5->Update();
+  c5->WaitPrimitive();
+  
+  monitoringfile_summary->Close();
+
+}
+
+
 void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", int maxnhit=5)
 {
 
