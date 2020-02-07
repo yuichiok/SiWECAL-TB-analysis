@@ -38,30 +38,12 @@ vector<TString>* list_files(const char *dirname, const char *ext=".dat")
 
 void ConvertDirectorySL(string dirname, bool zerosupression=false)
 {
-  for(int j=0; j<2; j++) {
+  for(int j=0; j<1000; j++) {
     
     TString filen=".dat";
     if(j>0 && j<10) filen=TString::Format(".dat_000%i",j);
     if(j>9 && j<100) filen=TString::Format(".dat_00%i",j);
     if(j>99 && j<1000) filen=TString::Format(".dat_0%i",j);
-    // ext=strcat(ext,filen.Data());
-    
-    /* if(j==1) ext=".dat_0001";
-    if(j==2) ext=".dat_0002";
-    if(j==3) ext=".dat_0003";
-    if(j==4) ext=".dat_0004";
-    if(j==5) ext=".dat_0005";
-    if(j==6) ext=".dat_0006";
-    if(j==7) ext=".dat_0007";
-    if(j==8) ext=".dat_0008";
-    if(j==9) ext=".dat_0009";
-    if(j==10) ext=".dat_0010";
-    if(j==11) ext=".dat_0011";
-    if(j==12) ext=".dat_0012";
-    if(j==13) ext=".dat_0013";
-    if(j==14) ext=".dat_0014";
-    if(j==15) ext=".dat_0015";
-    if(j==16) ext=".dat_0016";*/
     
     vector<TString>* filenames = list_files(dirname.c_str(),filen.Data());
     if(filenames->size()==0) break;

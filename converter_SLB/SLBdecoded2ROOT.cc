@@ -79,6 +79,7 @@ protected:
   int chipID[SLBDEPTH][NCHIP];
   int slot[SLBDEPTH];
   int slboard_id[SLBDEPTH];
+  int n_slboards;
   int acqNumber;
 
 
@@ -94,6 +95,7 @@ void SLBdecoded2ROOT::Initialisation() {
 
   tree->Branch("event",&event,"event/I");
   tree->Branch("acqNumber",&acqNumber,"acqNumber/I");
+  tree->Branch("n_slboards",&n_slboards,"n_slboards/I");
 
   TString name;
   name= TString::Format("slot[%i][%i]/I",SLBDEPTH,NCHIP);
@@ -227,9 +229,9 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
   std::getline(reading_file, strheader);
   std::getline(reading_file, strheader);
   TString tmpst;
-  int nslboards=0;
-  reading_file >> tmpst >> tmpst >> tmpst  >> tmpst >>  tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst  >> tmpst >> nslboards >> tmpst;
-  cout<<" NB OF CONNECTED SLABs = " << nslboards <<endl;
+  //  int nslboards=0;
+  reading_file >> tmpst >> tmpst >> tmpst  >> tmpst >>  tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst  >> tmpst >> n_slboards >> tmpst;
+  cout<<" NB OF CONNECTED SLABs = " << n_slboards <<endl;
 
   std::getline(reading_file, strheader);
   std::getline(reading_file, strheader);
@@ -237,7 +239,7 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
   std::getline(reading_file, strheader);
   std::getline(reading_file, strheader);
 
-  for(int islboard=0; islboard<nslboards; islboard++) 
+  for(int islboard=0; islboard<n_slboards; islboard++) 
     std::getline(reading_file, strheader);
 
   std::string str;
@@ -458,6 +460,7 @@ int SLBdecoded2ROOT::GetTree (TString rootfilename) { //from raw2root 1st pass
   slboardread->SetBranchAddress("chipid",chipID);
   slboardread->SetBranchAddress("slot",slot);
   slboardread->SetBranchAddress("slboard_id",slboard_id);
+  slboardread->SetBranchAddress("n_slboards",&n_slboards);
   R2Rstate=1;
   return 1;
 
