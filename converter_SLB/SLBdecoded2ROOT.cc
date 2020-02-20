@@ -98,10 +98,10 @@ void SLBdecoded2ROOT::Initialisation() {
   tree->Branch("n_slboards",&n_slboards,"n_slboards/I");
 
   TString name;
-  name= TString::Format("slot[%i][%i]/I",SLBDEPTH,NCHIP);
+  name= TString::Format("slot[%i]/I",SLBDEPTH);
   tree->Branch("slot",slot,name);
   
-  name= TString::Format("slboard_id[%i][%i]/I",SLBDEPTH,NCHIP);
+  name= TString::Format("slboard_id[%i]/I",SLBDEPTH);
   tree->Branch("slboard_id",slboard_id,name);
   
   name= TString::Format("chipid[%i][%i]/I",SLBDEPTH,NCHIP);
@@ -164,8 +164,11 @@ void SLBdecoded2ROOT::treeInit(bool zerosupression=false) { //init data for a si
       chipID[isl][k]=-999;
       numCol[isl][k]=0; 
     }
+    slot[isl]=-1;
+    slboard_id[isl]=-1;
   }
-  
+  n_slboards=-1;
+  acqNumber=-1;
 
   return;
 }
@@ -229,18 +232,18 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
   std::getline(reading_file, strheader);
   std::getline(reading_file, strheader);
   TString tmpst;
-  //  int nslboards=0;
-  reading_file >> tmpst >> tmpst >> tmpst  >> tmpst >>  tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst  >> tmpst >> n_slboards >> tmpst;
-  cout<<" NB OF CONNECTED SLABs = " << n_slboards <<endl;
+  int tmp_n_slboards=0;
+  reading_file >> tmpst >> tmpst >> tmpst  >> tmpst >>  tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst  >> tmpst >> tmp_n_slboards >> tmpst;
+  cout<<" NB OF CONNECTED SLABs = " << tmp_n_slboards <<endl;
 
-  std::getline(reading_file, strheader);
-  std::getline(reading_file, strheader);
-  std::getline(reading_file, strheader);
-  std::getline(reading_file, strheader);
-  std::getline(reading_file, strheader);
-
-  for(int islboard=0; islboard<n_slboards; islboard++) 
+  for(int islboard=0; islboard<tmp_n_slboards; islboard++) 
     std::getline(reading_file, strheader);
+
+  std::getline(reading_file, strheader);
+  std::getline(reading_file, strheader);
+  std::getline(reading_file, strheader);
+  std::getline(reading_file, strheader);
+  std::getline(reading_file, strheader);
 
   std::string str;
 
@@ -248,14 +251,15 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
   
   while (reading_file) {
     // output the line
+    TString tmpst1;
     TString tmpst;
     int size=0;
     int chip=-1;
     int slabidx=-1;
     int slabadd=-1;
-    reading_file >> tmpst >> tmpst >> size >> tmpst >> chip >> tmpst >>  tmpst >> tmpst >> slabidx >> tmpst >> slabadd >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst >> cycleID >> tmpst >> tmpst >> tmpst >> tmpst;
+    reading_file >> tmpst1 >> tmpst >> size >> tmpst >> chip >> tmpst >>  tmpst >> tmpst >> slabidx >> tmpst >> slabadd >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst >> cycleID >> tmpst >> tmpst >> tmpst >> tmpst;
     
-    //std::cout << " -----" <<size<< " "<<chip<<" "<<slabid<<" "<<cycleID <<" "<<acqNumber<< std::endl;
+    if(slabidx>20) std::cout << " -----" <<tmpst1<<" "<<size<< " "<<chip<<" "<<slabidx<<" "<<slabadd<<" "<<cycleID <<" "<<acqNumber<< std::endl;
 
     if(acqNumber==0) treeInit(zerosupression);
      if(acqNumber>0 && acqNumber!=cycleID) {
@@ -267,6 +271,7 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
 
     //save variables
     acqNumber=cycleID;
+    n_slboards=tmp_n_slboards;
     event++;
     int previousBCID=-1000;
     int loopBCID=0;

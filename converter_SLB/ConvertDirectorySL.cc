@@ -36,7 +36,7 @@ vector<TString>* list_files(const char *dirname, const char *ext=".dat")
 	return filenames;
 }
 
-void ConvertDirectorySL(string dirname, bool zerosupression=false)
+void ConvertDirectorySL(string dirname, bool zerosupression=false, TString outputname="default")
 {
   for(int j=0; j<1000; j++) {
     
@@ -44,8 +44,10 @@ void ConvertDirectorySL(string dirname, bool zerosupression=false)
     if(j>0 && j<10) filen=TString::Format(".dat_000%i",j);
     if(j>9 && j<100) filen=TString::Format(".dat_00%i",j);
     if(j>99 && j<1000) filen=TString::Format(".dat_0%i",j);
+    TString output="default";
+    if(outputname!="default") output=TString::Format("%s/converted%s.root",outputname.Data(),filen.Data());
     
-    vector<TString>* filenames = list_files(dirname.c_str(),filen.Data());
+    /*    vector<TString>* filenames = list_files(dirname.c_str(),filen.Data());
     if(filenames->size()==0) break;
     SLBdecoded2ROOT *ss;
     unsigned int nbCrb = filenames->size();
@@ -53,13 +55,35 @@ void ConvertDirectorySL(string dirname, bool zerosupression=false)
     for (int i = 0 ; i<nbCrb ; i++)
       {
 	ss = new SLBdecoded2ROOT();
-	ss->ReadFile((*filenames)[i], true,"default",zerosupression);
+	ss->ReadFile((*filenames)[i], true,outputname,zerosupression);
 	delete ss;
       }
     for (int i = 0 ; i<nbCrb ; i++)
       {
 	std::cout << (*filenames)[i] << std::endl;
-      }
+	}*/
+
+    vector<TString>* filenames = list_files(dirname.c_str(),filen.Data());
+    if(filenames->size()!=1) {
+      std::cout << "N files != 0 !!!  for "<< filen << std::endl;
+      break;
+    }
+    
+    SLBdecoded2ROOT *ss;
+    //unsigned int nbCrb = filenames->size();
+    
+    //    for (int i = 0 ; i<nbCrb ; i++)
+      // {
+    ss = new SLBdecoded2ROOT();
+    ss->ReadFile((*filenames)[0], true,output,zerosupression);
+    delete ss;
+    //  }
+    //    for (int i = 0 ; i<nbCrb ; i++)
+    //  {
+	std::cout << (*filenames)[0] << std::endl;
+	//      }
+
+    
   }
   
   gSystem->Exit(0);
