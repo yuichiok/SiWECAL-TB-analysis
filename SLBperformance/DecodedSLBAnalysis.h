@@ -77,7 +77,8 @@ public :
    virtual void     ReadMasked(TString filename);
    virtual void     ReadPedestals(TString filename);
    //Monitoring
-   virtual void     Monitoring(TString outputname, int freq);
+   virtual void     Monitoring(TString outputname, int freq, bool shifter);
+   virtual void     SynchronizationStudies(TString outputname, int freq, bool shifter);
    //signal analysis: MIP fitt and signal/noise 
    virtual void     SignalAnalysis(int slboard, TString outputname, int nmaxhits);
    virtual TF1 *langaufit(TH1F *his, Double_t *fitrange, Double_t *startvalues, Double_t *parlimitslo, Double_t *parlimitshi, Double_t *fitparams, Double_t *fiterrors, Double_t *ChiSqr, Int_t *NDF);

@@ -17,10 +17,80 @@
 using namespace std;
 
 
-void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int freq=10)
+void DecodedSLBAnalysis::SynchronizationStudies(TString outputname="testMonitoring", int freq=10, bool shifter=false)
+{
+  TH2F* adc_bcid[15][16];
+
+  for(int i=0; i<15; i++) {
+    for(int j=0; j<16; j++) {
+      adc_bcid[i][j]=new TH2F(TString::Format("ad_bcid_slb%i_chip%i",i,j),TString::Format("ad_bcid_slb%i_chip%i",i,j),1000,-0.5,999.5,1000,-0.5,999.5);
+    }
+  }
+
+  // --------------
+  if (fChain == 0) return;
+  Long64_t nentries = fChain->GetEntriesFast();
+  //-----------------
+  cout<<"Start SynchronizationStudies, read only 1 event each "<< freq<<endl;
+  cout<<"Total number of entries: "<< nentries<<endl;
+
+  // -----------------------------------------------------------------------------------------------------
+  // Signal readout
+  Long64_t nbytes = 0, nb = 0;
+  int n_SLB=0;
+  for (Long64_t jentry=0; jentry<nentries;jentry++) {
+    Long64_t ientry = LoadTree(jentry);
+    if (ientry < 0) break;
+    nb = fChain->GetEntry(jentry);   nbytes += nb;
+    if ( jentry > 1000 && jentry % 1000 ==0 ) std::cout << "Progress: " << 100.*jentry/nentries <<" %"<<endl;
+
+    if(jentry==0) n_SLB=n_slboards;
+
+    if(jentry % freq !=0 ) continue;
+
+    for(int islboard=0; islboard<n_slboards; islboard++) {
+      //channels starting retriggers
+      for(int ichip=0; ichip<16; ichip++) {
+	
+	bool first_retrig=false;
+	bool trigger=false;
+	int isca_trig=-1;
+	int isca_retrig=-1;
+	for(int isca=0; isca<15; isca++) {
+	 for(int ichn=0; ichn<64; ichn++) {
+	   if(gain_hit_high[islboard][ichip][isca][ichn]==1) {
+	     adc_bcid[islboard][ichip]->Fill(bcid[islboard][ichip][isca],charge_hiGain[islboard][ichip][isca][ichn]);
+	   }
+	 }
+	}
+      }
+    }
+
+  
+
+  }
+  // -----------------------------------------------------------------------------------------------------   
+  // Signal analysis
+  TFile *monitoringfile_summary = new TFile("results_monitoring/SynchronizationStudis_summary_"+outputname+".root" , "RECREATE");
+  monitoringfile_summary->cd();
+
+  for(int i=0; i<n_SLB; i++) {
+    for(int j=0; j<16; j++) {
+      adc_bcid[i][j]->GetXaxis()->SetTitle(TString::Format("adc_bcid SLB_%i_chip%i",i,i));
+      adc_bcid[i][j]->GetYaxis()->SetTitle(TString::Format("adc_bcid SLB_%i_chip%i",i,j));
+      adc_bcid[i][j]->Write();
+    }
+  } 
+  monitoringfile_summary->Close();
+
+}
+
+
+void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int freq=10, bool shifter=false)
 {
   TH2F* bcid_diff_trig_trig[15];
   TH2F* bcid_diff_trig_retrig_start[15];
+  TH2F* bcid_diff[15];
 
   TH2F* bcid_correl[15][15];
 
@@ -42,7 +112,8 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
 
   for(int i=0; i<15; i++) {
     bcid_diff_trig_trig[i]=new TH2F(TString::Format("bcid_diff_trig_trig_slb%i",i),TString::Format("bcid_diff_trig_trig_slb%i",i),15,-0.5,14.5,2001,-1000.5,1000.5);
-    bcid_diff_trig_retrig_start[i]=new TH2F(TString::Format("bcid_diff_trig_retrig_start_slb%i",i),TString::Format("bcid_diff_trig_retrig_start_slb%i",i),15,-0.5,14.5,2001,-100.5,100.5);
+    bcid_diff_trig_retrig_start[i]=new TH2F(TString::Format("bcid_diff_trig_retrig_start_slb%i",i),TString::Format("bcid_diff_trig_retrig_start_slb%i",i),15,-0.5,14.5,2001,-1000.5,1000.5);
+    bcid_diff[i]=new TH2F(TString::Format("bcid_dif_slb%i",i),TString::Format("bcid_diff_slb%i",i),15,-0.5,14.5,2001,-1000.5,1000.5);
 
     for(int j=0; j<15; j++) {
       bcid_correl[i][j]=new TH2F(TString::Format("bcid_correl_slb%i_slb%i",i,j),TString::Format("bcid_correl_slb%i_slb%i",i,j),500,0,5000,500,0,5000);
@@ -79,6 +150,8 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
   Long64_t nentries = fChain->GetEntriesFast();
   //-----------------
   cout<<"Start MONITORING, read only 1 event each "<< freq<<endl;
+  cout<<"Total number of entries: "<< nentries<<endl;
+
   // -----------------------------------------------------------------------------------------------------
   // Signal readout
   Long64_t nbytes = 0, nb = 0;
@@ -88,6 +161,7 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
     if (ientry < 0) break;
     nb = fChain->GetEntry(jentry);   nbytes += nb;
     if ( jentry > 1000 && jentry % 1000 ==0 ) std::cout << "Progress: " << 100.*jentry/nentries <<" %"<<endl;
+
     if(jentry==0) n_SLB=n_slboards;
 
     if(jentry % freq !=0 ) continue;
@@ -102,6 +176,7 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
 	int isca_retrig=-1;
 	for(int isca=0; isca<15; isca++) {
 
+	  trigger=false;
 	  //first retrigger
 	  if(badbcid[islboard][ichip][isca]>2 && first_retrig==false) {
 	    first_retrig=true;
@@ -147,7 +222,9 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
 	    for(int ichip2=0; ichip2<16; ichip2++) {
 	      bool first_retrig2=false;
 	      for(int isca2=0; isca2<15; isca2++) {
-		  bcid_correl[islboard][islboard2]->Fill(bcid[islboard][ichip][isca],bcid[islboard2][ichip2][isca2]);
+		if(bcid[islboard2][ichip2][isca2]<0) continue;
+		bcid_correl[islboard][islboard2]->Fill(bcid[islboard][ichip][isca],bcid[islboard2][ichip2][isca2]);
+		  bcid_diff[islboard]->Fill(islboard2,bcid[islboard2][ichip2][isca2]-bcid[islboard][ichip][isca]);
 		  if(trigger==true) {	      
 		    if(islboard2!=islboard || ichip2!=ichip || isca2>isca)  {
 		      //first retrigger
@@ -210,6 +287,12 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
     bcid_diff_trig_retrig_start[i]->GetXaxis()->SetTitle("SLB");
     // bcid_diff_trig_retrig_start[i]->GetYaxis()->SetRangeUser(-100,100);
     bcid_diff_trig_retrig_start[i]->Write();
+
+    bcid_diff[i]->SetTitle(TString::Format("correlations with SLB_%i",i));
+    bcid_diff[i]->GetYaxis()->SetTitle(TString::Format("bcid_{all in SLB_%i}- bcid_{all in SLB_xaxis}",i));
+    bcid_diff[i]->GetXaxis()->SetTitle("SLB");
+    // bcid_diff_trig_retrig_start[i]->GetYaxis()->SetRangeUser(-100,100);
+    bcid_diff[i]->Write();
     
     hitmap_trig_xy[i]->GetYaxis()->SetTitle("x");
     hitmap_trig_xy[i]->GetYaxis()->SetTitle("y");
@@ -256,7 +339,7 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
   c1->Write();
   c1->Modified();
   c1->Update();
-  c1->WaitPrimitive();
+  if(shifter==true) c1->WaitPrimitive();
 
    TCanvas *c2 = new TCanvas("hitmaps_chipchn","hitmaps_chipchn",1800,900);
   c2->Divide(3,n_SLB);
@@ -272,7 +355,7 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
   c2->Write();
   c2->Modified();
   c2->Update();
-  c2->WaitPrimitive();
+  if(shifter==true) c2->WaitPrimitive();
 
 
   TCanvas *c1bis = new TCanvas("lastsca","lastsca",1800,900);
@@ -289,7 +372,7 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
   c1bis->Write();
   c1bis->Modified();
   c1bis->Update();
-  c1bis->WaitPrimitive();
+  if(shifter==true) c1bis->WaitPrimitive();
 
   TCanvas *c3 = new TCanvas("bcid_correl","bcid_correl",1800,900);
   c3->Divide(n_SLB,n_SLB);
@@ -303,7 +386,7 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
   c3->Write();
   c3->Modified();
   c3->Update();
-  c3->WaitPrimitive();
+  if(shifter==true) c3->WaitPrimitive();
 
 
   TCanvas *c4 = new TCanvas("bcid_correl2","bcid_correl2",1800,900);
@@ -321,7 +404,7 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
   c4->Write();
   c4->Modified();
   c4->Update();
-  c4->WaitPrimitive();
+  if(shifter==true) c4->WaitPrimitive();
 
   TCanvas *c5 = new TCanvas("bcid_correl3","bcid_correl3",1800,900);
   c5->Divide(int(n_SLB/2)+1,int(n_SLB/2)+1);
@@ -334,7 +417,7 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
   c5->Write();
   c5->Modified();
   c5->Update();
-  c5->WaitPrimitive();
+  if(shifter==true) c5->WaitPrimitive();
   
   monitoringfile_summary->Close();
 

@@ -19,12 +19,12 @@ void SingleSlabAnalysis(TString filename_in, TString output="", int i_slboard=2)
   
   filename_in=filename_in+".root";
   
-
+  cout<<" Analyze file: "<<filename_in<<endl;
   DecodedSLBAnalysis ss(filename_in);
   ss.ReadMap(map,i_slboard);
-  //  ss.PedestalAnalysis(i_slboard,output,4);
+  ss.PedestalAnalysis(i_slboard,output,4);
   ss.SignalAnalysis(i_slboard,output,4);
-  //  ss.Retriggers(i_slboard,output,10);
+  ss.Retriggers(i_slboard,output,10);
   //ss.PedestalAnalysis(slboard,output,map,4);
   //ss.SignalAnalysis(slboard,output,map,4);
   gSystem->Exit(0);

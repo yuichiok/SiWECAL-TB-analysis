@@ -9,27 +9,31 @@
 
 #source analysis.sh 21010 1
 
-run="Run_ILC_cosmic_test_11212019_11h08min_Ascii"
-#Run_ILC_slab14_HV100_12192019_14h58min_Ascii"
-data_folder="/home/calice/TB2020/commissioning/data_slboard/"${run}"/"
-runname=$run
+run="Run_ILC_test_cosmic_02192020_18h50min_Ascii"
+#Run_ILC_test_cosmic_02192020_18h30min_Ascii"
+data_folder="/mnt/win2/Run_Data/"${run}"/"
 
-#cd ../converter_SLB
-#root -l -q ConvertDirectorySL.cc\(\"${data_folder}\"\) 
-#hadd ${data_folder}/../${runname}.root ${data_folder}/${run}*.root 
+mkdir "/home/calice/TB2020/commissioning/SiWECAL-TB-analysis_TB2020/converter_SLB/convertedfiles/"${run}
+output="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis_TB2020/converter_SLB/convertedfiles/"${run}"/"
 
-#cd -
+cd ../converter_SLB
+root -l -q ConvertDirectorySL.cc\(\"${data_folder}\",false,\"${output}\"\) 
+hadd ${output}/${run}.root ${output}/*.root 
 
-root -l Monitoring.cc\(\"${data_folder}/../${runname}\",\"${runname}\"\) 
+cd -
+root -l Monitoring.cc\(\"${output}/${run}\",\"${run}\",1\) 
 
-#root -l SingleSlabAnalysis.cc\(\"${data_folder}/../${runname}\",\"${runname}\",0\) 
-#root -l SingleSlabAnalysis.cc\(\"${data_folder}/../${runname}\",\"${runname}\",1\) &
-#root -l SingleSlabAnalysis.cc\(\"${data_folder}/../${runname}\",\"${runname}\",2\) 
+root -l SingleSlabAnalysis.cc\(\"${output}/${run}\",\"${run}\",1\) &
+root -l SingleSlabAnalysis.cc\(\"${output}/${run}\",\"${run}\",2\) 
+root -l SingleSlabAnalysis.cc\(\"${output}/${run}\",\"${run}\",4\) &
+root -l SingleSlabAnalysis.cc\(\"${output}/${run}\",\"${run}\",5\)
 
-#sleep 10
 
-#cd performance
-#source analysis.sh $runname 0
-#source analysis.sh $runname 1
-#source analysis.sh $runname 2
+sleep 5
+
+cd performance
+source analysis.sh $run 1 &
+source analysis.sh $run 2
+source analysis.sh $run 4 &
+source analysis.sh $run 5
 
