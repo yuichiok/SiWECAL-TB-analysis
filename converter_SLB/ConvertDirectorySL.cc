@@ -38,12 +38,14 @@ vector<TString>* list_files(const char *dirname, const char *ext=".dat")
 
 void ConvertDirectorySL(string dirname, bool zerosupression=false, TString outputname="default")
 {
-  for(int j=0; j<1000; j++) {
+  for(int j=0; j<2000; j++) {
     
     TString filen=".dat";
     if(j>0 && j<10) filen=TString::Format(".dat_000%i",j);
     if(j>9 && j<100) filen=TString::Format(".dat_00%i",j);
     if(j>99 && j<1000) filen=TString::Format(".dat_0%i",j);
+    if(j>999 && j<10000) filen=TString::Format(".dat_%i",j);
+
     TString output="default";
     if(outputname!="default") output=TString::Format("%s/converted%s.root",outputname.Data(),filen.Data());
     
@@ -75,7 +77,7 @@ void ConvertDirectorySL(string dirname, bool zerosupression=false, TString outpu
     //    for (int i = 0 ; i<nbCrb ; i++)
       // {
     ss = new SLBdecoded2ROOT();
-    ss->ReadFile((*filenames)[0], true,output,zerosupression);
+    ss->ReadFile((*filenames)[0], false,output,zerosupression);
     delete ss;
     //  }
     //    for (int i = 0 ; i<nbCrb ; i++)
