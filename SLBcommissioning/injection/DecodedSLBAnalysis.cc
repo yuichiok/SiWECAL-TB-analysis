@@ -18,14 +18,20 @@
 
 using namespace std;
 
-std::vector<std::array<float,5>> DecodedSLBAnalysis::HoldscanAnalysis(int readentries=-1)
+std::vector<std::array<float,6>> DecodedSLBAnalysis::HoldscanAnalysis(int readentries=-1)
 {
 
   float y[15][16][64];
   float ey[15][16][64];
   TH1F* adc[15][16][64];
 
+  int board_id[15];
+  int board_slot[15];
+
+    
   for(int i=0; i<15; i++) {
+    board_id[i]=-1;
+    board_slot[i]=-1;
     for(int j=0; j<16; j++) {
       for(int k=0; k<64; k++) {
 	y[i][j][k]=0;
@@ -36,7 +42,6 @@ std::vector<std::array<float,5>> DecodedSLBAnalysis::HoldscanAnalysis(int readen
   }
 
 
-  
 
   // --------------
   Long64_t nentries = fChain->GetEntriesFast();
@@ -61,6 +66,8 @@ std::vector<std::array<float,5>> DecodedSLBAnalysis::HoldscanAnalysis(int readen
 
 
     for(int islboard=0; islboard<n_slboards; islboard++) {
+      	if(board_id[islboard]==-1) board_id[islboard]=slboard_id[islboard];
+	if(board_slot[islboard]==-1) board_slot[islboard]=slot[islboard];
       //channels starting retriggers
       for(int ichip=0; ichip<16; ichip++) {
 	for(int isca=0; isca<15; isca++) {
@@ -80,19 +87,20 @@ std::vector<std::array<float,5>> DecodedSLBAnalysis::HoldscanAnalysis(int readen
 
   }
 
-  std::vector<std::array<float,5>> result;
+  std::vector<std::array<float,6>> result;
   
   for(int islboard=0; islboard<n_slboards; islboard++) {
     for(int ichip=0; ichip<16; ichip++) {
       for(int ichn=0; ichn<64; ichn++) {
 	y[islboard][ichip][ichn]=adc[islboard][ichip][ichn]->GetMean();
 	ey[islboard][ichip][ichn]=adc[islboard][ichip][ichn]->GetRMS();
-	std::array<float,5> temparray;
+	std::array<float,6> temparray;
 	temparray[0]=islboard;
-	temparray[1]=ichip;
-	temparray[2]=ichn;
-	temparray[3]=y[islboard][ichip][ichn];
-	temparray[4]=ey[islboard][ichip][ichn];
+	temparray[1]=board_id[islboard];
+	temparray[2]=ichip;
+	temparray[3]=ichn;
+	temparray[4]=y[islboard][ichip][ichn];
+	temparray[5]=ey[islboard][ichip][ichn];
 	result.push_back(temparray);
       }
     }
@@ -103,7 +111,7 @@ std::vector<std::array<float,5>> DecodedSLBAnalysis::HoldscanAnalysis(int readen
 }
 
 
-std::vector<std::array<float,8>> DecodedSLBAnalysis::InjectionAnalysis(int readentries=-1)
+std::vector<std::array<float,9>> DecodedSLBAnalysis::InjectionAnalysis(int readentries=-1)
 {
 
     cout<<"START"<< endl;
@@ -113,7 +121,13 @@ std::vector<std::array<float,8>> DecodedSLBAnalysis::InjectionAnalysis(int reade
   TH1F* high_gain[15][16][64][3];
   TH1F* low_gain[15][16][64][3];
 
+  int board_id[15];
+  int board_slot[15];
+
+    
   for(int i=0; i<15; i++) {
+    board_id[i]=-1;
+    board_slot[i]=-1;
     for(int j=0; j<16; j++) {
       for(int k=0; k<64; k++) {
 	for(int l=0; l<3; l++) {
@@ -121,23 +135,11 @@ std::vector<std::array<float,8>> DecodedSLBAnalysis::InjectionAnalysis(int reade
 	  ey[i][j][k][l]=0;
 	  high_gain[i][j][k][l]= new TH1F(TString::Format("high_gain_slab%i_chip%i_sca%i_chn%i",i,j,l,k),TString::Format("high_gain_slab%i_chip%i_sca%i_chn%i",i,j,l,k),4096,-0.5,4095.5);
 	  low_gain[i][j][k][l]= new TH1F(TString::Format("low_gain_slab%i_chip%i_sca%i_chn%i",i,j,l,k),TString::Format("low_gain_slab%i_chip%i_sca%i_chn%i",i,j,l,k),4096,-0.5,4095.5);
-	  //  low_gain[i][j][k][l]= new TH1F(TString::Format("low_gain_slab%i_chip%i_sca%i_chn%i",i,j,l,k),TString::Format("low_gain_slab%i_chip%i_sca%i_chn%i",i,j,l,k),4096,-0.5,4095.5);
 	}
       }
     }
   }
 
-  /*  TH1D* low_gain[15][16][64][3];
-  for(int i=0; i<15; i++) {
-    for(int j=0; j<16; j++) {
-      for(int k=0; k<64; k++) {
-	for(int l=0; l<3; l++) {
-	  low_gain[i][j][k][l]= new TH1D(TString::Format("low_gain_slab%i_chip%i_sca%i_chn%i",i,j,l,k),TString::Format("low_gain_slab%i_chip%i_sca%i_chn%i",i,j,l,k),10,-0.5,1095.5);
-	}
-      }
-    }
-    }*/
-  
 
   // --------------
   Long64_t nentries = fChain->GetEntriesFast();
@@ -160,8 +162,12 @@ std::vector<std::array<float,8>> DecodedSLBAnalysis::InjectionAnalysis(int reade
 
     //if(jentry % 1000 !=0 ) continue;
 
-
     for(int islboard=0; islboard<n_slboards; islboard++) {
+
+      if(board_id[islboard]==-1) {
+	board_id[islboard]=slboard_id[islboard];
+      }
+      
       //channels starting retriggers
       for(int ichip=0; ichip<16; ichip++) {
 	for(int isca=0; isca<15; isca++) {
@@ -185,22 +191,24 @@ std::vector<std::array<float,8>> DecodedSLBAnalysis::InjectionAnalysis(int reade
     
   }
 
-  std::vector<std::array<float,8>> result;
+  std::vector<std::array<float,9>> result;
   
   for(int islboard=0; islboard<n_slboards; islboard++) {
     for(int ichip=0; ichip<16; ichip++) {
       for(int ichn=0; ichn<64; ichn++) {
 	for(int isca=0; isca<3; isca++) {
 	  
-	  std::array<float,8> temparray;
+	  std::array<float,9> temparray;
 	  temparray[0]=islboard;
-	  temparray[1]=ichip;
-	  temparray[2]=ichn;
-	  temparray[3]=isca;
-	  temparray[4]=high_gain[islboard][ichip][ichn][isca]->GetMean();
-	  temparray[5]=high_gain[islboard][ichip][ichn][isca]->GetRMS();
-	  temparray[6]=low_gain[islboard][ichip][ichn][isca]->GetMean();
-	  temparray[7]=low_gain[islboard][ichip][ichn][isca]->GetRMS();
+	  temparray[1]=board_id[islboard];
+
+	  temparray[2]=ichip;
+	  temparray[3]=ichn;
+	  temparray[4]=isca;
+	  temparray[5]=high_gain[islboard][ichip][ichn][isca]->GetMean();
+	  temparray[6]=high_gain[islboard][ichip][ichn][isca]->GetRMS();
+	  temparray[7]=low_gain[islboard][ichip][ichn][isca]->GetMean();
+	  temparray[8]=low_gain[islboard][ichip][ichn][isca]->GetRMS();
 	  result.push_back(temparray);
 	}
       }

@@ -33,6 +33,8 @@ public :
    Int_t           event;
    Int_t           acqNumber;
    Int_t           n_slboards;
+   Int_t           slot[15];
+   Int_t           slboard_id[15];
    Int_t           chipid[15][16];
    Int_t           nColumns[15][16];
    Int_t           bcid[15][16][15];
@@ -44,10 +46,13 @@ public :
    Int_t           gain_hit_low[15][16][15][64];
    Int_t           gain_hit_high[15][16][15][64];
 
+
    // List of branches
    TBranch        *b_event;   //!
    TBranch        *b_acqNumber;   //!
    TBranch        *b_n_slboards;   //!
+   TBranch        *b_slot;   //!
+   TBranch        *b_slboard_id;   //!
    TBranch        *b_chipid;   //!
    TBranch        *b_nColumns;   //!
    TBranch        *b_bcid;   //!
@@ -71,8 +76,8 @@ public :
    virtual void     Init(TTree *tree);
    // write file with masked channels
    // analysis of pedestal and writting of the file with pedestals per chi/channel/sca
-   virtual std::vector<std::array<float,5>> HoldscanAnalysis(int);
-   virtual std::vector<std::array<float,8>> InjectionAnalysis(int);
+   virtual std::vector<std::array<float,6>> HoldscanAnalysis(int);
+   virtual std::vector<std::array<float,9>> InjectionAnalysis(int);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
 
@@ -160,6 +165,8 @@ void DecodedSLBAnalysis::Init(TTree *tree)
    fChain->SetBranchAddress("event", &event, &b_event);
    fChain->SetBranchAddress("acqNumber", &acqNumber, &b_acqNumber);
    fChain->SetBranchAddress("n_slboards", &n_slboards, &b_n_slboards);
+   fChain->SetBranchAddress("slot", slot, &b_slot);
+   fChain->SetBranchAddress("slboard_id", slboard_id, &b_slboard_id);
    fChain->SetBranchAddress("chipid", chipid, &b_chipid);
    fChain->SetBranchAddress("nColumns", nColumns, &b_nColumns);
    fChain->SetBranchAddress("bcid", bcid, &b_bcid);
@@ -171,6 +178,7 @@ void DecodedSLBAnalysis::Init(TTree *tree)
    fChain->SetBranchAddress("gain_hit_low", gain_hit_low, &b_gain_hit_low);
    fChain->SetBranchAddress("gain_hit_high", gain_hit_high, &b_gain_hit_high);
    Notify();
+
 }
 
 Bool_t DecodedSLBAnalysis::Notify()
