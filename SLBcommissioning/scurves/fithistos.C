@@ -10,6 +10,7 @@
 #include <iostream>
 #include <fstream>
 #include "TF1.h"
+#include "../conf_struct.h"
 
 //#include "../../style/Style.C"
 //#include "../../style/Labels.C"
@@ -148,9 +149,10 @@ std::vector<double> MeanSigma(TGraph *scurve_threshold, TString type="SK2a") {
 
 }
 
-void fithistos(TString filename = "RateVsThresholdScan_02192020_SLBoard_test2", int nslabs=8){
+void fithistos(TString filename = "RateVsThresholdScan_02192020_SLBoard_test2", int nslabs=6, int iteration=0){
 
-  
+  read_configuration_file(TString::Format("../Run_Settings_it%i.txt",iteration),false);
+
   TGraphErrors *scurve[15][16][64];
   TF1 *scurvefit[15][16][64];
 
@@ -211,13 +213,16 @@ void fithistos(TString filename = "RateVsThresholdScan_02192020_SLBoard_test2", 
       double fine_tuning[64];
       std::cout<<" -------------------------------------- "<< endl;
       std::cout<<"slab: "<<i<<" asic:"<<iasic<<"    TH:"<<mean<< endl;
+      detector.slab[0][i].asu[0].skiroc[iasic].threshold_dac=mean;
       for(int ichn=0; ichn<64; ichn++) {
 	fine_tuning[ichn]=mean_sigma.at(1+ichn);
 	std::cout<<" chn:"<<ichn<<" TH -"<<fine_tuning[ichn]<<endl;
+	detector.slab[0][i].asu[0].skiroc[iasic].chn_threshold_adj[ichn]=fine_tuning[ichn];
       }
     }
   }
-      
+
+  write_configuration_file(TString::Format("../Run_Settings_it%i.txt",iteration+1));
 	
   /*  TCanvas *canvas_asic[15];
   
