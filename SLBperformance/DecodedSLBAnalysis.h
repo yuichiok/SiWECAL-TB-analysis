@@ -33,6 +33,8 @@ public :
    Int_t           event;
    Int_t           acqNumber;
    Int_t           n_slboards;
+   Int_t           slot[15];
+   Int_t           slboard_id[15];
    Int_t           chipid[15][16];
    Int_t           nColumns[15][16];
    Int_t           bcid[15][16][15];
@@ -48,6 +50,8 @@ public :
    TBranch        *b_event;   //!
    TBranch        *b_acqNumber;   //!
    TBranch        *b_n_slboards;   //!
+   TBranch        *b_slot;   //!
+   TBranch        *b_slboard_id;   //!
    TBranch        *b_chipid;   //!
    TBranch        *b_nColumns;   //!
    TBranch        *b_bcid;   //!
@@ -179,6 +183,8 @@ void DecodedSLBAnalysis::Init(TTree *tree)
    fChain->SetBranchAddress("event", &event, &b_event);
    fChain->SetBranchAddress("acqNumber", &acqNumber, &b_acqNumber);
    fChain->SetBranchAddress("n_slboards", &n_slboards, &b_n_slboards);
+   fChain->SetBranchAddress("slot", slot, &b_slot);
+   fChain->SetBranchAddress("slboard_id", slboard_id, &b_slboard_id);
    fChain->SetBranchAddress("chipid", chipid, &b_chipid);
    fChain->SetBranchAddress("nColumns", nColumns, &b_nColumns);
    fChain->SetBranchAddress("bcid", bcid, &b_bcid);

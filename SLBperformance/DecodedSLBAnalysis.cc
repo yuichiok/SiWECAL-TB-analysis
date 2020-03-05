@@ -48,7 +48,7 @@ void DecodedSLBAnalysis::SynchronizationStudies(TString outputname="testMonitori
 
     if(jentry % freq !=0 ) continue;
 
-    for(int islboard=0; islboard<n_slboards; islboard++) {
+    for(int ilayer=0; ilayer<n_slboards; ilayer++) {
       //channels starting retriggers
       for(int ichip=0; ichip<16; ichip++) {
 	
@@ -58,8 +58,8 @@ void DecodedSLBAnalysis::SynchronizationStudies(TString outputname="testMonitori
 	int isca_retrig=-1;
 	for(int isca=0; isca<15; isca++) {
 	 for(int ichn=0; ichn<64; ichn++) {
-	   if(gain_hit_high[islboard][ichip][isca][ichn]==1) {
-	     adc_bcid[islboard][ichip]->Fill(bcid[islboard][ichip][isca],charge_hiGain[islboard][ichip][isca][ichn]);
+	   if(gain_hit_high[ilayer][ichip][isca][ichn]==1) {
+	     adc_bcid[ilayer][ichip]->Fill(bcid[ilayer][ichip][isca],charge_hiGain[ilayer][ichip][isca][ichn]);
 	   }
 	 }
 	}
@@ -76,8 +76,8 @@ void DecodedSLBAnalysis::SynchronizationStudies(TString outputname="testMonitori
 
   for(int i=0; i<n_SLB; i++) {
     for(int j=0; j<16; j++) {
-      adc_bcid[i][j]->GetXaxis()->SetTitle(TString::Format("adc_bcid SLB_%i_chip%i",i,i));
-      adc_bcid[i][j]->GetYaxis()->SetTitle(TString::Format("adc_bcid SLB_%i_chip%i",i,j));
+      adc_bcid[i][j]->GetXaxis()->SetTitle(TString::Format("adc_bcid layer_%i_chip%i",i,i));
+      adc_bcid[i][j]->GetYaxis()->SetTitle(TString::Format("adc_bcid layer_%i_chip%i",i,j));
       adc_bcid[i][j]->Write();
     }
   } 
@@ -166,7 +166,7 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
 
     if(jentry % freq !=0 ) continue;
 
-    for(int islboard=0; islboard<n_slboards; islboard++) {
+    for(int ilayer=0; ilayer<n_slboards; ilayer++) {
       //channels starting retriggers
       for(int ichip=0; ichip<16; ichip++) {
 	
@@ -178,75 +178,75 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
 
 	  trigger=false;
 	  //first retrigger
-	  if(badbcid[islboard][ichip][isca]>2 && first_retrig==false) {
+	  if(badbcid[ilayer][ichip][isca]>2 && first_retrig==false) {
 	    first_retrig=true;
 	    for(int ichn=0; ichn<64; ichn++) {
-	     if(gain_hit_high[islboard][ichip][isca][ichn]==1) {
-	       hitmap_retrig_start_xy[islboard]->Fill(map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn]);
-	       hitmap_retrig_start_chipchn[islboard]->Fill(ichip,ichn);
+	     if(gain_hit_high[ilayer][ichip][isca][ichn]==1) {
+	       hitmap_retrig_start_xy[ilayer]->Fill(map_pointX[ilayer][ichip][ichn],map_pointY[ilayer][ichip][ichn]);
+	       hitmap_retrig_start_chipchn[ilayer]->Fill(ichip,ichn);
 	     }
 	    }
-	    retrig_start->Fill(islboard,ichip);
-	    lastsca_retrig_start[islboard]->Fill(ichip,isca);
+	    retrig_start->Fill(ilayer,ichip);
+	    lastsca_retrig_start[ilayer]->Fill(ichip,isca);
 	  }
 
 	  //all retriggers
-	  if(badbcid[islboard][ichip][isca]>2 && first_retrig==true) {
+	  if(badbcid[ilayer][ichip][isca]>2 && first_retrig==true) {
 	    for(int ichn=0; ichn<64; ichn++) {
-	     if(gain_hit_high[islboard][ichip][isca][ichn]==1) {
-	       hitmap_retrig_xy[islboard]->Fill(map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn]);
-	       hitmap_retrig_chipchn[islboard]->Fill(ichip,ichn);
+	     if(gain_hit_high[ilayer][ichip][isca][ichn]==1) {
+	       hitmap_retrig_xy[ilayer]->Fill(map_pointX[ilayer][ichip][ichn],map_pointY[ilayer][ichip][ichn]);
+	       hitmap_retrig_chipchn[ilayer]->Fill(ichip,ichn);
 	     }
 	    }
-	    retrig->Fill(islboard,ichip);
+	    retrig->Fill(ilayer,ichip);
 	    isca_retrig=isca;
 	  }
 
 	  //all triggers
-	  if(badbcid[islboard][ichip][isca]==0) {
+	  if(badbcid[ilayer][ichip][isca]==0) {
 	    for(int ichn=0; ichn<64; ichn++) {
-	     if(gain_hit_high[islboard][ichip][isca][ichn]==1) {
-	       hitmap_trig_xy[islboard]->Fill(map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn]);
-	       hitmap_trig_chipchn[islboard]->Fill(ichip,ichn);
+	     if(gain_hit_high[ilayer][ichip][isca][ichn]==1) {
+	       hitmap_trig_xy[ilayer]->Fill(map_pointX[ilayer][ichip][ichn],map_pointY[ilayer][ichip][ichn]);
+	       hitmap_trig_chipchn[ilayer]->Fill(ichip,ichn);
 	     }
 	    }
-	    trig->Fill(islboard,ichip);
+	    trig->Fill(ilayer,ichip);
 	    trigger=true;
 	    isca_trig=isca;
 	  }
 
 	  // search coincidences
 	  //-------------------------------------------------------
-	  for(int islboard2=0; islboard2<n_slboards; islboard2++) {
+	  for(int ilayer2=0; ilayer2<n_slboards; ilayer2++) {
 	    //channels starting retriggers
 	    for(int ichip2=0; ichip2<16; ichip2++) {
 	      bool first_retrig2=false;
 	      for(int isca2=0; isca2<15; isca2++) {
-		if(bcid[islboard2][ichip2][isca2]<0) continue;
-		bcid_correl[islboard][islboard2]->Fill(bcid[islboard][ichip][isca],bcid[islboard2][ichip2][isca2]);
-		  bcid_diff[islboard]->Fill(islboard2,bcid[islboard2][ichip2][isca2]-bcid[islboard][ichip][isca]);
+		if(bcid[ilayer2][ichip2][isca2]<0) continue;
+		bcid_correl[ilayer][ilayer2]->Fill(bcid[ilayer][ichip][isca],bcid[ilayer2][ichip2][isca2]);
+		  bcid_diff[ilayer]->Fill(ilayer2,bcid[ilayer2][ichip2][isca2]-bcid[ilayer][ichip][isca]);
 		  if(trigger==true) {	      
-		    if(islboard2!=islboard || ichip2!=ichip || isca2>isca)  {
+		    if(ilayer2!=ilayer || ichip2!=ichip || isca2>isca)  {
 		      //first retrigger
-		      if(badbcid[islboard2][ichip2][isca2]>2 && first_retrig2==false) {
+		      if(badbcid[ilayer2][ichip2][isca2]>2 && first_retrig2==false) {
 			first_retrig2=true;
-			bcid_diff_trig_retrig_start[islboard]->Fill(islboard2,bcid[islboard2][ichip2][isca2]-bcid[islboard][ichip][isca]);		      
+			bcid_diff_trig_retrig_start[ilayer]->Fill(ilayer2,bcid[ilayer2][ichip2][isca2]-bcid[ilayer][ichip][isca]);		      
 		      }
-		      if(badbcid[islboard2][ichip2][isca2]==0) {
-			bcid_diff_trig_trig[islboard]->Fill(islboard2,bcid[islboard2][ichip2][isca2]-bcid[islboard][ichip][isca]);
+		      if(badbcid[ilayer2][ichip2][isca2]==0) {
+			bcid_diff_trig_trig[ilayer]->Fill(ilayer2,bcid[ilayer2][ichip2][isca2]-bcid[ilayer][ichip][isca]);
 		      }
 		    }
 		  }//trig==true
 	      }//isca2
 	    }//ichip2
-	  }//islboard2
+	  }//ilayer2
 	    
       }//end isca
-	lastsca_trig[islboard]->Fill(ichip,isca_trig);
-	lastsca_retrig[islboard]->Fill(ichip,isca_retrig);
+	lastsca_trig[ilayer]->Fill(ichip,isca_trig);
+	lastsca_retrig[ilayer]->Fill(ichip,isca_retrig);
 	
     }//end chip
-  }// islboard
+  }// ilayer
   
 
   }
@@ -257,8 +257,8 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
 
  for(int i=0; i<n_SLB; i++)
    for(int j=0; j<n_SLB; j++) {
-     bcid_correl[i][j]->GetXaxis()->SetTitle(TString::Format("bcid SLB_%i",i));
-     bcid_correl[i][j]->GetYaxis()->SetTitle(TString::Format("bcid SLB_%i",j));
+     bcid_correl[i][j]->GetXaxis()->SetTitle(TString::Format("bcid layer_%i",i));
+     bcid_correl[i][j]->GetYaxis()->SetTitle(TString::Format("bcid layer_%i",j));
      bcid_correl[i][j]->Write();
    }
  
@@ -276,20 +276,20 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
     lastsca_retrig_start[i]->GetYaxis()->SetTitle("last SCA");
     lastsca_retrig_start[i]->Write();
 
-    bcid_diff_trig_trig[i]->SetTitle(TString::Format("correlations with SLB_%i triggers",i));
-    bcid_diff_trig_trig[i]->GetYaxis()->SetTitle(TString::Format("bcid_{trigger in SLB_%i}- bcid_{trigger in SLB_xaxis}",i));
+    bcid_diff_trig_trig[i]->SetTitle(TString::Format("correlations with layer_%i triggers",i));
+    bcid_diff_trig_trig[i]->GetYaxis()->SetTitle(TString::Format("bcid_{trigger in layer_%i}- bcid_{trigger in layer_xaxis}",i));
     bcid_diff_trig_trig[i]->GetXaxis()->SetTitle("SLB");
     // bcid_diff_trig_trig[i]->GetYaxis()->SetRangeUser(-100,100);
     bcid_diff_trig_trig[i]->Write();
 
-    bcid_diff_trig_retrig_start[i]->SetTitle(TString::Format("correlations with SLB_%i triggers",i));
-    bcid_diff_trig_retrig_start[i]->GetYaxis()->SetTitle(TString::Format("bcid_{trigger in SLB_%i}- bcid_{first REtrigger in SLB_xaxis}",i));
+    bcid_diff_trig_retrig_start[i]->SetTitle(TString::Format("correlations with layer_%i triggers",i));
+    bcid_diff_trig_retrig_start[i]->GetYaxis()->SetTitle(TString::Format("bcid_{trigger in layer_%i}- bcid_{first REtrigger in layer_xaxis}",i));
     bcid_diff_trig_retrig_start[i]->GetXaxis()->SetTitle("SLB");
     // bcid_diff_trig_retrig_start[i]->GetYaxis()->SetRangeUser(-100,100);
     bcid_diff_trig_retrig_start[i]->Write();
 
-    bcid_diff[i]->SetTitle(TString::Format("correlations with SLB_%i",i));
-    bcid_diff[i]->GetYaxis()->SetTitle(TString::Format("bcid_{all in SLB_%i}- bcid_{all in SLB_xaxis}",i));
+    bcid_diff[i]->SetTitle(TString::Format("correlations with layer_%i",i));
+    bcid_diff[i]->GetYaxis()->SetTitle(TString::Format("bcid_{all in layer_%i}- bcid_{all in layer_xaxis}",i));
     bcid_diff[i]->GetXaxis()->SetTitle("SLB");
     // bcid_diff_trig_retrig_start[i]->GetYaxis()->SetRangeUser(-100,100);
     bcid_diff[i]->Write();
@@ -324,48 +324,84 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
   retrig_start->Write();
   retrig->Write();
 
-
   TCanvas *c1 = new TCanvas("hitmaps_xy","hitmaps_xy",1800,900);
-  c1->Divide(3,n_SLB);
+  c1->Divide(4,4);
   for(int i=0; i<n_SLB; i++) {
-    c1->cd(i*n_SLB+1);
+    c1->cd(i+1);
     hitmap_trig_xy[i]->Draw("colz");
-    c1->cd(i*n_SLB+2);
-    hitmap_retrig_start_xy[i]->Draw("colz");
-    c1->cd(i*n_SLB+3);
-    hitmap_retrig_xy[i]->Draw("colz");
   }
-  
   c1->Write();
   c1->Modified();
   c1->Update();
   if(shifter==true) c1->WaitPrimitive();
 
-   TCanvas *c2 = new TCanvas("hitmaps_chipchn","hitmaps_chipchn",1800,900);
-  c2->Divide(3,n_SLB);
+  TCanvas *c1_ret = new TCanvas("retrigger_start_xy","retrigger_start_xy",1800,900);
+  c1_ret->Divide(4,4);
   for(int i=0; i<n_SLB; i++) {
-    c2->cd(i*n_SLB+1);
-    hitmap_trig_chipchn[i]->Draw("colz");
-    c2->cd(i*n_SLB+2);
-    hitmap_retrig_start_chipchn[i]->Draw("colz");
-    c2->cd(i*n_SLB+3);
-    hitmap_retrig_chipchn[i]->Draw("colz");
+    c1->cd(i+1);
+    hitmap_retrig_start_xy[i]->Draw("colz");
   }
-  
+  c1_ret->Write();
+  c1_ret->Modified();
+  c1_ret->Update();
+  if(shifter==true) c1_ret->WaitPrimitive();
+
+
+  TCanvas *c1_ret2 = new TCanvas("retrigger_xy","retrigger_xy",1800,900);
+  c1_ret2->Divide(4,4);
+  for(int i=0; i<n_SLB; i++) {
+    c1->cd(i+1);
+    hitmap_retrig_start_xy[i]->Draw("colz");
+  }
+  c1_ret2->Write();
+  c1_ret2->Modified();
+  c1_ret2->Update();
+  if(shifter==true) c1_ret2->WaitPrimitive();
+
+
+  TCanvas *c2 = new TCanvas("hitmaps_chipchn","hitmaps_chipchn",1800,900);
+  c2->Divide(4,4);
+  for(int i=0; i<n_SLB; i++) {
+    c2->cd(i+1);
+    hitmap_trig_chipchn[i]->Draw("colz");
+  }
   c2->Write();
   c2->Modified();
   c2->Update();
   if(shifter==true) c2->WaitPrimitive();
 
+  TCanvas *c2_ret = new TCanvas("retrigger_start_chipchn","retrigger_start_chipchn",1800,900);
+  c2_ret->Divide(4,4);
+  for(int i=0; i<n_SLB; i++) {
+    c2->cd(i+1);
+    hitmap_retrig_start_chipchn[i]->Draw("colz");
+  }
+  c2_ret->Write();
+  c2_ret->Modified();
+  c2_ret->Update();
+  if(shifter==true) c2_ret->WaitPrimitive();
+
+
+  TCanvas *c2_ret2 = new TCanvas("retrigger_chipchn","retrigger_chipchn",1800,900);
+  c2_ret2->Divide(4,4);
+  for(int i=0; i<n_SLB; i++) {
+    c2->cd(i+1);
+    hitmap_retrig_start_chipchn[i]->Draw("colz");
+  }
+  c2_ret2->Write();
+  c2_ret2->Modified();
+  c2_ret2->Update();
+  if(shifter==true) c2_ret2->WaitPrimitive();
+
 
   TCanvas *c1bis = new TCanvas("lastsca","lastsca",1800,900);
-  c1bis->Divide(3,n_SLB);
+  c1bis->Divide(n_SLB,3);
   for(int i=0; i<n_SLB; i++) {
-    c1bis->cd(i*n_SLB+1);
+    c1bis->cd(i+1);
     lastsca_trig[i]->Draw("colz");
-    c1bis->cd(i*n_SLB+2);
+    c1bis->cd(i+1+n_SLB);
     lastsca_retrig_start[i]->Draw("colz");
-    c1bis->cd(i*n_SLB+3);
+    c1bis->cd(i+1+2*n_SLB);
     lastsca_retrig[i]->Draw("colz");
   }
   
@@ -389,12 +425,8 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
   if(shifter==true) c3->WaitPrimitive();
 
 
-  TCanvas *c4 = new TCanvas("bcid_correl2","bcid_correl2",1800,900);
-  int ncanvas=n_SLB;
-  if(n_SLB % 2 ==0 ) ncanvas=int(n_SLB/2);
-  else ncanvas=int(n_SLB/2);
-     
-  c4->Divide(ncanvas+1,ncanvas+1);
+  TCanvas *c4 = new TCanvas("bcid_correl2","bcid_correl2",1800,900);    
+  c4->Divide(4,4);
   for(int i=0; i<n_SLB; i++) {
     c4->cd(i+1);
     bcid_diff_trig_trig[i]->GetYaxis()->SetRangeUser(-100,100);
@@ -407,7 +439,7 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
   if(shifter==true) c4->WaitPrimitive();
 
   TCanvas *c5 = new TCanvas("bcid_correl3","bcid_correl3",1800,900);
-  c5->Divide(int(n_SLB/2)+1,int(n_SLB/2)+1);
+  c5->Divide(4,4);
   for(int i=0; i<n_SLB; i++) {
     c5->cd(i+1);
     bcid_diff_trig_retrig_start[i]->GetYaxis()->SetRangeUser(-100,100);
@@ -424,18 +456,18 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
 }
 
 
-void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", int maxnhit=5)
+void DecodedSLBAnalysis::SignalAnalysis(int i_layer, TString outputname="", int maxnhit=5)
 {
 
-  TString slboard = TString::Format("_SLB_%i_",i_slboard);
-  if(outputname!="") slboard=slboard+outputname;
+  TString layer = TString::Format("_layer_%i_",i_layer);
+  if(outputname!="") layer=layer+outputname;
 
   //Read the list of pedestals (this information contains, implicitily, the masked channels information )
-  ReadPedestals("results_pedestal/Pedestal"+slboard+".txt");
+  ReadPedestals("results_pedestal/Pedestal"+layer+".txt");
 
   
-  ofstream fout_mip("results_mipcalibration/MIP"+slboard+".txt",ios::out);
-  fout_mip<<"#mip results "<<slboard<<endl;
+  ofstream fout_mip("results_mipcalibration/MIP"+layer+".txt",ios::out);
+  fout_mip<<"#mip results "<<layer<<endl;
   fout_mip<<"#chip channel mpv empv widthmpv chi2ndf nentries"<<endl;
 
   // --------------
@@ -453,12 +485,12 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
     std::vector<TH1F*>  tmps_n_histo;
 	
     for(int ichn=0;ichn<65;ichn++) {
-      TString histo_title=TString::Format("charge_%s_chip%i_chn%i",slboard.Data(),ichip,ichn);
-      if(ichn==64) histo_title=TString::Format("charge_%s_chip%i",slboard.Data(),ichip);
+      TString histo_title=TString::Format("charge_chip%i_chn%i",ichip,ichn);
+      if(ichn==64) histo_title=TString::Format("charge_chip%i",ichip);
       TH1F *chn_mip = new TH1F(histo_title,histo_title,4197,-100.5,4096.5);
       tmpmip_histo.push_back(chn_mip);
-      TString s_n_title=TString::Format("s_n_%s_chip%i_chn%i",slboard.Data(),ichip,ichn);
-      if(ichn==64) s_n_title=TString::Format("s_n_%s_chip%i",slboard.Data(),ichip);
+      TString s_n_title=TString::Format("s_n_chip%i_chn%i",ichip,ichn);
+      if(ichn==64) s_n_title=TString::Format("s_n_chip%i",ichip);
       TH1F *chn_s_n = new TH1F(s_n_title,s_n_title,4197,-100.5,4096.5);
       tmps_n_histo.push_back(chn_s_n);
     }      
@@ -467,36 +499,36 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
   }
 
   //maps 
-  TH2F* MPV_2d = new TH2F("MPV_2d"+slboard,"MPV_2d"+slboard,32,-90,90,32,-90,90);
-  TH2F* eMPV_2d = new TH2F("eMPV_2d"+slboard,"eMPV_2d"+slboard,32,-90,90,32,-90,90);
-  TH2F* widthMPV_2d = new TH2F("widthMPV_2d"+slboard,"widthMPV_2d"+slboard,32,-90,90,32,-90,90);
-  TH2F* chi2NDF_2d = new TH2F("chi2NDF_2d"+slboard,"chi2NDF_2d"+slboard,32,-90,90,32,-90,90);
-  TH2F* mipEntries_2d = new TH2F("mipEntries_2d"+slboard,"mipEntries_2d"+slboard,32,-90,90,32,-90,90);
-  TH2F* S_N_2d = new TH2F("S_N_2d"+slboard,"S_N_2d"+slboard,32,-90,90,32,-90,90);
+  TH2F* MPV_2d = new TH2F("MPV_2d","MPV_2d",32,-90,90,32,-90,90);
+  TH2F* eMPV_2d = new TH2F("eMPV_2d","eMPV_2d",32,-90,90,32,-90,90);
+  TH2F* widthMPV_2d = new TH2F("widthMPV_2d","widthMPV_2d",32,-90,90,32,-90,90);
+  TH2F* chi2NDF_2d = new TH2F("chi2NDF_2d","chi2NDF_2d",32,-90,90,32,-90,90);
+  TH2F* mipEntries_2d = new TH2F("mipEntries_2d","mipEntries_2d",32,-90,90,32,-90,90);
+  TH2F* S_N_2d = new TH2F("S_N_2d","S_N_2d",32,-90,90,32,-90,90);
 
-  TH2F* MPV_chipchn = new TH2F("MPV_chipchn"+slboard,"MPV_chipchn"+slboard,64,-0.5,63.5,16,-0.5,15.5);
-  TH2F* eMPV_chipchn = new TH2F("eMPV_chipchn"+slboard,"eMPV_chipchn"+slboard,64,-0.5,63.5,16,-0.5,15.5);
-  TH2F* widthMPV_chipchn = new TH2F("widthMPV_chipchn"+slboard,"widthMPV_chipchn"+slboard,64,-0.5,63.5,16,-0.5,15.5);
-  TH2F* mipEntries_chipchn = new TH2F("mipEntries_chipchn"+slboard,"mipEntries_chipchn"+slboard,64,-0.5,63.5,16,-0.5,15.5);
+  TH2F* MPV_chipchn = new TH2F("MPV_chipchn","MPV_chipchn",64,-0.5,63.5,16,-0.5,15.5);
+  TH2F* eMPV_chipchn = new TH2F("eMPV_chipchn","eMPV_chipchn",64,-0.5,63.5,16,-0.5,15.5);
+  TH2F* widthMPV_chipchn = new TH2F("widthMPV_chipchn","widthMPV_chipchn",64,-0.5,63.5,16,-0.5,15.5);
+  TH2F* mipEntries_chipchn = new TH2F("mipEntries_chipchn","mipEntries_chipchn",64,-0.5,63.5,16,-0.5,15.5);
 
-  TH2F* correl_S_N_vs_nhits = new TH2F("correl_S_N_vs_nhits"+slboard,"correl_S_N_vs_nhits"+slboard,80,0.25,40.25,20,1225,51225);
-  TH2F* correl_S_N_vs_mpv = new TH2F("correl_S_N_vs_mpv"+slboard,"correl_S_N_vs_mpv"+slboard,80,0.25,40.25,40,40.5,80.5);
-  TH2F* correl_mpv_vs_nhits = new TH2F("correl_mpv_vs_nhits"+slboard,"correl_mpv_vs_nhits"+slboard,40,40.5,80.5,20,1225,51225);
-  TH2F* correl_widthped_vs_nhits = new TH2F("correl_widthped_vs_nhits"+slboard,"correl_widthped_vs_nhits"+slboard,50,2.05,7.05,20,1225,51225);
-  TH2F* correl_S_N_vs_widthmpv = new TH2F("correl_S_N_vs_widthmpv"+slboard,"correl_S_N_vs_widthmpv"+slboard,80,0.25,40.25,50,0.5,50.5);
-  TH2F* correl_S_N_vs_widthped = new TH2F("correl_S_N_vs_widthped"+slboard,"correl_S_N_vs_widthped"+slboard,80,0.25,40.25,50,2.05,7.05);
+  TH2F* correl_S_N_vs_nhits = new TH2F("correl_S_N_vs_nhits","correl_S_N_vs_nhits",80,0.25,40.25,20,1225,51225);
+  TH2F* correl_S_N_vs_mpv = new TH2F("correl_S_N_vs_mpv","correl_S_N_vs_mpv",80,0.25,40.25,40,40.5,80.5);
+  TH2F* correl_mpv_vs_nhits = new TH2F("correl_mpv_vs_nhits","correl_mpv_vs_nhits",40,40.5,80.5,20,1225,51225);
+  TH2F* correl_widthped_vs_nhits = new TH2F("correl_widthped_vs_nhits","correl_widthped_vs_nhits",50,2.05,7.05,20,1225,51225);
+  TH2F* correl_S_N_vs_widthmpv = new TH2F("correl_S_N_vs_widthmpv","correl_S_N_vs_widthmpv",80,0.25,40.25,50,0.5,50.5);
+  TH2F* correl_S_N_vs_widthped = new TH2F("correl_S_N_vs_widthped","correl_S_N_vs_widthped",80,0.25,40.25,50,2.05,7.05);
 
 
   //summary plots
   TH1F* MPV_chip[16];
   TH1F* S_N_chip[16];
   for(int ichip=0; ichip<16; ichip++) {
-    MPV_chip[ichip]= new TH1F(TString::Format("MPV_%s_chip%i",slboard.Data(),ichip),TString::Format("MPV_%s_chip%i",slboard.Data(),ichip),2000,0.05,200.05);
-    S_N_chip[ichip]= new TH1F(TString::Format("S_N_%s_chip%i",slboard.Data(),ichip),TString::Format("S_N_%s_chip%i",slboard.Data(),ichip),500,0.05,50.05);
+    MPV_chip[ichip]= new TH1F(TString::Format("MPV_chip%i",ichip),TString::Format("MPV_chip%i",ichip),2000,0.05,200.05);
+    S_N_chip[ichip]= new TH1F(TString::Format("S_N_chip%i",ichip),TString::Format("S_N_chip%i",ichip),500,0.05,50.05);
   }
 
-  TH1F* MPV_slab= new TH1F(TString::Format("MPV_%s",slboard.Data()),TString::Format("MPV_%s",slboard.Data()),2000,0.05,200.05);
-  TH1F* S_N_slab= new TH1F(TString::Format("S_N_%s",slboard.Data()),TString::Format("S_N_%s",slboard.Data()),1000,0.05,100.05);
+  TH1F* MPV_slab= new TH1F("MPV","MPV",2000,0.05,200.05);
+  TH1F* S_N_slab= new TH1F("S_N","S_N",1000,0.05,100.05);
  
   // -----------------------------------------------------------------------------------------------------
   // Signal readout
@@ -507,8 +539,8 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
     nb = fChain->GetEntry(jentry);   nbytes += nb;
     if ( jentry > 1000 && jentry % 1000 ==0 ) std::cout << "Progress: " << 100.*jentry/nentries <<" %"<<endl;
 
-    for(int islboard=0; islboard<n_slboards; islboard++) {
-      if(islboard != i_slboard) continue;
+    for(int ilayer=0; ilayer<n_slboards; ilayer++) {
+      if(ilayer != i_layer) continue;
       for(int ichip=0; ichip<16; ichip++) {
 	for(int ichn=0; ichn<64; ichn++) {
 	  for(int isca=0; isca<15; isca++) {
@@ -516,32 +548,32 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
 	    if( ped_mean.at(ichip).at(ichn).at(isca)>50 &&  ped_width.at(ichip).at(ichn).at(isca)>0 ) {
 
 	      bool selection=false;
-	      if(charge_hiGain[islboard][ichip][isca][ichn]>0 && gain_hit_high[islboard][ichip][isca][ichn]==1 && badbcid[islboard][ichip][isca]==0 && nhits[islboard][ichip][isca]<maxnhit+1 ) {
-		if ( (slboard=="_SLB_0" || slboard=="_SLB_1" || slboard=="_SLB_2" || slboard=="_SLB_3")  &&
-		     bcid[islboard][ichip][isca]>50 && (bcid[islboard][ichip][isca]<890 ||bcid[islboard][ichip][isca]>930)  ) selection=true;
+	      if(charge_hiGain[ilayer][ichip][isca][ichn]>0 && gain_hit_high[ilayer][ichip][isca][ichn]==1 && badbcid[ilayer][ichip][isca]==0 && nhits[ilayer][ichip][isca]<maxnhit+1 ) {
+		//	if ( (layer=="_layer_0" || layer=="_layer_1" || layer=="_layer_2" || layer=="_layer_3")  &&
+		//	     bcid[ilayer][ichip][isca]>50 && (bcid[ilayer][ichip][isca]<890 ||bcid[ilayer][ichip][isca]>930)  ) selection=true;
 
-		if( (slboard!="_SLB_0" && slboard!="_SLB_1" && slboard!="_SLB_2" && slboard!="_SLB_3")  &&
-		    bcid[islboard][ichip][isca]>0 ) selection=true;
+		//	if( (layer!="_layer_0" && layer!="_layer_1" && layer!="_layer_2" && layer!="_layer_3")  &&
+		if(bcid[ilayer][ichip][isca]>15 ) selection=true;
 	      }
 
 	      if(selection==true) {
-		mip_histo.at(ichip).at(ichn)->Fill(charge_hiGain[islboard][ichip][isca][ichn]-ped_mean.at(ichip).at(ichn).at(isca));
-		s_n_histo.at(ichip).at(ichn)->Fill( (charge_hiGain[islboard][ichip][isca][ichn]-ped_mean.at(ichip).at(ichn).at(isca)) / ped_width.at(ichip).at(ichn).at(isca));
+		mip_histo.at(ichip).at(ichn)->Fill(charge_hiGain[ilayer][ichip][isca][ichn]-ped_mean.at(ichip).at(ichn).at(isca));
+		s_n_histo.at(ichip).at(ichn)->Fill( (charge_hiGain[ilayer][ichip][isca][ichn]-ped_mean.at(ichip).at(ichn).at(isca)) / ped_width.at(ichip).at(ichn).at(isca));
 
-		mip_histo.at(ichip).at(64)->Fill(charge_hiGain[islboard][ichip][isca][ichn]-ped_mean.at(ichip).at(ichn).at(isca));
-		s_n_histo.at(ichip).at(64)->Fill( (charge_hiGain[islboard][ichip][isca][ichn]-ped_mean.at(ichip).at(ichn).at(isca)) / ped_width.at(ichip).at(ichn).at(isca));
+		mip_histo.at(ichip).at(64)->Fill(charge_hiGain[ilayer][ichip][isca][ichn]-ped_mean.at(ichip).at(ichn).at(isca));
+		s_n_histo.at(ichip).at(64)->Fill( (charge_hiGain[ilayer][ichip][isca][ichn]-ped_mean.at(ichip).at(ichn).at(isca)) / ped_width.at(ichip).at(ichn).at(isca));
 	      }
 	    }
     
 	  }//ichn
 	}//sca
       }//ichip
-    }//islboard
+    }//ilayer
   }
 
   // -----------------------------------------------------------------------------------------------------   
   // Signal analysis
-  TFile *signalfile_summary = new TFile("results_mipcalibration/Signal_summary"+slboard+".root" , "RECREATE");
+  TFile *signalfile_summary = new TFile("results_mipcalibration/Signal_summary"+layer+".root" , "RECREATE");
   signalfile_summary->cd();
   TDirectory *cdhisto = signalfile_summary->mkdir("histograms");
 
@@ -588,11 +620,11 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
 	double mipentries=mip_histo.at(ichip).at(ichn)->GetEntries();
 
 	if(ichn<64) {
-	  MPV_2d->Fill(map_pointX[i_slboard][ichip][ichn],map_pointY[i_slboard][ichip][ichn],mpv);
-	  eMPV_2d->Fill(map_pointX[i_slboard][ichip][ichn],map_pointY[i_slboard][ichip][ichn],empv);
-	  widthMPV_2d->Fill(map_pointX[i_slboard][ichip][ichn],map_pointY[i_slboard][ichip][ichn],wmpv);
-	  chi2NDF_2d->Fill(map_pointX[i_slboard][ichip][ichn],map_pointY[i_slboard][ichip][ichn],chi2ndf);
-	  mipEntries_2d->Fill(map_pointX[i_slboard][ichip][ichn],map_pointY[i_slboard][ichip][ichn],mipentries);
+	  MPV_2d->Fill(map_pointX[i_layer][ichip][ichn],map_pointY[i_layer][ichip][ichn],mpv);
+	  eMPV_2d->Fill(map_pointX[i_layer][ichip][ichn],map_pointY[i_layer][ichip][ichn],empv);
+	  widthMPV_2d->Fill(map_pointX[i_layer][ichip][ichn],map_pointY[i_layer][ichip][ichn],wmpv);
+	  chi2NDF_2d->Fill(map_pointX[i_layer][ichip][ichn],map_pointY[i_layer][ichip][ichn],chi2ndf);
+	  mipEntries_2d->Fill(map_pointX[i_layer][ichip][ichn],map_pointY[i_layer][ichip][ichn],mipentries);
 	  MPV_chip[ichip]->Fill(mpv);
 	  MPV_slab->Fill(mpv);
 	  
@@ -615,7 +647,7 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
         double s_n_temp=fitsnr_temp2->GetParameter(1);
 
 	if(ichn<64) {
-	  S_N_2d->Fill(map_pointX[i_slboard][ichip][ichn],map_pointY[i_slboard][ichip][ichn],s_n_temp);
+	  S_N_2d->Fill(map_pointX[i_layer][ichip][ichn],map_pointY[i_layer][ichip][ichn],s_n_temp);
 	  S_N_chip[ichip]->Fill(s_n_temp);
 	  S_N_slab->Fill(s_n_temp);
 	
@@ -643,32 +675,32 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
 
   signalfile_summary->cd();
 
-  TCanvas *canvas_maps = new TCanvas(TString::Format("Signal_%s",slboard.Data()),TString::Format("Signal_%s",slboard.Data()),1200,800);
+  TCanvas *canvas_maps = new TCanvas("Signal","Signal",1200,800);
   canvas_maps->Divide(2,2);
-  TCanvas *canvas_summary_mip = new TCanvas(TString::Format("mip_perchip_%s",slboard.Data()),TString::Format("mip_perchip_%s",slboard.Data()),1200,800);
+  TCanvas *canvas_summary_mip = new TCanvas("mip_perchip","mip_perchip",1200,800);
   canvas_summary_mip->Divide(4,4);
-  TCanvas *canvas_summary_s_n = new TCanvas(TString::Format("s_n_perchip_%s",slboard.Data()),TString::Format("s_n_perchip_%s",slboard.Data()),1200,1200);
+  TCanvas *canvas_summary_s_n = new TCanvas("s_n_perchip","s_n_perchip",1200,1200);
   canvas_summary_s_n->Divide(4,4); 
-  TCanvas *canvas_summary = new TCanvas(TString::Format("summary_%s",slboard.Data()),TString::Format("summary_%s",slboard.Data()),1200,600);
+  TCanvas *canvas_summary = new TCanvas("summary","summary",1200,600);
   canvas_summary->Divide(2,1);
 
-  TCanvas *canvas_correlations_S_N = new TCanvas(TString::Format("correlations_S_N_%s",slboard.Data()),TString::Format("correlations_S_N_%s",slboard.Data()),800,900);
+  TCanvas *canvas_correlations_S_N = new TCanvas("correlations_S_N","correlations_S_N",800,900);
   canvas_correlations_S_N->Divide(2,3);
 
   
   // SUMMARY MAPS
-  eMPV_2d->SetTitle("eMIP[ADC] map, "+slboard);
+  eMPV_2d->SetTitle("eMIP[ADC] map");
   eMPV_2d->GetXaxis()->SetTitle("x");
   eMPV_2d->GetYaxis()->SetTitle("y");
   eMPV_2d->Write();
-  widthMPV_2d->SetTitle("widthMIP[ADC] map, "+slboard);
+  widthMPV_2d->SetTitle("widthMIP[ADC] map");
   widthMPV_2d->GetXaxis()->SetTitle("x");
   widthMPV_2d->GetYaxis()->SetTitle("y");
   widthMPV_2d->Write();
 
   canvas_maps->cd(1);
   MPV_2d->SetStats(kFALSE);
-  MPV_2d->SetTitle("MIP[ADC] map, "+slboard);
+  MPV_2d->SetTitle("MIP[ADC] map");
   MPV_2d->GetXaxis()->SetTitle("x");
   MPV_2d->GetYaxis()->SetTitle("y");
   //MPV_2d->GetZaxis()->SetRangeUser(0,100);
@@ -677,7 +709,7 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
   canvas_maps->cd(3);
   gPad->SetLogz();
   chi2NDF_2d->SetStats(kFALSE);
-  chi2NDF_2d->SetTitle("chi2NDF map, "+slboard);
+  chi2NDF_2d->SetTitle("chi2NDF map");
   chi2NDF_2d->GetXaxis()->SetTitle("x");
   chi2NDF_2d->GetYaxis()->SetTitle("y");
   //chi2NDF_2d->GetZaxis()->SetRangeUser(0,20);
@@ -686,33 +718,33 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
   canvas_maps->cd(4);
   gPad->SetLogz();
   mipEntries_2d->SetStats(kFALSE);
-  mipEntries_2d->SetTitle("Hits map, "+slboard);
+  mipEntries_2d->SetTitle("Hits map");
   mipEntries_2d->GetXaxis()->SetTitle("x");
   mipEntries_2d->GetYaxis()->SetTitle("y");
   mipEntries_2d->Draw("colz");
   mipEntries_2d->Write();
   canvas_maps->cd(2);
   S_N_2d->SetStats(kFALSE);
-  S_N_2d->SetTitle("S / N map, "+slboard);
+  S_N_2d->SetTitle("S / N map");
   S_N_2d->GetXaxis()->SetTitle("x");
   S_N_2d->GetYaxis()->SetTitle("y");
   //S_N_2d->GetZaxis()->SetRangeUser(0,50);
   S_N_2d->Draw("colz");
   S_N_2d->Write();
 
-  MPV_chipchn->SetTitle("MIP[ADC] map, "+slboard);
+  MPV_chipchn->SetTitle("MIP[ADC] map");
   MPV_chipchn->GetXaxis()->SetTitle("chip");
   MPV_chipchn->GetYaxis()->SetTitle("chn");
   MPV_chipchn->Write();
-  widthMPV_chipchn->SetTitle("widthMIP[ADC] map, "+slboard);
+  widthMPV_chipchn->SetTitle("widthMIP[ADC] map");
   widthMPV_chipchn->GetXaxis()->SetTitle("chip");
   widthMPV_chipchn->GetYaxis()->SetTitle("chn");
   widthMPV_chipchn->Write();
-  eMPV_chipchn->SetTitle("eMIP[ADC] map, "+slboard);
+  eMPV_chipchn->SetTitle("eMIP[ADC] map");
   eMPV_chipchn->GetXaxis()->SetTitle("chip");
   eMPV_chipchn->GetYaxis()->SetTitle("chn");
   eMPV_chipchn->Write();
-  mipEntries_chipchn->SetTitle("widthMIP[ADC] map, "+slboard);
+  mipEntries_chipchn->SetTitle("widthMIP[ADC] map");
   mipEntries_chipchn->GetXaxis()->SetTitle("chip");
   mipEntries_chipchn->GetYaxis()->SetTitle("chn");
   mipEntries_chipchn->Write();
@@ -721,10 +753,10 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
   
   // SUMMARY histograms (per chip)  
   for(int ichip=0; ichip<16; ichip ++) {
-    TString slboard0=slboard+TString::Format("_chip%i",ichip);
+    TString subtitle=TString::Format("chip%i",ichip);
     canvas_summary_mip->cd(ichip+1);
     MPV_chip[ichip]->SetStats(kFALSE);
-    MPV_chip[ichip]->SetTitle("MIP[ADC]_map, "+slboard0);
+    MPV_chip[ichip]->SetTitle("MIP[ADC]_map, "+subtitle);
     MPV_chip[ichip]->GetXaxis()->SetTitle("x");
     MPV_chip[ichip]->GetYaxis()->SetTitle("y");
     MPV_chip[ichip]->GetZaxis()->SetRangeUser(0,100);
@@ -733,10 +765,10 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
     MPV_chip[ichip]->Write();
   }
   for(int ichip=0; ichip<16; ichip ++) {
-    TString slboard0=slboard+TString::Format("_chip%i",ichip);
+    TString subtitle=TString::Format("chip%i",ichip);
     canvas_summary_s_n->cd(ichip+1);
     S_N_chip[ichip]->SetStats(kFALSE);
-    S_N_chip[ichip]->SetTitle("S_N_map, "+slboard0);
+    S_N_chip[ichip]->SetTitle("S_N_map, "+subtitle);
     S_N_chip[ichip]->GetXaxis()->SetTitle("x");
     S_N_chip[ichip]->GetYaxis()->SetTitle("y");
     S_N_chip[ichip]->GetZaxis()->SetRangeUser(0,100);
@@ -747,24 +779,24 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
 
   // SUMMARY histograms (per chip)  
   canvas_summary->cd(1);
-  MPV_slab->SetTitle("MIP, "+slboard);
+  MPV_slab->SetTitle("MIP, "+layer);
   MPV_slab->GetXaxis()->SetTitle("MIP[ADC] (ped. subtr)");
   MPV_slab->GetYaxis()->SetTitle("fitted channels");
   MPV_slab->Draw("h");
   MPV_slab->Write();
   canvas_summary->cd(2);
-  S_N_slab->SetTitle("S / N, "+slboard);
+  S_N_slab->SetTitle("S / N, "+layer);
   S_N_slab->GetXaxis()->SetTitle("no units");
   S_N_slab->GetYaxis()->SetTitle("fitted channels");
   S_N_slab->Draw("h");
   S_N_slab->Write();
-  canvas_summary->Print("results_mipcalibration/Signal_summary"+slboard+".png");
+  canvas_summary->Print("results_mipcalibration/Signal_summary"+layer+".png");
 
 
   //Correlations 
   canvas_correlations_S_N->cd(1);
   correl_S_N_vs_nhits->SetStats(kFALSE);
-  correl_S_N_vs_nhits->SetTitle(slboard);
+  correl_S_N_vs_nhits->SetTitle(layer);
   correl_S_N_vs_nhits->GetXaxis()->SetTitle("S / N");
   correl_S_N_vs_nhits->GetYaxis()->SetTitle("nhits");
 
@@ -773,7 +805,7 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
 
   canvas_correlations_S_N->cd(2);
   correl_S_N_vs_mpv->SetStats(kFALSE);
-  correl_S_N_vs_mpv->SetTitle(slboard);
+  correl_S_N_vs_mpv->SetTitle(layer);
   correl_S_N_vs_mpv->GetXaxis()->SetTitle("S / N");
   correl_S_N_vs_mpv->GetYaxis()->SetTitle("MIP[ADC] (ped. subst.)");
 
@@ -783,7 +815,7 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
 
   canvas_correlations_S_N->cd(3); 
   correl_S_N_vs_widthmpv->SetStats(kFALSE);
-  correl_S_N_vs_widthmpv->SetTitle(slboard);
+  correl_S_N_vs_widthmpv->SetTitle(layer);
   correl_S_N_vs_widthmpv->GetXaxis()->SetTitle("S / N");
   correl_S_N_vs_widthmpv->GetYaxis()->SetTitle("MIP width [ADC]");
 
@@ -793,7 +825,7 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
 
   canvas_correlations_S_N->cd(4);
   correl_S_N_vs_widthped->SetStats(kFALSE);
-  correl_S_N_vs_widthped->SetTitle(slboard);
+  correl_S_N_vs_widthped->SetTitle(layer);
   correl_S_N_vs_widthped->GetXaxis()->SetTitle("S / N");
   correl_S_N_vs_widthped->GetYaxis()->SetTitle("Ped. width [ADC]");
 
@@ -802,7 +834,7 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
 
   canvas_correlations_S_N->cd(5);
   correl_mpv_vs_nhits->SetStats(kFALSE);
-  correl_mpv_vs_nhits->SetTitle(slboard);
+  correl_mpv_vs_nhits->SetTitle(layer);
   correl_mpv_vs_nhits->GetXaxis()->SetTitle("MIP [ADC] (ped. subs.)");
   correl_mpv_vs_nhits->GetYaxis()->SetTitle("nhits");
 
@@ -811,7 +843,7 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
 
   canvas_correlations_S_N->cd(6);
   correl_widthped_vs_nhits->SetStats(kFALSE);
-  correl_widthped_vs_nhits->SetTitle(slboard);
+  correl_widthped_vs_nhits->SetTitle(layer);
   correl_widthped_vs_nhits->GetXaxis()->SetTitle("Ped. width [ADC]");
   correl_widthped_vs_nhits->GetYaxis()->SetTitle("nhits");
 
@@ -918,21 +950,21 @@ void DecodedSLBAnalysis::ReadPedestals(TString filename)
 
 }
 
-void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", int maxnhit=5)
+void DecodedSLBAnalysis::PedestalAnalysis(int i_layer,TString outputname="", int maxnhit=5)
 {
 
   //Read the channel/chip -- x/y mapping
   //  ReadMap(map_filename);
 
-  TString slboard = TString::Format("_SLB_%i_",i_slboard);
-  if(outputname!="") slboard=slboard+outputname;
+  TString layer = TString::Format("_layer_%i_",i_layer);
+  if(outputname!="") layer=layer+outputname;
   
   //Read the list of masked channels
-  ReadMasked("maskedchannels/masked"+slboard+".txt");
+  ReadMasked("maskedchannels/masked"+layer+".txt");
   
-  ofstream fout_ped("results_pedestal/Pedestal"+slboard+".txt",ios::out);
+  ofstream fout_ped("results_pedestal/Pedestal"+layer+".txt",ios::out);
 
-  fout_ped<<"#pedestal results (fit to a gaussian) remove channels/sca with two pedestals peaks from the analysis : "<<slboard<<endl;
+  fout_ped<<"#pedestal results (fit to a gaussian) remove channels/sca with two pedestals peaks from the analysis : "<<layer<<endl;
   fout_ped<<"#chip channel ped0 eped0 widthped0 ped1 eped1 widthped1... ped14 eped14 widhtped14 (all SCA)"<<endl;
 
   
@@ -981,8 +1013,8 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 
   std::vector<TH1F*> pedestal_chip ;
   std::vector<TH1F*> pedestal_tagged_chip ;
-  std::vector<TH1F*> pedestal_slboard_chip ;
-  std::vector<TH1F*> pedestal_tagged_slboard_chip ;
+  std::vector<TH1F*> pedestal_layer_chip ;
+  std::vector<TH1F*> pedestal_tagged_layer_chip ;
 
 
   for(int ichip=0; ichip<16; ichip++) {
@@ -992,11 +1024,11 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
     TH1F *ped_tagged_chip = new TH1F(TString::Format("ped_tagged_chip%i",ichip),TString::Format("ped_tagged_chip%i",ichip),1000,0.5,1000.5);
     pedestal_tagged_chip.push_back(ped_tagged_chip);
 
-    TH1F *ped_slboard_chip = new TH1F(TString::Format("ped_slboard_chip%i",ichip),TString::Format("ped_slboard_chip%i",ichip),1002,-500,500);
-    pedestal_slboard_chip.push_back(ped_slboard_chip);
+    TH1F *ped_layer_chip = new TH1F(TString::Format("ped_layer_chip%i",ichip),TString::Format("ped_layer_chip%i",ichip),1002,-500,500);
+    pedestal_layer_chip.push_back(ped_layer_chip);
     
-    TH1F *ped_tagged_slboard_chip = new TH1F(TString::Format("ped_tagged_slboard_chip%i",ichip),TString::Format("ped_tagged_slboard_chip%i",ichip),1002,-500,500);
-    pedestal_tagged_slboard_chip.push_back(ped_tagged_slboard_chip);
+    TH1F *ped_tagged_layer_chip = new TH1F(TString::Format("ped_tagged_layer_chip%i",ichip),TString::Format("ped_tagged_layer_chip%i",ichip),1002,-500,500);
+    pedestal_tagged_layer_chip.push_back(ped_tagged_layer_chip);
 
     std::vector<std::vector<TH1F*> >pedtemp_sca;
     std::vector<std::vector<TH1F*> >pedtemp_sca_tagged;
@@ -1032,8 +1064,8 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 
     if ( jentry > 1000 && jentry % 1000 ==0 ) std::cout << "Progress: " << 100.*jentry/nentries <<" %"<<endl;
 
-    for(int islboard=0; islboard<n_slboards; islboard++) {
-      if(islboard != i_slboard) continue;
+    for(int ilayer=0; ilayer<n_slboards; ilayer++) {
+      if(ilayer != i_layer) continue;
     
       for(int ichip=0; ichip<16; ichip++) {
 
@@ -1043,7 +1075,7 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 	  if(global == true) {
 	    int ntaggedasbad = 0;
 	    for(int ichn=0; ichn<64; ichn++) {
-	      if(gain_hit_high[islboard][ichip][isca][ichn]==1 && charge_hiGain[islboard][ichip][isca][ichn]<15 && charge_hiGain[islboard][ichip][isca][ichn]>-1 ) 
+	      if(gain_hit_high[ilayer][ichip][isca][ichn]==1 && charge_hiGain[ilayer][ichip][isca][ichn]<15 && charge_hiGain[ilayer][ichip][isca][ichn]>-1 ) 
 		ntaggedasbad++;
 	    }//ichn 
 	    if ( ntaggedasbad > 0) gooddata=false;
@@ -1054,18 +1086,18 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 	    //good events
 	    bool selection=false;
 
-	    if( charge_hiGain[islboard][ichip][isca][ichn]>30 && badbcid[islboard][ichip][isca]==0 && nhits[islboard][ichip][isca]<maxnhit+1 && bcid[islboard][ichip][isca]>50) selection=true;
+	    if( charge_hiGain[ilayer][ichip][isca][ichn]>30 && badbcid[ilayer][ichip][isca]==0 && nhits[ilayer][ichip][isca]<maxnhit+1 && bcid[ilayer][ichip][isca]>50) selection=true;
 		  
-	    // if(masked[islboard][ichip][ichn]==1) selection=false;
-	    if(gain_hit_high[islboard][ichip][isca][ichn]==0 && selection==true && gooddata==true)
-	      ped_sca.at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[islboard][ichip][isca][ichn]);
+	    // if(masked[ilayer][ichip][ichn]==1) selection=false;
+	    if(gain_hit_high[ilayer][ichip][isca][ichn]==0 && selection==true && gooddata==true)
+	      ped_sca.at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[ilayer][ichip][isca][ichn]);
 
 	    //bad events
 	    //	  selection=false;
-	    //	  if( ( badbcid[islboard][ichip][isca]!=0  || nhits[islboard][ichip][isca]>maxnhit || gooddata==false) ) selection=true;
-	    //	  if(masked[islboard][ichip][ichn]==1) selection=false;
-	    if(gain_hit_high[islboard][ichip][isca][ichn]==0 && (selection==false || gooddata==false) )
-	      ped_sca_tagged.at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[islboard][ichip][isca][ichn]);
+	    //	  if( ( badbcid[ilayer][ichip][isca]!=0  || nhits[ilayer][ichip][isca]>maxnhit || gooddata==false) ) selection=true;
+	    //	  if(masked[ilayer][ichip][ichn]==1) selection=false;
+	    if(gain_hit_high[ilayer][ichip][isca][ichn]==0 && (selection==false || gooddata==false) )
+	      ped_sca_tagged.at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[ilayer][ichip][isca][ichn]);
 
 	  }
            
@@ -1073,11 +1105,11 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 
       }//ichip 
 
-    }// islboard 
+    }// ilayer 
   }  // end first loop analysis to fill pedestal historgrams
 
 
-  TFile *pedfile = new TFile("results_pedestal/Pedestal"+slboard+".root" , "RECREATE");
+  TFile *pedfile = new TFile("results_pedestal/Pedestal"+layer+".root" , "RECREATE");
   pedfile->cd();
 
   //initialize pedestal vectors
@@ -1114,8 +1146,8 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 	ped_sca_tagged.at(ichip).at(ichn).at(isca)->SetName(TString::Format("ped_tagged_chip%i_chn%i_sca%i",ichip,ichn,isca));
 	ped_sca_tagged.at(ichip).at(ichn).at(isca)->Write();
 
-	pedestal_entries_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , ped_sca.at(ichip).at(ichn).at(isca)->GetEntries());
-	pedestal_tagged_entries_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , ped_sca_tagged.at(ichip).at(ichn).at(isca)->GetEntries());
+	pedestal_entries_map[isca] -> Fill( map_pointX[i_layer][ichip][ichn] , map_pointY[i_layer][ichip][ichn] , ped_sca.at(ichip).at(ichn).at(isca)->GetEntries());
+	pedestal_tagged_entries_map[isca] -> Fill( map_pointX[i_layer][ichip][ichn] , map_pointY[i_layer][ichip][ichn] , ped_sca_tagged.at(ichip).at(ichn).at(isca)->GetEntries());
 
 	
 	ped_mean.at(ichip).at(ichn).push_back(0.);
@@ -1125,7 +1157,7 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 	if(ped_sca.at(ichip).at(ichn).at(isca)->GetEntries()> 50 ){ //max_entries/2 ) {
 	  TSpectrum *s = new TSpectrum();
 	  int npeaks = s->Search(ped_sca.at(ichip).at(ichn).at(isca),2,"",0.8); 
-	  pedestal_npeaks_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , npeaks);
+	  pedestal_npeaks_map[isca] -> Fill( map_pointX[i_layer][ichip][ichn] , map_pointY[i_layer][ichip][ichn] , npeaks);
 	  if(npeaks > 0) {
             Double_t *mean_peak=s->GetPositionX();
             Double_t *mean_high=s->GetPositionY();
@@ -1140,7 +1172,7 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
               }
             }
             for(int ipeak=0; ipeak<npeaks; ipeak ++) {
-	      if(ipeak != npeak_max) pedestal_slboard_chip.at(ichip)->Fill( mean_peak[npeak_max] - mean_peak[ipeak]);
+	      if(ipeak != npeak_max) pedestal_layer_chip.at(ichip)->Fill( mean_peak[npeak_max] - mean_peak[ipeak]);
 	    }
 	    if(npeaks ==1 ) {
 	      Double_t *mean_peak=s->GetPositionX();
@@ -1157,17 +1189,17 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 	      ped_error.at(ichip).at(ichn).at(isca)=f1->GetParError(1);
 	      ped_width.at(ichip).at(ichn).at(isca)=f1->GetParameter(2);
 	      pedestal_chip.at(ichip)->Fill(f1->GetParameter(1));
-	      pedestal_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , f1->GetParameter(1));
-	      pedestal_width_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , f1->GetParameter(2));
-	      pedestal_error_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , f1->GetParError(1));
-	      pedestal_chi2ndf_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , f1->GetChisquare() / f1->GetNDF());
+	      pedestal_map[isca] -> Fill( map_pointX[i_layer][ichip][ichn] , map_pointY[i_layer][ichip][ichn] , f1->GetParameter(1));
+	      pedestal_width_map[isca] -> Fill( map_pointX[i_layer][ichip][ichn] , map_pointY[i_layer][ichip][ichn] , f1->GetParameter(2));
+	      pedestal_error_map[isca] -> Fill( map_pointX[i_layer][ichip][ichn] , map_pointY[i_layer][ichip][ichn] , f1->GetParError(1));
+	      pedestal_chi2ndf_map[isca] -> Fill( map_pointX[i_layer][ichip][ichn] , map_pointY[i_layer][ichip][ichn] , f1->GetChisquare() / f1->GetNDF());
 	      
 	    } else {
 	      fout_ped<<ped_sca.at(ichip).at(ichn).at(isca)->GetMean()<< " " << ped_sca.at(ichip).at(ichn).at(isca)->GetRMS()/sqrt(ped_sca.at(ichip).at(ichn).at(isca)->GetEntries())<<" "<<ped_sca.at(ichip).at(ichn).at(isca)->GetRMS()<<" ";
-	      pedestal_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , ped_sca.at(ichip).at(ichn).at(isca)->GetMean());
-	      pedestal_width_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , ped_sca.at(ichip).at(ichn).at(isca)->GetRMS() );
-	      pedestal_error_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , ped_sca.at(ichip).at(ichn).at(isca)->GetRMS()/sqrt(ped_sca.at(ichip).at(ichn).at(isca)->GetMean()));
-	      pedestal_chi2ndf_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , 0);
+	      pedestal_map[isca] -> Fill( map_pointX[i_layer][ichip][ichn] , map_pointY[i_layer][ichip][ichn] , ped_sca.at(ichip).at(ichn).at(isca)->GetMean());
+	      pedestal_width_map[isca] -> Fill( map_pointX[i_layer][ichip][ichn] , map_pointY[i_layer][ichip][ichn] , ped_sca.at(ichip).at(ichn).at(isca)->GetRMS() );
+	      pedestal_error_map[isca] -> Fill( map_pointX[i_layer][ichip][ichn] , map_pointY[i_layer][ichip][ichn] , ped_sca.at(ichip).at(ichn).at(isca)->GetRMS()/sqrt(ped_sca.at(ichip).at(ichn).at(isca)->GetMean()));
+	      pedestal_chi2ndf_map[isca] -> Fill( map_pointX[i_layer][ichip][ichn] , map_pointY[i_layer][ichip][ichn] , 0);
 	    }
 	    
 	  } else fout_ped<<0<< " " << 0<<" "<<0<<" ";
@@ -1181,7 +1213,7 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 	if(ped_sca_tagged.at(ichip).at(ichn).at(isca)->GetEntries()> 250) {
 	  TSpectrum *s = new TSpectrum();
 	  int npeaks = s->Search(ped_sca_tagged.at(ichip).at(ichn).at(isca),2,"",0.2);
-	  pedestal_tagged_npeaks_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , npeaks);
+	  pedestal_tagged_npeaks_map[isca] -> Fill( map_pointX[i_layer][ichip][ichn] , map_pointY[i_layer][ichip][ichn] , npeaks);
 
 	  if(npeaks > 0) {
 
@@ -1200,7 +1232,7 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 	    }
 
 	    for(int ipeak=0; ipeak<npeaks; ipeak ++) {
-              if(ipeak != npeak_max) pedestal_tagged_slboard_chip.at(ichip)->Fill( mean_peak[npeak_max] - mean_peak[ipeak] );
+              if(ipeak != npeak_max) pedestal_tagged_layer_chip.at(ichip)->Fill( mean_peak[npeak_max] - mean_peak[ipeak] );
             }
 
 	    if(mean_peak_higher>0) {
@@ -1216,10 +1248,10 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 		ped_sca_tagged.at(ichip).at(ichn).at(isca)->Fit("f1","RQ");
 		pedestal_tagged_chip.at(ichip)->Fill(f1->GetParameter(1));
 		
-		pedestal_tagged_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , f1->GetParameter(1));
-		pedestal_tagged_width_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , f1->GetParameter(2));
-		pedestal_tagged_error_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , f1->GetParError(1));
-		pedestal_tagged_chi2ndf_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , f1->GetChisquare() / f1->GetNDF());
+		pedestal_tagged_map[isca] -> Fill( map_pointX[i_layer][ichip][ichn] , map_pointY[i_layer][ichip][ichn] , f1->GetParameter(1));
+		pedestal_tagged_width_map[isca] -> Fill( map_pointX[i_layer][ichip][ichn] , map_pointY[i_layer][ichip][ichn] , f1->GetParameter(2));
+		pedestal_tagged_error_map[isca] -> Fill( map_pointX[i_layer][ichip][ichn] , map_pointY[i_layer][ichip][ichn] , f1->GetParError(1));
+		pedestal_tagged_chi2ndf_map[isca] -> Fill( map_pointX[i_layer][ichip][ichn] , map_pointY[i_layer][ichip][ichn] , f1->GetChisquare() / f1->GetNDF());
 	      }
 	    }
 	  }
@@ -1233,17 +1265,17 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 
   pedfile->Close();
 
-  TFile *pedfile_summary = new TFile("results_pedestal/Pedestal_summary"+slboard+".root" , "RECREATE");
+  TFile *pedfile_summary = new TFile("results_pedestal/Pedestal_summary"+layer+".root" , "RECREATE");
   pedfile_summary->cd();
   
   // good pedestal events (not tagged events)
-  TCanvas *canvas_pedestal_map = new TCanvas("pedestal_map"+slboard, "pedestal_map"+slboard,1200,1200);
+  TCanvas *canvas_pedestal_map = new TCanvas("pedestal_map", "pedestal_map",1200,1200);
   canvas_pedestal_map->Divide(4,4);
   for(int isca=0; isca<15; isca ++) {
-    TString slboard0=slboard+TString::Format("_sca%i",isca);
+    TString subtitle=TString::Format("sca%i",isca);
     canvas_pedestal_map->cd(isca+1);
     pedestal_map[isca]->SetStats(kFALSE);
-    pedestal_map[isca]->SetTitle("pedestal_map, "+slboard0);
+    pedestal_map[isca]->SetTitle("pedestal_map, "+subtitle);
     pedestal_map[isca]->GetXaxis()->SetTitle("x");
     pedestal_map[isca]->GetYaxis()->SetTitle("y");
     pedestal_map[isca]->GetZaxis()->SetRangeUser(200,400);
@@ -1253,13 +1285,13 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
     pedestal_map[isca]->Write();
   }
 
-  TCanvas *canvas_pedestal_width_map = new TCanvas("pedestal_width_map"+slboard, "pedestal_width_map"+slboard,1200,1200);
+  TCanvas *canvas_pedestal_width_map = new TCanvas("pedestal_width_map", "pedestal_width_map",1200,1200);
   canvas_pedestal_width_map->Divide(4,4);
   for(int isca=0; isca<15; isca ++) {
-    TString slboard0=slboard+TString::Format("_sca%i",isca);
+    TString subtitle=TString::Format("sca%i",isca);
     canvas_pedestal_width_map->cd(isca+1);
     pedestal_width_map[isca]->SetStats(kFALSE);
-    pedestal_width_map[isca]->SetTitle("pedestal_width_map, "+slboard0);
+    pedestal_width_map[isca]->SetTitle("pedestal_width_map, "+subtitle);
     pedestal_width_map[isca]->GetXaxis()->SetTitle("x");
     pedestal_width_map[isca]->GetYaxis()->SetTitle("y");
     pedestal_width_map[isca]->GetZaxis()->SetRangeUser(1,20);
@@ -1268,13 +1300,13 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
     pedestal_width_map[isca]->Write();
   }
 
-  TCanvas *canvas_pedestal_error_map = new TCanvas("pedestal_error_map"+slboard, "pedestal_error_map"+slboard,1200,1200);
+  TCanvas *canvas_pedestal_error_map = new TCanvas("pedestal_error_map", "pedestal_error_map",1200,1200);
   canvas_pedestal_error_map->Divide(4,4);
   for(int isca=0; isca<15; isca ++) {
-    TString slboard0=slboard+TString::Format("_sca%i",isca);
+    TString subtitle=TString::Format("sca%i",isca);
     canvas_pedestal_error_map->cd(isca+1);
     pedestal_error_map[isca]->SetStats(kFALSE);
-    pedestal_error_map[isca]->SetTitle("pedestal_error_map, "+slboard0);
+    pedestal_error_map[isca]->SetTitle("pedestal_error_map, "+subtitle);
     pedestal_error_map[isca]->GetXaxis()->SetTitle("x");
     pedestal_error_map[isca]->GetYaxis()->SetTitle("y");
     //noise.at(ichip)->SetLineColor(2);
@@ -1282,13 +1314,13 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
     pedestal_error_map[isca]->Write();
   }
 
-  TCanvas *canvas_pedestal_npeaks_map = new TCanvas("pedestal_npeaks_map"+slboard, "pedestal_npeaks_map"+slboard,1200,1200);
+  TCanvas *canvas_pedestal_npeaks_map = new TCanvas("pedestal_npeaks_map", "pedestal_npeaks_map",1200,1200);
   canvas_pedestal_npeaks_map->Divide(4,4);
   for(int isca=0; isca<15; isca ++) {
-    TString slboard0=slboard+TString::Format("_sca%i",isca);
+    TString subtitle=TString::Format("sca%i",isca);
     canvas_pedestal_npeaks_map->cd(isca+1);
     pedestal_npeaks_map[isca]->SetStats(kFALSE);
-    pedestal_npeaks_map[isca]->SetTitle("pedestal_npeaks_map, "+slboard0);
+    pedestal_npeaks_map[isca]->SetTitle("pedestal_npeaks_map, "+subtitle);
     pedestal_npeaks_map[isca]->GetXaxis()->SetTitle("x");
     pedestal_npeaks_map[isca]->GetYaxis()->SetTitle("y");
     pedestal_npeaks_map[isca]->GetZaxis()->SetRangeUser(0.5,4.5);
@@ -1297,13 +1329,13 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
     pedestal_npeaks_map[isca]->Write();
   }
 
-  TCanvas *canvas_pedestal_chi2ndf_map = new TCanvas("pedestal_chi2ndf_map"+slboard, "pedestal_chi2ndf_map"+slboard,1200,1200);
+  TCanvas *canvas_pedestal_chi2ndf_map = new TCanvas("pedestal_chi2ndf_map", "pedestal_chi2ndf_map",1200,1200);
   canvas_pedestal_chi2ndf_map->Divide(4,4);
   for(int isca=0; isca<15; isca ++) {
-    TString slboard0=slboard+TString::Format("_sca%i",isca);
+    TString subtitle=TString::Format("sca%i",isca);
     canvas_pedestal_chi2ndf_map->cd(isca+1);
     pedestal_chi2ndf_map[isca]->SetStats(kFALSE);
-    pedestal_chi2ndf_map[isca]->SetTitle("pedestal_chi2ndf_map, "+slboard0);
+    pedestal_chi2ndf_map[isca]->SetTitle("pedestal_chi2ndf_map, "+subtitle);
     pedestal_chi2ndf_map[isca]->GetXaxis()->SetTitle("x");
     pedestal_chi2ndf_map[isca]->GetYaxis()->SetTitle("y");
     //noise.at(ichip)->SetLineColor(2);
@@ -1311,13 +1343,13 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
     pedestal_chi2ndf_map[isca]->Write();
   }
 
-  TCanvas *canvas_pedestal_entries_map = new TCanvas("pedestal_entries_map"+slboard, "pedestal_entries_map"+slboard,1200,1200);
+  TCanvas *canvas_pedestal_entries_map = new TCanvas("pedestal_entries_map", "pedestal_entries_map",1200,1200);
   canvas_pedestal_entries_map->Divide(4,4);
   for(int isca=0; isca<15; isca ++) {
-    TString slboard0=slboard+TString::Format("_sca%i",isca);
+    TString subtitle=TString::Format("_sca%i",isca);
     canvas_pedestal_entries_map->cd(isca+1);
     pedestal_entries_map[isca]->SetStats(kFALSE);
-    pedestal_entries_map[isca]->SetTitle("pedestal_entries_map, "+slboard0);
+    pedestal_entries_map[isca]->SetTitle("pedestal_entries_map, "+subtitle);
     pedestal_entries_map[isca]->GetXaxis()->SetTitle("x");
     pedestal_entries_map[isca]->GetYaxis()->SetTitle("y");
     //noise.at(ichip)->SetLineColor(2);
@@ -1334,7 +1366,7 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
   canvas_pedestal_chi2ndf_map->Write();
 
    
-  TCanvas *canvas_pedestal_pedestal = new TCanvas("pedestal_average"+slboard, "pedestal_average"+slboard,1200,1200);
+  TCanvas *canvas_pedestal_pedestal = new TCanvas("pedestal_average", "pedestal_average",1200,1200);
   canvas_pedestal_pedestal->Divide(4,4);
   for(int ichip=0; ichip<16; ichip++) {
     canvas_pedestal_pedestal->cd(ichip+1);
@@ -1350,29 +1382,29 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 
   canvas_pedestal_pedestal->Write();
 
-  TCanvas *canvas_pedestal_slboard = new TCanvas("pedestal_slboard"+slboard, "pedestal_slboard"+slboard,1200,1200);
-  canvas_pedestal_slboard->Divide(4,4);
+  TCanvas *canvas_pedestal_layer = new TCanvas("pedestal_layer", "pedestal_layer",1200,1200);
+  canvas_pedestal_layer->Divide(4,4);
   for(int ichip=0; ichip<16; ichip++) {
-    canvas_pedestal_slboard->cd(ichip+1);
+    canvas_pedestal_layer->cd(ichip+1);
 
-    pedestal_slboard_chip.at(ichip)->GetXaxis()->SetRangeUser(-100,100);
-    pedestal_slboard_chip.at(ichip)->SetTitle(TString::Format("Pedestal slboard, chip-%i",ichip));
-    pedestal_slboard_chip.at(ichip)->GetXaxis()->SetTitle("ADC");
-    pedestal_slboard_chip.at(ichip)->GetYaxis()->SetTitle("#");
-    pedestal_slboard_chip.at(ichip)->Draw("hs");
+    pedestal_layer_chip.at(ichip)->GetXaxis()->SetRangeUser(-100,100);
+    pedestal_layer_chip.at(ichip)->SetTitle(TString::Format("Pedestal layer, chip-%i",ichip));
+    pedestal_layer_chip.at(ichip)->GetXaxis()->SetTitle("ADC");
+    pedestal_layer_chip.at(ichip)->GetYaxis()->SetTitle("#");
+    pedestal_layer_chip.at(ichip)->Draw("hs");
   }
 
-  canvas_pedestal_slboard->Write();
+  canvas_pedestal_layer->Write();
 
 
   // Tagged events
-  TCanvas *canvas_pedestal_tagged_map = new TCanvas("pedestal_tagged_map"+slboard, "pedestal_tagged_map"+slboard,1200,1200);
+  TCanvas *canvas_pedestal_tagged_map = new TCanvas("pedestal_tagged_map", "pedestal_tagged_map",1200,1200);
   canvas_pedestal_tagged_map->Divide(4,4);
   for(int isca=0; isca<15; isca ++) {
-    TString slboard0=slboard+TString::Format("_sca%i",isca);
+    TString subtitle=layer+TString::Format("_sca%i",isca);
     canvas_pedestal_tagged_map->cd(isca+1);
     pedestal_tagged_map[isca]->SetStats(kFALSE);
-    pedestal_tagged_map[isca]->SetTitle("pedestal_tagged_map, "+slboard0);
+    pedestal_tagged_map[isca]->SetTitle("pedestal_tagged_map, "+subtitle);
     pedestal_tagged_map[isca]->GetXaxis()->SetTitle("x");
     pedestal_tagged_map[isca]->GetYaxis()->SetTitle("y");
     pedestal_tagged_map[isca]->GetZaxis()->SetRangeUser(200,400);
@@ -1382,13 +1414,13 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
     pedestal_tagged_map[isca]->Write();
   }
 
-  TCanvas *canvas_pedestal_tagged_width_map = new TCanvas("pedestal_tagged_width_map"+slboard, "pedestal_tagged_width_map"+slboard,1200,1200);
+  TCanvas *canvas_pedestal_tagged_width_map = new TCanvas("pedestal_tagged_width_map", "pedestal_tagged_width_map",1200,1200);
   canvas_pedestal_tagged_width_map->Divide(4,4);
   for(int isca=0; isca<15; isca ++) {
-    TString slboard0=slboard+TString::Format("_sca%i",isca);
+    TString subtitle=TString::Format("sca%i",isca);
     canvas_pedestal_tagged_width_map->cd(isca+1);
     pedestal_tagged_width_map[isca]->SetStats(kFALSE);
-    pedestal_tagged_width_map[isca]->SetTitle("pedestal_tagged_width_map, "+slboard0);
+    pedestal_tagged_width_map[isca]->SetTitle("pedestal_tagged_width_map, "+subtitle);
     pedestal_tagged_width_map[isca]->GetXaxis()->SetTitle("x");
     pedestal_tagged_width_map[isca]->GetYaxis()->SetTitle("y");
     pedestal_tagged_width_map[isca]->GetZaxis()->SetRangeUser(0,7);
@@ -1397,13 +1429,13 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
     pedestal_tagged_width_map[isca]->Write();
   }
 
-  TCanvas *canvas_pedestal_tagged_error_map = new TCanvas("pedestal_tagged_error_map"+slboard, "pedestal_tagged_error_map"+slboard,1200,1200);
+  TCanvas *canvas_pedestal_tagged_error_map = new TCanvas("pedestal_tagged_error_map", "pedestal_tagged_error_map",1200,1200);
   canvas_pedestal_tagged_error_map->Divide(4,4);
   for(int isca=0; isca<15; isca ++) {
-    TString slboard0=slboard+TString::Format("_sca%i",isca);
+    TString subtitle=TString::Format("sca%i",isca);
     canvas_pedestal_tagged_error_map->cd(isca+1);
     pedestal_tagged_error_map[isca]->SetStats(kFALSE);
-    pedestal_tagged_error_map[isca]->SetTitle("pedestal_tagged_error_map, "+slboard0);
+    pedestal_tagged_error_map[isca]->SetTitle("pedestal_tagged_error_map, "+subtitle);
     pedestal_tagged_error_map[isca]->GetXaxis()->SetTitle("x");
     pedestal_tagged_error_map[isca]->GetYaxis()->SetTitle("y");
     //noise.at(ichip)->SetLineColor(2);
@@ -1411,13 +1443,13 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
     pedestal_tagged_error_map[isca]->Write();
   }
 
-  TCanvas *canvas_pedestal_tagged_npeaks_map = new TCanvas("pedestal_tagged_npeaks_map"+slboard, "pedestal_tagged_npeaks_map"+slboard,1200,1200);
+  TCanvas *canvas_pedestal_tagged_npeaks_map = new TCanvas("pedestal_tagged_npeaks_map", "pedestal_tagged_npeaks_map",1200,1200);
   canvas_pedestal_tagged_npeaks_map->Divide(4,4);
   for(int isca=0; isca<15; isca ++) {
-    TString slboard0=slboard+TString::Format("_sca%i",isca);
+    TString subtitle=TString::Format("sca%i",isca);
     canvas_pedestal_tagged_npeaks_map->cd(isca+1);
     pedestal_tagged_npeaks_map[isca]->SetStats(kFALSE);
-    pedestal_tagged_npeaks_map[isca]->SetTitle("pedestal_tagged_npeaks_map, "+slboard0);
+    pedestal_tagged_npeaks_map[isca]->SetTitle("pedestal_tagged_npeaks_map, "+subtitle);
     pedestal_tagged_npeaks_map[isca]->GetXaxis()->SetTitle("x");
     pedestal_tagged_npeaks_map[isca]->GetYaxis()->SetTitle("y");
     pedestal_tagged_npeaks_map[isca]->GetZaxis()->SetRangeUser(0.5,4.5);
@@ -1426,13 +1458,13 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
     pedestal_tagged_npeaks_map[isca]->Write();
   }
 
-  TCanvas *canvas_pedestal_tagged_chi2ndf_map = new TCanvas("pedestal_tagged_chi2ndf_map"+slboard, "pedestal_tagged_chi2ndf_map"+slboard,1200,1200);
+  TCanvas *canvas_pedestal_tagged_chi2ndf_map = new TCanvas("pedestal_tagged_chi2ndf_map", "pedestal_tagged_chi2ndf_map",1200,1200);
   canvas_pedestal_tagged_chi2ndf_map->Divide(4,4);
   for(int isca=0; isca<15; isca ++) {
-    TString slboard0=slboard+TString::Format("_sca%i",isca);
+    TString subtitle=TString::Format("sca%i",isca);
     canvas_pedestal_tagged_chi2ndf_map->cd(isca+1);
     pedestal_tagged_chi2ndf_map[isca]->SetStats(kFALSE);
-    pedestal_tagged_chi2ndf_map[isca]->SetTitle("pedestal_tagged_chi2ndf_map, "+slboard0);
+    pedestal_tagged_chi2ndf_map[isca]->SetTitle("pedestal_tagged_chi2ndf_map, "+subtitle);
     pedestal_tagged_chi2ndf_map[isca]->GetXaxis()->SetTitle("x");
     pedestal_tagged_chi2ndf_map[isca]->GetYaxis()->SetTitle("y");
     //noise.at(ichip)->SetLineColor(2);
@@ -1440,13 +1472,13 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
     pedestal_tagged_chi2ndf_map[isca]->Write();
   }
 
-  TCanvas *canvas_pedestal_tagged_entries_map = new TCanvas("pedestal_tagged_entries_map"+slboard, "pedestal_tagged_entries_map"+slboard,1200,1200);
+  TCanvas *canvas_pedestal_tagged_entries_map = new TCanvas("pedestal_tagged_entries_map", "pedestal_tagged_entries_map",1200,1200);
   canvas_pedestal_tagged_entries_map->Divide(4,4);
   for(int isca=0; isca<15; isca ++) {
-    TString slboard0=slboard+TString::Format("_sca%i",isca);
+    TString subtitle=TString::Format("sca%i",isca);
     canvas_pedestal_tagged_entries_map->cd(isca+1);
     pedestal_tagged_entries_map[isca]->SetStats(kFALSE);
-    pedestal_tagged_entries_map[isca]->SetTitle("pedestal_tagged_entries_map, "+slboard0);
+    pedestal_tagged_entries_map[isca]->SetTitle("pedestal_tagged_entries_map, "+subtitle);
     pedestal_tagged_entries_map[isca]->GetXaxis()->SetTitle("x");
     pedestal_tagged_entries_map[isca]->GetYaxis()->SetTitle("y");
     //noise.at(ichip)->SetLineColor(2);
@@ -1463,7 +1495,7 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
   canvas_pedestal_tagged_chi2ndf_map->Write();
 
    
-  TCanvas *canvas_pedestal_tagged_pedestal = new TCanvas("pedestal_tagged_average"+slboard, "pedestal_tagged_average"+slboard,1200,1200);
+  TCanvas *canvas_pedestal_tagged_pedestal = new TCanvas("pedestal_tagged_average", "pedestal_tagged_average",1200,1200);
   canvas_pedestal_tagged_pedestal->Divide(4,4);
   for(int ichip=0; ichip<16; ichip++) {
     canvas_pedestal_tagged_pedestal->cd(ichip+1);
@@ -1477,19 +1509,19 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
   canvas_pedestal_tagged_pedestal->Write();
 
 
-  TCanvas *canvas_pedestal_tagged_slboard = new TCanvas("pedestal_tagged_slboard"+slboard, "pedestal_tagged_slboard"+slboard,1200,1200);
-  canvas_pedestal_tagged_slboard->Divide(4,4);
+  TCanvas *canvas_pedestal_tagged_layer = new TCanvas("pedestal_tagged_layer","pedestal_tagged_layer",1200,1200);
+  canvas_pedestal_tagged_layer->Divide(4,4);
   for(int ichip=0; ichip<16; ichip++) {
-    canvas_pedestal_tagged_slboard->cd(ichip+1);
+    canvas_pedestal_tagged_layer->cd(ichip+1);
 
-    pedestal_tagged_slboard_chip.at(ichip)->GetXaxis()->SetRangeUser(-100,100);
-    pedestal_tagged_slboard_chip.at(ichip)->SetTitle(TString::Format("Pedestal slboard, chip-%i",ichip));
-    pedestal_tagged_slboard_chip.at(ichip)->GetXaxis()->SetTitle("ADC");
-    pedestal_tagged_slboard_chip.at(ichip)->GetYaxis()->SetTitle("#");
-    pedestal_tagged_slboard_chip.at(ichip)->Draw("hs");
+    pedestal_tagged_layer_chip.at(ichip)->GetXaxis()->SetRangeUser(-100,100);
+    pedestal_tagged_layer_chip.at(ichip)->SetTitle(TString::Format("Pedestal layer, chip-%i",ichip));
+    pedestal_tagged_layer_chip.at(ichip)->GetXaxis()->SetTitle("ADC");
+    pedestal_tagged_layer_chip.at(ichip)->GetYaxis()->SetTitle("#");
+    pedestal_tagged_layer_chip.at(ichip)->Draw("hs");
   }
 
-  canvas_pedestal_tagged_slboard->Write();
+  canvas_pedestal_tagged_layer->Write();
 
   pedfile_summary->Close();
 
@@ -1497,36 +1529,36 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 
 }
  
-void DecodedSLBAnalysis::Retriggers(int i_slboard, TString outputname="",int maxnhit=10)
+void DecodedSLBAnalysis::Retriggers(int i_layer, TString outputname="",int maxnhit=10)
 {
 
   //function that reads a root file and check which channels have or not signal (hit bit ==1).
   //should be used for root files that contain a full position scan, in order to provide meaninful list of masked channels.
  
-  TString slboard = TString::Format("_SLB_%i_",i_slboard);
-  if(outputname!="") slboard=slboard+outputname;
+  TString layer = TString::Format("_layer_%i_",i_layer);
+  if(outputname!="") layer=layer+outputname;
   if (fChain == 0) return;
   Long64_t nentries = fChain->GetEntriesFast();
 
   //summary
-  TH2F* h_total_planeE = new TH2F("total_planeE"+slboard,"total_planeE"+slboard,16,-0.5,15.5,15,-0.5,14.5);
-  TH2F* h_total_negE = new TH2F("total_negE"+slboard,"total_negE"+slboard,16,-0.5,15.5,15,-0.5,14.5);
-  TH2F* h_total_negE_nohit = new TH2F("total_negE_nohit"+slboard,"total_negE_nohit"+slboard,16,-0.5,15.5,15,-0.5,14.5);
-  TH2F* h_total_burst = new TH2F("total_burst"+slboard,"total_burst"+slboard,16,-0.5,15.5,15,-0.5,14.5);
-  TH2F* h_total_retrig = new TH2F("total_retrig"+slboard,"total_retrig"+slboard,16,-0.5,15.5,15,-0.5,14.5);
-  TH2F* h_total_retrig_trains = new TH2F("total_retrig_trains"+slboard,"total_retrig_trains"+slboard,16,-0.5,15.5,15,-0.5,14.5);
-  TH2F* h_total_trig = new TH2F("total_trig"+slboard,"total_trig"+slboard,16,-0.5,15.5,15,-0.5,14.5);
+  TH2F* h_total_planeE = new TH2F("total_planeE","total_planeE",16,-0.5,15.5,15,-0.5,14.5);
+  TH2F* h_total_negE = new TH2F("total_negE","total_negE",16,-0.5,15.5,15,-0.5,14.5);
+  TH2F* h_total_negE_nohit = new TH2F("total_negE_nohit","total_negE_nohit",16,-0.5,15.5,15,-0.5,14.5);
+  TH2F* h_total_burst = new TH2F("total_burst","total_burst",16,-0.5,15.5,15,-0.5,14.5);
+  TH2F* h_total_retrig = new TH2F("total_retrig","total_retrig",16,-0.5,15.5,15,-0.5,14.5);
+  TH2F* h_total_retrig_trains = new TH2F("total_retrig_trains","total_retrig_trains",16,-0.5,15.5,15,-0.5,14.5);
+  TH2F* h_total_trig = new TH2F("total_trig","total_trig",16,-0.5,15.5,15,-0.5,14.5);
 
-  TH1F* h_signal = new TH1F("signal"+slboard,"signal"+slboard,4000,50.5,4050.5);
-  TH2F* h_trig = new TH2F("trig"+slboard,"trig"+slboard,16,-0.5,15.5,64,-0.5,63.5);
-  TH2F* h_trig_xy = new TH2F("trig_xy"+slboard,"trig_xy"+slboard,32,-90,90,32,-90,90);
+  TH1F* h_signal = new TH1F("signal","signal",4000,50.5,4050.5);
+  TH2F* h_trig = new TH2F("trig","trig",16,-0.5,15.5,64,-0.5,63.5);
+  TH2F* h_trig_xy = new TH2F("trig_xy","trig_xy",32,-90,90,32,-90,90);
   
-  TH1F* h_bad = new TH1F("bad"+slboard,"bad"+slboard,4000,50.5,4050.5);
+  TH1F* h_bad = new TH1F("bad","bad",4000,50.5,4050.5);
 
-  TH2F* h_first_retriggering = new TH2F("first_retriggering"+slboard,"first_retriggering"+slboard,16,-0.5,15.5,64,-0.5,63.5);
-  TH2F* h_all_retriggering = new TH2F("all_retriggering"+slboard,"all_retriggering"+slboard,16,-0.5,15.5,64,-0.5,63.5);
-  TH2F* h_first_retriggering_xy = new TH2F("first_retriggering_xy"+slboard,"first_retriggering_xy"+slboard,32,-90,90,32,-90,90);
-  TH2F* h_all_retriggering_xy = new TH2F("all_retriggering_xy"+slboard,"all_retriggering_xy"+slboard,32,-90,90,32,-90,90);
+  TH2F* h_first_retriggering = new TH2F("first_retriggering","first_retriggering",16,-0.5,15.5,64,-0.5,63.5);
+  TH2F* h_all_retriggering = new TH2F("all_retriggering","all_retriggering",16,-0.5,15.5,64,-0.5,63.5);
+  TH2F* h_first_retriggering_xy = new TH2F("first_retriggering_xy","first_retriggering_xy",32,-90,90,32,-90,90);
+  TH2F* h_all_retriggering_xy = new TH2F("all_retriggering_xy","all_retriggering_xy",32,-90,90,32,-90,90);
 
   TH2F* h_dist_sca15[16];
   for(int ichip=0; ichip<16; ichip++) h_dist_sca15[ichip] = new TH2F(TString::Format("h_dist_sca15_chip%i",ichip),TString::Format("h_dist_sca15_chip%i",ichip),16,-0.5,15.5,401,-200.5,200.5);
@@ -1547,8 +1579,8 @@ void DecodedSLBAnalysis::Retriggers(int i_slboard, TString outputname="",int max
 
     if ( jentry > 1000 && jentry % 1000 ==0 ) std::cout << "Progress: " << 100.*jentry/nentries <<" %"<<endl;
 
-    for(int islboard=0; islboard<n_slboards; islboard++) {
-      if(islboard != i_slboard) continue;
+    for(int ilayer=0; ilayer<n_slboards; ilayer++) {
+      if(ilayer != i_layer) continue;
       
       for(int ichip=0; ichip<16; ichip++) {
 
@@ -1557,9 +1589,9 @@ void DecodedSLBAnalysis::Retriggers(int i_slboard, TString outputname="",int max
 	for(int isca=0; isca<15; isca++) {
 	  bool retrig=false;
 	  bool burst=false;
-	  if(bcid[islboard][ichip][isca]<0) continue;
+	  if(bcid[ilayer][ichip][isca]<0) continue;
 	
-	  if(badbcid[islboard][ichip][isca]>2 && bcid[islboard][ichip][isca]>50 ) {
+	  if(badbcid[ilayer][ichip][isca]>2 && bcid[ilayer][ichip][isca]>50 ) {
 	    retrig=true;
 	    if(first_retrig==false) {
 	      first_retrig=true;
@@ -1568,7 +1600,7 @@ void DecodedSLBAnalysis::Retriggers(int i_slboard, TString outputname="",int max
 	    h_total_retrig->Fill(ichip,isca);
 
 	  }
-	  if(bcid[islboard][ichip][isca]<50  ) {
+	  if(bcid[ilayer][ichip][isca]<50  ) {
 	    burst=true;
 	    h_total_burst->Fill(ichip,isca);
 	  }
@@ -1577,9 +1609,9 @@ void DecodedSLBAnalysis::Retriggers(int i_slboard, TString outputname="",int max
 	  int hits_negative=0;
 	  int nohits_negative=0;
 	  for(int ichn=0;ichn<64;ichn++) {
-	    if(gain_hit_high[islboard][ichip][isca][ichn]==1) hits_plane++; 
-	    if(gain_hit_high[islboard][ichip][isca][ichn]==1 && charge_hiGain[islboard][ichip][isca][ichn]<100) hits_negative++;
-	    if(gain_hit_high[islboard][ichip][isca][ichn]==0 && charge_hiGain[islboard][ichip][isca][ichn]<100)  nohits_negative++;
+	    if(gain_hit_high[ilayer][ichip][isca][ichn]==1) hits_plane++; 
+	    if(gain_hit_high[ilayer][ichip][isca][ichn]==1 && charge_hiGain[ilayer][ichip][isca][ichn]<100) hits_negative++;
+	    if(gain_hit_high[ilayer][ichip][isca][ichn]==0 && charge_hiGain[ilayer][ichip][isca][ichn]<100)  nohits_negative++;
 	  }
 	
 	  if( burst == false && retrig == false) {
@@ -1593,66 +1625,66 @@ void DecodedSLBAnalysis::Retriggers(int i_slboard, TString outputname="",int max
 	    if(bad==false) {
 	      h_total_trig->Fill(ichip,isca);
 	      for(int ichn=0;ichn<64;ichn++)
-		if(gain_hit_high[islboard][ichip][isca][ichn]==1) {
-		  h_signal->Fill(charge_hiGain[islboard][ichip][isca][ichn]);
+		if(gain_hit_high[ilayer][ichip][isca][ichn]==1) {
+		  h_signal->Fill(charge_hiGain[ilayer][ichip][isca][ichn]);
 		  h_trig -> Fill(ichip,ichn);
-		  h_trig_xy -> Fill(map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn]);    
+		  h_trig_xy -> Fill(map_pointX[ilayer][ichip][ichn],map_pointY[ilayer][ichip][ichn]);    
 
 		}
 	    } else {
-	      for(int ichn=0;ichn<64;ichn++) if(gain_hit_high[islboard][ichip][isca][ichn]==1) h_bad->Fill(charge_hiGain[islboard][ichip][isca][ichn]);
+	      for(int ichn=0;ichn<64;ichn++) if(gain_hit_high[ilayer][ichip][isca][ichn]==1) h_bad->Fill(charge_hiGain[ilayer][ichip][isca][ichn]);
 	    }
 	  
 	  } else {
-	    for(int ichn=0;ichn<64;ichn++) if(gain_hit_high[islboard][ichip][isca][ichn]==1) h_bad->Fill(charge_hiGain[islboard][ichip][isca][ichn]);
+	    for(int ichn=0;ichn<64;ichn++) if(gain_hit_high[ilayer][ichip][isca][ichn]==1) h_bad->Fill(charge_hiGain[ilayer][ichip][isca][ichn]);
 	  }
 	}
       }
 
-    }// for islboards
+    }// for ilayers
 
-    for(int islboard=0; islboard<n_slboards; islboard++) {
-      if(islboard != i_slboard) continue;
+    for(int ilayer=0; ilayer<n_slboards; ilayer++) {
+      if(ilayer != i_layer) continue;
       //channels starting retriggers
       for(int ichip=0; ichip<16; ichip++) {
 	
 	bool first_retrig=false;
       
 	for(int isca=0; isca<15; isca++) {
-	  if(bcid[islboard][ichip][isca]<0) continue;
-	  if(bcid[islboard][ichip][isca]<50 || (bcid[islboard][ichip][isca]>890 && bcid[islboard][ichip][isca]<930)) continue;
+	  if(bcid[ilayer][ichip][isca]<0) continue;
+	  if(bcid[ilayer][ichip][isca]<50 || (bcid[ilayer][ichip][isca]>890 && bcid[ilayer][ichip][isca]<930)) continue;
 
 	  if(isca==0) {
-	    if(badbcid[islboard][ichip][isca]>2) first_retrig=true;
+	    if(badbcid[ilayer][ichip][isca]>2) first_retrig=true;
 	    for(int ichn=0; ichn<64; ichn++) {
-	      if(gain_hit_high[islboard][ichip][isca][ichn]==1) {
+	      if(gain_hit_high[ilayer][ichip][isca][ichn]==1) {
 		h_first_retriggering -> Fill(ichip,ichn);
 		h_all_retriggering -> Fill(ichip,ichn);
 
-		h_first_retriggering_xy -> Fill(map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn]);
-		h_all_retriggering_xy -> Fill(map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn]);     
+		h_first_retriggering_xy -> Fill(map_pointX[ilayer][ichip][ichn],map_pointY[ilayer][ichip][ichn]);
+		h_all_retriggering_xy -> Fill(map_pointX[ilayer][ichip][ichn],map_pointY[ilayer][ichip][ichn]);     
 	      }
 	    }
 	  }
 	
-	  if(isca > 0 && badbcid[islboard][ichip][isca]>2 && first_retrig==false) {
+	  if(isca > 0 && badbcid[ilayer][ichip][isca]>2 && first_retrig==false) {
 	    first_retrig=true;
 	    for(int ichn=0; ichn<64; ichn++) {
-	      if(gain_hit_high[islboard][ichip][isca][ichn]==1) {
+	      if(gain_hit_high[ilayer][ichip][isca][ichn]==1) {
 		h_first_retriggering -> Fill(ichip,ichn);
 		h_all_retriggering -> Fill(ichip,ichn);
 
-		h_first_retriggering_xy -> Fill(map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn]);
-		h_all_retriggering_xy -> Fill(map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn]);    
+		h_first_retriggering_xy -> Fill(map_pointX[ilayer][ichip][ichn],map_pointY[ilayer][ichip][ichn]);
+		h_all_retriggering_xy -> Fill(map_pointX[ilayer][ichip][ichn],map_pointY[ilayer][ichip][ichn]);    
 	      }
 	    }
 	  }
 
-	  if(badbcid[islboard][ichip][isca]>2 && first_retrig==true){
+	  if(badbcid[ilayer][ichip][isca]>2 && first_retrig==true){
 	    for(int ichn=0; ichn<64; ichn++) {
-	      if(gain_hit_high[islboard][ichip][isca][ichn]==1) {
+	      if(gain_hit_high[ilayer][ichip][isca][ichn]==1) {
 		h_all_retriggering -> Fill(ichip,ichn);
-		h_all_retriggering_xy -> Fill(map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn]);    
+		h_all_retriggering_xy -> Fill(map_pointX[ilayer][ichip][ichn],map_pointY[ilayer][ichip][ichn]);    
 
 	      }
 	    }
@@ -1660,18 +1692,18 @@ void DecodedSLBAnalysis::Retriggers(int i_slboard, TString outputname="",int max
 
 	}//end isca
       }//end chip
-    }// islboard
+    }// ilayer
 
-    for(int islboard=0; islboard<n_slboards; islboard++) {
-      if(islboard != i_slboard) continue;
+    for(int ilayer=0; ilayer<n_slboards; ilayer++) {
+      if(ilayer != i_layer) continue;
       //if sca = 15, retrigger distance?
       for(int ichip=0; ichip<16; ichip++) {
 	int sca=14;
-	if(bcid[islboard][ichip][sca]<0) continue;
+	if(bcid[ilayer][ichip][sca]<0) continue;
 
 	for(int ichip2=0; ichip2<16; ichip2++) {
 	  for(int isca=0; isca<15; isca++) {
-	    if(badbcid[islboard][ichip2][isca]>2 && ichip2!=ichip) h_dist_sca15[ichip]->Fill(ichip2,bcid[islboard][ichip][sca]-bcid[islboard][ichip2][isca]);
+	    if(badbcid[ilayer][ichip2][isca]>2 && ichip2!=ichip) h_dist_sca15[ichip]->Fill(ichip2,bcid[ilayer][ichip][sca]-bcid[ilayer][ichip2][isca]);
 	  }
 	}
       }
@@ -1679,28 +1711,28 @@ void DecodedSLBAnalysis::Retriggers(int i_slboard, TString outputname="",int max
       //if a trigger is recorded... when appears the next retrigger?
       for(int ichip=0; ichip<16; ichip++) {
 	for(int isca=0; isca<15; isca++) {
-	  if(bcid[islboard][ichip][isca]<0) continue;
-	  if(bcid[islboard][ichip][isca]<50)  continue;
+	  if(bcid[ilayer][ichip][isca]<0) continue;
+	  if(bcid[ilayer][ichip][isca]<50)  continue;
 
-	  if(badbcid[islboard][ichip][isca]==0) {
+	  if(badbcid[ilayer][ichip][isca]==0) {
 	  
 	    for(int ichip2=0; ichip2<16; ichip2++) {
 	      for(int isca2=0; isca2<15; isca2++) {
-		if(bcid[islboard][ichip2][isca2]<0) continue;
-		if(bcid[islboard][ichip2][isca2]<50 ) continue;
-		if(badbcid[islboard][ichip2][isca]>2 && ichip2!=ichip) h_dist_trig_retrig[ichip]->Fill(ichip2,bcid[islboard][ichip][isca]-bcid[islboard][ichip2][isca]);
+		if(bcid[ilayer][ichip2][isca2]<0) continue;
+		if(bcid[ilayer][ichip2][isca2]<50 ) continue;
+		if(badbcid[ilayer][ichip2][isca]>2 && ichip2!=ichip) h_dist_trig_retrig[ichip]->Fill(ichip2,bcid[ilayer][ichip][isca]-bcid[ilayer][ichip2][isca]);
 	      }
 	    }
 	  
 	  }
 	}
       }
-    }//islboard
+    }//ilayer
 	  
       
   }
   //end loop
-  TFile *summary = new TFile("results_retriggers/Retriggers"+slboard+".root" , "RECREATE");
+  TFile *summary = new TFile("results_retriggers/Retriggers"+layer+".root" , "RECREATE");
   summary->cd();
 
   h_total_planeE->Write();
@@ -1767,7 +1799,7 @@ void DecodedSLBAnalysis::ReadMasked(TString filename)
 }
 
 
-void DecodedSLBAnalysis::ReadMap(TString filename, int slboard) 
+void DecodedSLBAnalysis::ReadMap(TString filename, int layer) 
 {
 
   std::ifstream reading_file(filename);
@@ -1776,8 +1808,8 @@ void DecodedSLBAnalysis::ReadMap(TString filename, int slboard)
   }
   for(int i=0; i<16; i++) {
     for(int j=0; j<64; j++) {
-      map_pointX[slboard][i][j] = -1000.;
-      map_pointY[slboard][i][j] = -1000.;
+      map_pointX[layer][i][j] = -1000.;
+      map_pointY[layer][i][j] = -1000.;
     }
   }
 
@@ -1787,8 +1819,8 @@ void DecodedSLBAnalysis::ReadMap(TString filename, int slboard)
   reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
   while(reading_file){
     reading_file >> tmp_chip >> tmp_x0 >> tmp_y0 >> tmp_channel >> tmp_x >> tmp_y ;
-    map_pointX[slboard][tmp_chip][tmp_channel] = -tmp_x ;
-    map_pointY[slboard][tmp_chip][tmp_channel] = -tmp_y ;
+    map_pointX[layer][tmp_chip][tmp_channel] = -tmp_x ;
+    map_pointY[layer][tmp_chip][tmp_channel] = -tmp_y ;
   }
 
 }
