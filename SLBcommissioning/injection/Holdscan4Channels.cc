@@ -27,7 +27,7 @@ void Holdscan4Channels(TString filename_in="/home/calice/TB2020/commissioning/Si
       }
     }
   }
-
+  
   int count=0;
   for(int i=0; i<230; i=i+20) {
     cout<<" i: "<<i<<endl;
@@ -116,10 +116,6 @@ void Holdscan4Channels(TString filename_in="/home/calice/TB2020/commissioning/Si
 	leg->Draw();
       }
     canvas->Print(TString::Format("results/%s_layer%i.root",run.Data(),i));
-  }
-
-
-				 
-  
+  }  
 }
 
