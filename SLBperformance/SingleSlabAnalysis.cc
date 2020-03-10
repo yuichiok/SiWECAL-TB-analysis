@@ -1,5 +1,4 @@
-//# Copyright 2012-2018  Roman Poeschl, Adrián Irles
-//# This file is part of Calicoes.  
+//# Copyright 2020 Adrián Irles IJCLab (CNRS/IN2P3)
 
 #include "TROOT.h"
 #include "TFile.h"
@@ -22,11 +21,10 @@ void SingleSlabAnalysis(TString filename_in, TString output="", int i_layer=2){
   cout<<" Analyze file: "<<filename_in<<endl;
   DecodedSLBAnalysis ss(filename_in);
   ss.ReadMap(map,i_layer);
-  // ss.PedestalAnalysis(i_layer,output,4);
-  //ss.SignalAnalysis(i_layer,output,4);
+  ss.PedestalAnalysis(i_layer,output,4);
+  ss.SignalAnalysis(i_layer,output,4);
   ss.Retriggers(i_layer,output,10);
-  //ss.PedestalAnalysis(layer,output,map,4);
-  //ss.SignalAnalysis(layer,output,map,4);
+  
   gSystem->Exit(0);
 
 }
