@@ -1,3 +1,4 @@
+//# Copyright 2020  Adrián Irles (IJCLab, CNRS/IN2P3)                                                  
 // example about structures
 #include "TFile.h"
 #include "TCanvas.h"

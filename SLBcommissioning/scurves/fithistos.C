@@ -1,3 +1,5 @@
+//# Copyright 2020  Adrián Irles (IJCLab, CNRS/IN2P3)
+
 #include "TFile.h"
 #include "TCanvas.h"
 #include "TPaveStats.h"
@@ -10,10 +12,9 @@
 #include <iostream>
 #include <fstream>
 #include "TF1.h"
+#include "TGraphErrors.h"
+#include "TGraph.h"
 #include "../conf_struct.h"
-
-//#include "../../style/Style.C"
-//#include "../../style/Labels.C"
 
 using namespace std;
 
@@ -101,7 +102,7 @@ std::vector<double> MeanSigma(TGraph *scurve_threshold, TString type="SK2a") {
   double mean=0;
   double sigma=0;
   int max=0;
-  int min=10000000000000000;
+  int min=1000000;
   double nch=0;
   for(int ichn=0; ichn<64; ichn++) {
     Double_t x,y;
@@ -149,14 +150,14 @@ std::vector<double> MeanSigma(TGraph *scurve_threshold, TString type="SK2a") {
 
 }
 
-void fithistos(TString filename = "RateVsThresholdScan_02192020_SLBoard_test2", int nslabs=6, int iteration=0){
+void fithistos(TString filename = "RateVsThresholdScan_02192020_SLBoard_test2", int nslabs=6, TString settings="../Run_Settings_", int iteration=0){
 
-  read_configuration_file(TString::Format("../Run_Settings_it%i.txt",iteration),false);
+  read_configuration_file(TString::Format("%sit%i.txt",settings.Data(),iteration),false);
 
   TGraphErrors *scurve[15][16][64];
   TF1 *scurvefit[15][16][64];
 
-  TFile *file_summary = new TFile("histos/scurves_"+filename+".root" , "READ");
+  TFile *file_summary = new TFile("../scurves/histos/scurves_"+filename+".root" , "READ");
   file_summary->cd();
 
   for(int i=0; i<nslabs; i++) {
@@ -222,30 +223,8 @@ void fithistos(TString filename = "RateVsThresholdScan_02192020_SLBoard_test2", 
     }
   }
 
-  write_configuration_file(TString::Format("../Run_Settings_it%i.txt",iteration+1));
-	
-  /*  TCanvas *canvas_asic[15];
+  write_configuration_file(TString::Format("%sthresholds_it%i.txt",settings.Data(),iteration));
   
-  for(int i=0; i<nslabs; i++) {
-    canvas_asic[i]= new TCanvas(TString::Format("canvas_layer%i",i),TString::Format("canvas_layer%i_chip%i",i),1600,1600);
-    canvas_asic[i]->Divide(4,4);
-    
-    for(int iasic=0; iasic<16; iasic++) {
-      canvas_asic[i]->cd(iasic+1);
-      scurve_threshold[i][iasic]->Draw("alp");
-      //scurve_offset[i][iasic]->Draw("alp");
-
-   //      for(int ichn=0; ichn<64; ichn++) {
-//	canvas_asic[i][iasic]->cd(1+ichn);
-//	scurve[i][iasic][ichn]->GetXaxis()->SetTitle("DAC");
-//	scurve[i][iasic][ichn]->GetYaxis()->SetTitle("Nhits");
-//	scurve[i][iasic][ichn]->SetTitle(TString::Format("chn %i",ichn));
-//	scurve[i][iasic][ichn]->Draw("al");
-//	}
-    }
-  }
-*/
-    
   
 }
 
