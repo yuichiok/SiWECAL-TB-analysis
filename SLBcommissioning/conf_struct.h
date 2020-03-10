@@ -68,7 +68,7 @@ struct detector_t {
 } detector;
 
 
-void read(TString filename="Run_Settings.txt", bool debug=true) {
+void read_configuration_file(TString filename="Run_Settings.txt", bool debug=true) {
 
   //===== Daughter: 0 SlabIdx: 0 SlabAdd: 1 SL_Board_SerNum: -1 FPGA_Version: V2.3.7  Nb_Of_Connected_ASUs: 1 =====
 
@@ -129,7 +129,7 @@ void read(TString filename="Run_Settings.txt", bool debug=true) {
 
 }
 
-void write(TString filename="Run_Settings_2.txt") {
+void write_configuration_file(TString filename="Run_Settings_2.txt") {
 
   //===== Daughter: 0 SlabIdx: 0 SlabAdd: 1 SL_Board_SerNum: -1 FPGA_Version: V2.3.7  Nb_Of_Connected_ASUs: 1 =====
 ofstream fout(filename,ios::out);

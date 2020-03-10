@@ -15,6 +15,8 @@
 #include "TMath.h"
 
 void FitLinearity4Channels(TString run="calib_02272020_pa1.2fb_trig230_chn0.8.16.24_calib_small_Ascii", int nslboards=6, int channel1=0, int channel2=8, int channel3=16, int channel4=24){
+
+  gROOT->SetBatch(kTRUE);
   
   cout<<" Graphs file: "<<run<<endl;
  
@@ -23,27 +25,30 @@ void FitLinearity4Channels(TString run="calib_02272020_pa1.2fb_trig230_chn0.8.16
 
   TFile *file_read = new TFile("results/graphs_"+run+".root" , "READ");
   file_read->cd();
+
+  TH1F* slboardRelations = (TH1F*)file_read->Get("layer_slboard_relation");
   
   for(int i=0; i<nslboards; i++) {
+    Int_t slboard = slboardRelations->GetBinContent(i+1);
     for(int j=0; j<16; j++) {
       for(int k=0; k<64; k++) {
 	
-	injection_high[i][j][k][0]=(TGraphErrors*)file_read->Get(TString::Format("high_gain_layer%i_chip%i_chn%i_sca0",i,j,k));
-	injection_high[i][j][k][1]=(TGraphErrors*)file_read->Get(TString::Format("high_gain_layer%i_chip%i_chn%i_sca1",i,j,k));
-	injection_high[i][j][k][2]=(TGraphErrors*)file_read->Get(TString::Format("high_gain_layer%i_chip%i_chn%i_sca2",i,j,k));
+	injection_high[i][j][k][0]=(TGraphErrors*)file_read->Get(TString::Format("high_gain_layer%i_slboard%i_chip%i_chn%i_sca0",i,slboard,j,k));
+	injection_high[i][j][k][1]=(TGraphErrors*)file_read->Get(TString::Format("high_gain_layer%i_slboard%i_chip%i_chn%i_sca1",i,slboard,j,k));
+	injection_high[i][j][k][2]=(TGraphErrors*)file_read->Get(TString::Format("high_gain_layer%i_slboard%i_chip%i_chn%i_sca2",i,slboard,j,k));
 
-	injection_low[i][j][k][0]=(TGraphErrors*)file_read->Get(TString::Format("low_gain_layer%i_chip%i_chn%i_sca0",i,j,k));
-	injection_low[i][j][k][1]=(TGraphErrors*)file_read->Get(TString::Format("low_gain_layer%i_chip%i_chn%i_sca1",i,j,k));
-	injection_low[i][j][k][2]=(TGraphErrors*)file_read->Get(TString::Format("low_gain_layer%i_chip%i_chn%i_sca2",i,j,k));
+	injection_low[i][j][k][0]=(TGraphErrors*)file_read->Get(TString::Format("low_gain_layer%i_slboard%i_chip%i_chn%i_sca0",i,slboard,j,k));
+	injection_low[i][j][k][1]=(TGraphErrors*)file_read->Get(TString::Format("low_gain_layer%i_slboard%i_chip%i_chn%i_sca1",i,slboard,j,k));
+	injection_low[i][j][k][2]=(TGraphErrors*)file_read->Get(TString::Format("low_gain_layer%i_slboard%i_chip%i_chn%i_sca2",i,slboard,j,k));
       }
     }
   }
 
   file_read->Close();
 
-  TFile *rejection_write = new TFile("results/rejectedFits_"+run+".root", "RECREATE");
+  TFile *rejection_write = new TFile("results/Rejected_Fits_"+run+".root", "RECREATE");
   
-  TFile *file_write = new TFile("results/fits_"+run+".root" , "RECREATE");
+  TFile *file_write = new TFile("results/Fits_"+run+".root" , "RECREATE");
   file_write->cd();
   
   for(int i=0; i<nslboards; i++) {
@@ -52,10 +57,10 @@ void FitLinearity4Channels(TString run="calib_02272020_pa1.2fb_trig230_chn0.8.16
     fileSuffix.Form("layer%i_" + run + ".txt", i);
    
     fstream high_pedestalsFile;
-    high_pedestalsFile.open("results/pedestals/pedestals_hg_" + fileSuffix,fstream::out);
+    high_pedestalsFile.open("results/pedestals/Pedestals_Fit_hg_" + fileSuffix,fstream::out);
     
     fstream low_pedestalsFile;
-    low_pedestalsFile.open("results/pedestals/pedestals_lg_"+ fileSuffix,fstream::out);
+    low_pedestalsFile.open("results/pedestals/Pedestals_Fit_lg_"+ fileSuffix,fstream::out);
     
     TString header = "#pedestal results (injection fits): " + run + "\n";
     header += "#chip channel ped0 eped0 accept0 ped1 eped1 accept1 ... pedn epedn acceptn (All sca)\n";
@@ -80,6 +85,16 @@ void FitLinearity4Channels(TString run="calib_02272020_pa1.2fb_trig230_chn0.8.16
 	high_pedestalsFile << j << " " << chan << " ";
 	low_pedestalsFile << j << " " << chan << " ";
 	for(int isca=0; isca<15; isca++) {
+
+	  Bool_t acceptFit_hg = false;
+	  Bool_t acceptFit_lg = false;
+	  
+	  if(isca > 2)
+	    {
+	      high_pedestalsFile << 0 << " " << TString::Format("%.1f",0.0) << " " << acceptFit_hg << " ";
+	      low_pedestalsFile << 0 << " " << TString::Format("%.1f",0.0) << " " << acceptFit_lg << " ";
+	       continue;
+	    }
 	  
 	  if(!ichan)
 	    {    
@@ -89,39 +104,58 @@ void FitLinearity4Channels(TString run="calib_02272020_pa1.2fb_trig230_chn0.8.16
 	      rej_vcanvas_hg.push_back(false);
 	      rej_vcanvas_lg.push_back(false);
 	    }
-
-	  Bool_t acceptFit_hg = true;
-	  Bool_t acceptFit_lg = true;
 	  
-	  TFitResultPtr fit_result_high = injection_high[i][j][chan][isca]->Fit("pol1", "QS", "", 0., 3.4);
-	  TFitResultPtr fit_result_low = injection_low[i][j][chan][isca]->Fit("pol1", "QS", "", 0., 3.4);
-
+	  TFitResultPtr fit_result_high = injection_high[i][j][chan][isca]->Fit("pol1", "QS", "", 0., 1.6);
+	  TFitResultPtr fit_result_low = injection_low[i][j][chan][isca]->Fit("pol1", "QS", "", 0., 1.6);
+	  
 	  TF1* fit_func_high = (TF1*)injection_high[i][j][chan][isca]->GetListOfFunctions()->FindObject("pol1");
 	  TF1* fit_func_low = (TF1*)injection_low[i][j][chan][isca]->GetListOfFunctions()->FindObject("pol1");
-	    
-	  Double_t* fit_high = fit_func_high->GetParameters();
-	  const Double_t* fit_high_err = fit_func_high->GetParErrors();
-	  Double_t chi_ndf_high = fit_func_high->GetChisquare()/fit_func_high->GetNDF();
 
-	  if(chi_ndf_high > 2.5 || fit_func_high->GetNumberFitPoints() < 5 || !fit_result_high->IsValid())
+	  if(!fit_result_high && fit_result_high->IsValid())
 	    {
-	      acceptFit_hg = false;
-	      rej_vcanvas_hg[isca] = !acceptFit_hg;
-	    } 
+	      acceptFit_hg = true;
+	      
+	      Double_t* fit_high = fit_func_high->GetParameters();
+	      const Double_t* fit_high_err = fit_func_high->GetParErrors();
+	      Double_t chi_ndf_high = fit_func_high->GetChisquare()/fit_func_high->GetNDF();
+
+	      if(chi_ndf_high > 2.5 || fit_func_high->GetNumberFitPoints() < 5)
+		{
+		  acceptFit_hg = false;
+		  rej_vcanvas_hg[isca] = !acceptFit_hg;
+		}
+
+	      high_pedestalsFile << fit_high[0] << " " << fit_high_err[0] << " " << acceptFit_hg << " ";
 	  
-	  Double_t* fit_low = fit_func_low->GetParameters();
-	  const Double_t* fit_low_err = fit_func_low->GetParErrors();
-	  Double_t chi_ndf_low = fit_func_low->GetChisquare()/fit_func_low->GetNDF();
-
-	   if(chi_ndf_low > 2.5 || fit_func_low->GetNumberFitPoints() < 5 || !fit_result_low->IsValid())
+	    }
+	  else
 	    {
-	      acceptFit_lg = false;
-	      rej_vcanvas_lg[isca] = !acceptFit_lg;
+	      rej_vcanvas_hg[isca] = !acceptFit_hg;
+	      high_pedestalsFile << 0 << " " << TString::Format("%.1f",0.0) << " " << acceptFit_hg << " ";
 	    }
 	  
-	  high_pedestalsFile << fit_high[0] << " " << fit_high_err[0] << " " << acceptFit_hg << " ";
-	  low_pedestalsFile << fit_low[0] << " " << fit_low_err[0] << " " << acceptFit_lg << " ";
+	  if(!fit_result_low && fit_result_low->IsValid())
+	    {
+	      acceptFit_lg = true;
+	      
+	      Double_t* fit_low = fit_func_low->GetParameters();
+	      const Double_t* fit_low_err = fit_func_low->GetParErrors();
+	      Double_t chi_ndf_low = fit_func_low->GetChisquare()/fit_func_low->GetNDF();
 
+	      if(chi_ndf_low > 2.5 || fit_func_low->GetNumberFitPoints() < 5)
+		{
+		  acceptFit_lg = false;
+		  rej_vcanvas_lg[isca] = !acceptFit_lg;
+		}
+	  
+	      low_pedestalsFile << fit_low[0] << " " << fit_low_err[0] << " " << acceptFit_lg << " ";
+	    }
+	  else
+	    {
+	      rej_vcanvas_lg[isca] = !acceptFit_lg;
+	      low_pedestalsFile << 0 << " " << TString::Format("%.1f",0.0) << " " << acceptFit_lg << " ";
+	    }
+	      
 	  vcanvas[isca]->cd(1+ichan);
 	  TLegend *leg = new TLegend(0.1,0.5,0.25,0.85);
 	  injection_high[i][j][chan][isca]->SetLineColor(1);
