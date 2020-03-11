@@ -1,3 +1,5 @@
+//# Copyright 2020 Adrián Irles IJCLab (CNRS/IN2P3)
+
 #ifndef SLBdecoded2ROOT_CC
 #define SLBdecoded2ROOT_CC
 
@@ -20,7 +22,6 @@
 #include <TCanvas.h>
 #include <TString.h>
 #include <iostream>
-#include <fstream>
 #include <sstream>
 #include <string>
 

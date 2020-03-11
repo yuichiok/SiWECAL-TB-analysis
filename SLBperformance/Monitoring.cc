@@ -1,5 +1,4 @@
-//# Copyright 2012-2018  Roman Poeschl, Adrián Irles
-//# This file is part of Calicoes.  
+//# Copyright 2020  Adrián Irles IJCLab (CNRS/IN2P3)
 
 #include "TROOT.h"
 #include "TFile.h"

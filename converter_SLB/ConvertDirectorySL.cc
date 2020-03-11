@@ -1,3 +1,5 @@
+//# Copyright 2020 Adrián Irles IJCLab (CNRS/IN2P3)
+
 #include "TSystemDirectory.h"
 #include "TCanvas.h"
 #include "TROOT.h"
@@ -12,7 +14,6 @@
 
 using namespace std;
 
-// fonction qui fait la liste de tous les fichiers *by_dif0.raw d'un dossier et qui renvoie la liste sous filenames. Écrit par Floris Thiant (LLR).
 vector<TString>* list_files(const char *dirname, const char *ext=".dat")
 {
 	TSystemDirectory dir(dirname, dirname);
@@ -82,8 +83,8 @@ void ConvertDirectorySL(string dirname, bool zerosupression=false, TString outpu
     //  }
     //    for (int i = 0 ; i<nbCrb ; i++)
     //  {
-	std::cout << (*filenames)[0] << std::endl;
-	//      }
+    std::cout << (*filenames)[0] << std::endl;
+    //      }
 
     
   }

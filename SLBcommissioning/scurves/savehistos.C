@@ -1,3 +1,5 @@
+//# Copyright 2020  Adrián Irles (IJCLab, CNRS/IN2P3)
+
 #include "TFile.h"
 #include "TCanvas.h"
 #include "TPaveStats.h"
