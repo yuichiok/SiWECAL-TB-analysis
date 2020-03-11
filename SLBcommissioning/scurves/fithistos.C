@@ -224,7 +224,7 @@ void fithistos(TString filename = "RateVsThresholdScan_02192020_SLBoard_test2", 
   }
 
   write_configuration_file(TString::Format("%sthresholds_it%i.txt",settings.Data(),iteration));
-  
+ 
   
 }
 
