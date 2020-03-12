@@ -61,10 +61,12 @@ struct detector_t {
   int acq_window_source;
   int acq_window;
   int acq_delay;
+  int delay_for_start_acq;
   int ext_sig_level;
   int ext_sig_edge;
   string core_daughter_fpga_ver[2];
   int core_daughter_n_slabs[2];
+  int ext_clock;
   slab_t slab[2][15];
 } detector;
 
@@ -86,15 +88,15 @@ void read_configuration_file(TString filename="Run_Settings.txt", bool debug=tru
   if(debug) cout<<detector.sl_soft_v<<" "<<detector.date_run_unix<<" "<< detector.date_run_date <<" "<< detector.date_run_time<<endl;
   //second line
   //----------------------
-  //== SYSTEM_TYPE: SL_COREMODULE_INTERFACE USB_SerNum: 2.41A FPGA_Version: V2.1.11  NB_Of_Core_Daughters: 1 ==
-  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> detector.usb_sernum >> tmpst >> detector.fpga_ver >> tmpst >> detector.n_core_daughters;
-  if(debug) cout<<" COREMODULE: USB_SerNum " <<detector.usb_sernum<<", FPGA Ver "<<detector.fpga_ver<<", NB_Of_Core_Daughters "<< detector.n_core_daughters<<endl;
+  //== SYSTEM_TYPE: SL_COREMODULE_INTERFACE USB_SerNum: 2.41A FPGA_Version: V2.1.11  NB_Of_Core_Daughters: 1 EXT_CLOCK: 0 ( 1 = YES, 0= NO) ==
+  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> detector.usb_sernum >> tmpst >> detector.fpga_ver >> tmpst >> detector.n_core_daughters >> tmpst >> detector.ext_clock >> tmpst >> tmpst >> tmpst >> tmpst >>tmpst >> tmpst >> tmpst;
+  if(debug) cout<<" COREMODULE: USB_SerNum " <<detector.usb_sernum<<", FPGA Ver "<<detector.fpga_ver<<", NB_Of_Core_Daughters "<< detector.n_core_daughters<< "EXT_CLOCK: "<< detector.ext_clock<<endl;
 
   //third line
   //----------------------
-  //== TriggerType: 1  ('0' = FORCE_TRIGGER, '1' = SELF_TRIGGER) ACQWindowSource: 0 ('0' = AUTO, '1'= SOFT_CMD, '2' = EXT_SIG) ACQWindow: 150 (ms) DelayBetweenCycle: 50 (ms) ExtSigLevel: 0 ('0' = TTL, '1' = NIM, '-1' = NA) ExtSigEdge: 0 ('0' = RISING_EDGE, '1' = FALLING_EDGE, '-1' = NA) ==
-  reading_file >> tmpst >> tmpst >> tmpst >> detector.trigger_type >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> detector.acq_window_source >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> detector.acq_window >> tmpst >> tmpst >> detector.acq_delay >> tmpst >> tmpst >> detector.ext_sig_level >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> detector.ext_sig_edge >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
-  if(debug) cout<<" Trigger Type: "<<detector.trigger_type << " AcqWindowSource ('0' = AUTO, '1'= SOFT_CMD, '2' = EXT_SIG): " <<detector.acq_window_source << " AcqWindow: "<<detector.acq_window << "ms DelayBetweenCycle: "<<detector.acq_delay<< "ms ExtSigLevel ('0' = TTL, '1' = NIM, '-1' = NA): " << detector.ext_sig_level << " ExtSigEdge ('0' = RISING_EDGE, '1' = FALLING_EDGE, '-1' = NA): " << detector.ext_sig_edge <<endl;
+  //== TriggerType: 1  ('0' = FORCE_TRIGGER, '1' = SELF_TRIGGER) ACQWindowSource: 0 ('0' = AUTO, '1'= SOFT_CMD, '2' = EXT_SIG) ACQWindow: 150 (ms) DelayBetweenCycle: 50 (ms)  DelayForStartAcq: 0 (5Mhz_Clock period) ExtSigLevel: 0 ('0' = TTL, '1' = NIM, '-1' = NA) ExtSigEdge: 0 ('0' = RISING_EDGE, '1' = FALLING_EDGE, '-1' = NA) ==
+  reading_file >> tmpst >> tmpst >> detector.trigger_type >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> detector.acq_window_source >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> detector.acq_window >> tmpst >> tmpst >> detector.acq_delay >> tmpst >> tmpst >> detector.delay_for_start_acq >> tmpst >> tmpst >> tmpst >> detector.ext_sig_level >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> detector.ext_sig_edge >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
+  if(debug) cout<<" Trigger Type: "<<detector.trigger_type << " AcqWindowSource ('0' = AUTO, '1'= SOFT_CMD, '2' = EXT_SIG): " <<detector.acq_window_source << " AcqWindow: "<<detector.acq_window << "ms DelayBetweenCycle: "<<detector.acq_delay<< "ms DelayStartAcq (5MHz clock):"<<detector.delay_for_start_acq <<"ms ExtSigLevel ('0' = TTL, '1' = NIM, '-1' = NA): " << detector.ext_sig_level << " ExtSigEdge ('0' = RISING_EDGE, '1' = FALLING_EDGE, '-1' = NA): " << detector.ext_sig_edge <<endl;
   
   //----------------------
   //=== CORE_DAUGHTER: 0 FPGA_Version: V1.3.1 Nb_Of_Connected_Slabs: 6 ===
@@ -136,8 +138,8 @@ void write_configuration_file(TString filename="Run_Settings_2.txt") {
 ofstream fout(filename,ios::out);
 
   fout<<"== SETTINGS FILE SAVED WITH ILC SL-SOFTWARE VERSION: "<<detector.sl_soft_v<<"  == DATE OF RUN: UnixTime = "<<detector.date_run_unix<<" date = "<<detector.date_run_date<<" time = "<<detector.date_run_time<<"  ==="<<endl;
-  fout<<"== SYSTEM_TYPE: SL_COREMODULE_INTERFACE USB_SerNum: "<<detector.usb_sernum<<" FPGA_Version: "<<detector.fpga_ver<<"  NB_Of_Core_Daughters: "<<detector.n_core_daughters<<" =="<<endl;
-  fout<<"== TriggerType: "<<detector.trigger_type<<"  ('0' = FORCE_TRIGGER, '1' = SELF_TRIGGER) ACQWindowSource: "<<detector.acq_window_source <<" ('0' = AUTO, '1'= SOFT_CMD, '2' = EXT_SIG) ACQWindow: "<< detector.acq_window <<" (ms) DelayBetweenCycle: "<< detector.acq_delay <<" (ms) ExtSigLevel: "<< detector.ext_sig_level  <<" ('0' = TTL, '1' = NIM, '-1' = NA) ExtSigEdge: "<< detector.ext_sig_edge <<" ('0' = RISING_EDGE, '1' = FALLING_EDGE, '-1' = NA) =="<<endl;
+  fout<<"== SYSTEM_TYPE: SL_COREMODULE_INTERFACE USB_SerNum: "<<detector.usb_sernum<<" FPGA_Version: "<<detector.fpga_ver<<"  NB_Of_Core_Daughters: "<<detector.n_core_daughters<<" EXT_CLOCK: "<<detector.ext_clock<<" ( 1 = YES, 0= NO) =="<<endl;
+  fout<<"== TriggerType: "<<detector.trigger_type<<"  ('0' = FORCE_TRIGGER, '1' = SELF_TRIGGER) ACQWindowSource: "<<detector.acq_window_source <<" ('0' = AUTO, '1'= SOFT_CMD, '2' = EXT_SIG) ACQWindow: "<< detector.acq_window <<" (ms) DelayBetweenCycle: "<< detector.acq_delay <<" (ms) DelayForStartAcq: "<<detector.delay_for_start_acq<<" (5Mhz_Clock period) ExtSigLevel: "<< detector.ext_sig_level  <<" ('0' = TTL, '1' = NIM, '-1' = NA) ExtSigEdge: "<< detector.ext_sig_edge <<" ('0' = RISING_EDGE, '1' = FALLING_EDGE, '-1' = NA) =="<<endl;
 
   //----------------------
   //=== CORE_DAUGHTER: 0 FPGA_Version: V1.3.1 Nb_Of_Connected_Slabs: 6 ===
