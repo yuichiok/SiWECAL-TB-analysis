@@ -45,7 +45,9 @@ TF1 *FitScurve(TGraphErrors *gr)
   int imax = TMath::LocMax(gr->GetN(),gr->GetY());
   int n=gr->GetN();
   double* x = gr->GetX();
-  double* y = gr->GetX();
+  double* y = gr->GetY();
+
+  if(n==0 || y[imax]==0) return NULL;
 
   double xmin = max(x[imax],x[n/3])-3;
   double xmax = FirstZero(gr)+10;
@@ -57,12 +59,12 @@ TF1 *FitScurve(TGraphErrors *gr)
   TF1 *fit1 = new TF1("fit1","[0]*TMath::Erfc((x-[1])/(sqrt(2)*[2]))",xmin,xmax);
 
   fit1->SetParLimits(0,ymax*0.1,ymax*10);
-  fit1->SetParLimits(1,190,250);
+  fit1->SetParLimits(1,170,250);
 
   fit1->SetParameter(0,ymax);
   fit1->SetParameter(1,200);
   fit1->SetParameter(2,3); 
-  gr->Fit("fit1","QREM");
+  gr->Fit("fit1","QR");
 
   par1=fit1->GetParameter(0); 
   par2=fit1->GetParameter(1); 
@@ -73,16 +75,15 @@ TF1 *FitScurve(TGraphErrors *gr)
 
   //  std::cout<<"  ----------- 2 "<<endl;
 
-  if(par2<180) par2=200;
-  if(par3<1) par3=1.5;
+  if(par2<185) par2=190;
+  //  if(par3<1) par3=1.5;
   xmin=max(par2-8*par3,x[n/3]);
   xmax=par2+20*par3;
   TF1 *fit2 = new TF1("fit2","[0]*TMath::Erfc((x-[1])/[2]+[3])",xmin,xmax);
 
-
   fit2->SetParLimits(0,par1*0.3,par1+par1*0.5);
-  fit2->SetParLimits(1,190,240);
-  fit2->SetParLimits(2,2,6);
+  fit2->SetParLimits(1,170,240);
+  fit2->SetParLimits(2,1.5,10);
 
   /* fit2->SetParameter(0,0.5*ymax);
   fit2->SetParameter(1,200);
@@ -90,7 +91,7 @@ TF1 *FitScurve(TGraphErrors *gr)
   fit2->SetParameter(0,par1);
   fit2->SetParameter(1,par2);
   fit2->SetParameter(2,par3);
-  gr->Fit("fit2","QERM");
+  gr->Fit("fit2","QR");
     
   return fit2;
 }
@@ -101,36 +102,35 @@ std::vector<double> MeanSigma(TGraph *scurve_threshold, TString type="SK2a") {
   double mean=0;
   double sigma=0;
   int max=0;
-  int min=10000000000000000;
+  int min=10000000;
   double nch=0;
   for(int ichn=0; ichn<64; ichn++) {
     Double_t x,y;
     scurve_threshold->GetPoint(ichn, x, y);
-    if(y<400) {
+    if(y<400 && y>100) {
       mean +=  y;
       nch++;
     }
     if(y>max && y<400) max=y;
-    if(y<min) min=y;
+    if(y<min && y>100) min=y;
   }
   mean/=nch;
   for(int ichn=0; ichn<64; ichn++) {
     Double_t x,y;
     scurve_threshold->GetPoint(ichn, x, y);
-    if(y<400) sigma +=  (y-mean)*(y-mean);
-    // cout<<ichn<<" "<<y<<endl;
+    if(y<400 && y>100) sigma +=  (y-mean)*(y-mean);
   }
-  sigma = sqrt( sigma/63.);
+  sigma = sqrt( sigma/float(nch-1));
 
 
   std::vector<double> result;
 
-  
-  if( (max-min)>15)  max=mean+sigma;
-  if(type=="SK2") max=mean;
+  cout<<" max:" <<max<<" optimal:"<<mean<<" std:"<<sigma<<" max-min:"<<max-min;
+
+  if( (max-min)>15)  max=mean+15;//3*sigma;
+  //  if(type=="SK2") max=mean;
   result.push_back(max);
 
-  // cout<<mean<<" "<<sigma<<" "<<max<< " "<<min<<endl;
   int th[64];
   for(int ichn=0; ichn<64; ichn++) {
     th[ichn]=0;
@@ -149,20 +149,25 @@ std::vector<double> MeanSigma(TGraph *scurve_threshold, TString type="SK2a") {
 
 }
 
-void fithistos(TString filename = "RateVsThresholdScan_02192020_SLBoard_test2", int nslabs=6, int iteration=0){
+void fithistos(TString filename, std::vector<int> slboards , int iteration=0){
 
-  read_configuration_file(TString::Format("../Run_Settings_it%i.txt",iteration),false);
+  if(slboards.size()==0 || slboards.size()>15) {
+    cout<<"ERROR: Size of vector of ids of the slboards = "<<slboards.size()<<endl;
+  }
 
+  filename=filename;
+  read_configuration_file(TString::Format("../"+filename+"/Run_Settings_it%i.txt",iteration),false);
+  cout<< " Read FILE ..... " << TString::Format("../"+filename+"/Run_Settings_it%i.txt",iteration) <<endl;
   TGraphErrors *scurve[15][16][64];
   TF1 *scurvefit[15][16][64];
 
   TFile *file_summary = new TFile("histos/scurves_"+filename+".root" , "READ");
   file_summary->cd();
 
-  for(int i=0; i<nslabs; i++) {
+  for(int i=0; i<slboards.size(); i++) {
     for(int iasic=0; iasic<16; iasic++) {
       for(int ichn=0; ichn<64; ichn++) {
-	scurve[i][iasic][ichn]=(TGraphErrors*)file_summary->Get(TString::Format("scurve_layer%i_chip%i_chn%i",i,iasic,ichn));
+	scurve[i][iasic][ichn]=(TGraphErrors*)file_summary->Get(TString::Format("scurve_slboard%i_chip%i_chn%i",slboards.at(i),iasic,ichn));
 	scurvefit[i][iasic][ichn]=FitScurve(scurve[i][iasic][ichn]);
       }
     }
@@ -175,7 +180,7 @@ void fithistos(TString filename = "RateVsThresholdScan_02192020_SLBoard_test2", 
   TGraph *scurve_offset[15][16];
 
 
-  for(int i=0; i<nslabs; i++) {
+  for(int i=0; i<slboards.size(); i++) {
     for(int iasic=0; iasic<16; iasic++) {
         double mean[64];
         double width[64];
@@ -188,13 +193,17 @@ void fithistos(TString filename = "RateVsThresholdScan_02192020_SLBoard_test2", 
 	  width[ichn]=-1;
 	  threshold[ichn]=-1;
 	  offset[ichn]=-1;
-
+	  
 	  chn[ichn]=ichn;
-	  mean[ichn]=scurvefit[i][iasic][ichn]->GetParameter(1);
-	  width[ichn]=scurvefit[i][iasic][ichn]->GetParameter(2);
-	  threshold[ichn]=scurvefit[i][iasic][ichn]->GetParameter(1)+5*scurvefit[i][iasic][ichn]->GetParameter(2);
-	  offset[ichn]=scurvefit[i][iasic][ichn]->GetParameter(3);
-
+	  
+	  if(scurvefit[i][iasic][ichn]!=NULL) {
+	    mean[ichn]=scurvefit[i][iasic][ichn]->GetParameter(1);
+	    width[ichn]=scurvefit[i][iasic][ichn]->GetParameter(2);
+	    threshold[ichn]=scurvefit[i][iasic][ichn]->GetParameter(1)+5*scurvefit[i][iasic][ichn]->GetParameter(2);
+	    offset[ichn]=scurvefit[i][iasic][ichn]->GetParameter(3);
+	  }
+	  //if(ichn==37)
+	  //cout<<" Result  " <<i<<  " "<<iasic <<" "<<ichn<<" "<< mean[ichn] << " " <<width[ichn] <<" "<<threshold[ichn]<<" "<<offset[ichn]<<endl;
 	}
 	scurve_mean[i][iasic]= new TGraph(64,chn,mean);
 	scurve_width[i][iasic]= new TGraph(64,chn,width);
@@ -204,30 +213,32 @@ void fithistos(TString filename = "RateVsThresholdScan_02192020_SLBoard_test2", 
     }
   }
 
-  for(int i=0; i<nslabs; i++) {
+  for(int i=0; i<slboards.size(); i++) {
     TString type="SK2";
-    if(i==2 || i==4 || i==5) type="SK2a";			       
+    if(slboards.at(i)==3 || slboards.at(i)==7 || slboards.at(i)==8|| slboards.at(i)==12) type="SK2a";			       
     for(int iasic=0; iasic<16; iasic++) {
+      cout<<" Thresholds for layer:" <<i<<" skiroc:"<<iasic;
       std::vector<double> mean_sigma = MeanSigma(scurve_threshold[i][iasic],type);
+      cout<<endl;
       double mean=mean_sigma.at(0);
       double fine_tuning[64];
-      std::cout<<" -------------------------------------- "<< endl;
-      std::cout<<"slab: "<<i<<" asic:"<<iasic<<"    TH:"<<mean<< endl;
+      //std::cout<<" -------------------------------------- "<< endl;
+      ////      std::cout<<"slab: "<<i<<" asic:"<<iasic<<"    TH:"<<mean<< endl;
       detector.slab[0][i].asu[0].skiroc[iasic].threshold_dac=mean;
       for(int ichn=0; ichn<64; ichn++) {
-	fine_tuning[ichn]=mean_sigma.at(1+ichn);
-	std::cout<<" chn:"<<ichn<<" TH -"<<fine_tuning[ichn]<<endl;
+	fine_tuning[ichn]=15;//mean_sigma.at(1+ichn);
+	//std::cout<<" chn:"<<ichn<<" TH : "<<fine_tuning[ichn]<<endl;
 	detector.slab[0][i].asu[0].skiroc[iasic].chn_threshold_adj[ichn]=fine_tuning[ichn];
       }
     }
   }
 
-  write_configuration_file(TString::Format("../Run_Settings_it%i.txt",iteration+1));
+  write_configuration_file(TString::Format("../"+filename+"/Run_Settings_comm_it%i.txt",iteration+1));
 	
   /*  TCanvas *canvas_asic[15];
   
   for(int i=0; i<nslabs; i++) {
-    canvas_asic[i]= new TCanvas(TString::Format("canvas_layer%i",i),TString::Format("canvas_layer%i_chip%i",i),1600,1600);
+    canvas_asic[i]= new TCanvas(TString::Format("canvas_slboard%i",i),TString::Format("canvas_slboard%i_chip%i",i),1600,1600);
     canvas_asic[i]->Divide(4,4);
     
     for(int iasic=0; iasic<16; iasic++) {

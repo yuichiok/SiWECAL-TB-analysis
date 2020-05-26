@@ -20,6 +20,8 @@ Float_t error_value[2][15][300][64][100]; //dauchter, slab, asic, chn, DAC
 Float_t x[100];
 Int_t nsteps;
 Int_t nslabs[2];
+int idslab[2][15];
+
 void ReadScurves(TString filename)
   
 {
@@ -32,11 +34,10 @@ void ReadScurves(TString filename)
   */
 
  
-  filename="/mnt/win2/Histos/"+filename+".txt";
-  
+  cout<<"Reading scurve file: "<<filename<<endl;
   std::ifstream reading_file(filename);
   if(!reading_file){
-    std::cout<<" dameyo - damedame"<<std::endl;
+    std::cout<<"NO FILE!!"<<std::endl;
   }
 
   for(int k=0; k<100; k++) {
@@ -49,7 +50,7 @@ void ReadScurves(TString filename)
 	    error_value[icore][islab][i][j][k] = 0.;
 	  }
 	}
-      }
+     }
     }
   }
   
@@ -58,7 +59,6 @@ void ReadScurves(TString filename)
   //  int nslabs[2];
   int ndaughter=0;
   int nasu[2][15];
-  int idslab[2][15];
 
   for(int i=0; i<2; i++) {
     nslabs[i]=0;
@@ -116,14 +116,14 @@ void ReadScurves(TString filename)
 
 }
 
-void savehistos(){//TString filename, int slabadd){
+void savehistos(TString filename = ""){//TString filename, int slabadd){
   
 
-  TString filename = "RateVsThresholdScan_02192020_SLBoard_test2";
+  TString filename_input = "../"+filename+"/RateVsThresholdScan_"+filename+"_SLBoard.txt";
   TGraphErrors *scurve[15][16][64];
 
 
- ReadScurves(filename);
+ ReadScurves(filename_input);
 
  for(int i=0; i<nslabs[0]; i++) {
    for(int iasic=0; iasic<16; iasic++) {
@@ -141,7 +141,7 @@ void savehistos(){//TString filename, int slabadd){
   file_summary->cd();
 
   for(int i=0; i<nslabs[0]; i++) {
-    canvas[i]= new TCanvas(TString::Format("canvas_layer%i",i),TString::Format("canvas_layer%i",i),1600,1000);
+    canvas[i]= new TCanvas(TString::Format("canvas_slboard%i",idslab[0][i]),TString::Format("canvas_slboard%i",idslab[0][i]),1600,1000);
     canvas[i]->Divide(4,4);
     
     //  TLegend *leg = new TLegend(0.6,0.7,0.9,0.9);
@@ -157,7 +157,7 @@ void savehistos(){//TString filename, int slabadd){
 	  //	  if(iasic==0) leg->AddEntry(scurve[i][iasic][ichn],"HV=100V","l");
 	  scurve[i][iasic][ichn]->Draw("al");
 	}
-	scurve[i][iasic][ichn]->SetName(TString::Format("scurve_layer%i_chip%i_chn%i",i,iasic,ichn));
+	scurve[i][iasic][ichn]->SetName(TString::Format("scurve_slboard%i_chip%i_chn%i",idslab[0][i],iasic,ichn));
 	file_summary->cd();
 	scurve[i][iasic][ichn]->Write();
 	
