@@ -71,7 +71,7 @@ void DecodedSLBAnalysis::SynchronizationStudies(TString outputname="testMonitori
   }
   // -----------------------------------------------------------------------------------------------------   
   // Signal analysis
-  TFile *monitoringfile_summary = new TFile("results_monitoring/SynchronizationStudis_summary_"+outputname+".root" , "RECREATE");
+  TFile *monitoringfile_summary = new TFile("results_monitoring/SynchronizationStudies_summary_"+outputname+".root" , "RECREATE");
   monitoringfile_summary->cd();
 
   for(int i=0; i<n_SLB; i++) {
