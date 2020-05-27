@@ -1,3 +1,5 @@
+//# Copyright 2020 Adrián Irles IJCLab (CNRS/IN2P3)
+
 #ifndef SLBdecoded2ROOT_CC
 #define SLBdecoded2ROOT_CC
 
@@ -20,7 +22,6 @@
 #include <TCanvas.h>
 #include <TString.h>
 #include <iostream>
-#include <fstream>
 #include <sstream>
 #include <string>
 
@@ -248,6 +249,29 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
   std::string str;
 
   // int bcid_cycle[20][16][15];
+
+  int mapping_z[15];
+  //2020 03 12
+  mapping_z[0]=8;
+  mapping_z[1]=9;
+  mapping_z[2]=10;
+  mapping_z[3]=5;
+  mapping_z[4]=1;
+  mapping_z[5]=13;
+  mapping_z[6]=11;
+  mapping_z[7]=7;
+
+  int mapping_slot[15];
+  //2020 03 12
+  mapping_slot[0]=1;
+  mapping_slot[1]=2;
+  mapping_slot[2]=3;
+  mapping_slot[3]=4;
+  mapping_slot[4]=5;
+  mapping_slot[5]=6;
+  mapping_slot[6]=7;
+  mapping_slot[7]=8;
+
   
   while (reading_file) {
     // output the line
@@ -259,8 +283,9 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
     int slabadd=-1;
     reading_file >> tmpst1 >> tmpst >> size >> tmpst >> chip >> tmpst >>  tmpst >> tmpst >> slabidx >> tmpst >> slabadd >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst >> cycleID >> tmpst >> tmpst >> tmpst >> tmpst;
     
-    if(slabidx>20) std::cout << " -----" <<tmpst1<<" "<<size<< " "<<chip<<" "<<slabidx<<" "<<slabadd<<" "<<cycleID <<" "<<acqNumber<< std::endl;
-
+    //    if(slabidx>20)
+    std::cout << " -----" <<tmpst1<<" "<<size<< " "<<chip<<" "<<slabidx<<" "<<slabadd<<" "<<cycleID <<" "<<acqNumber<< std::endl;
+    if(slabidx<0) break;
     if(acqNumber==0) treeInit(zerosupression);
      if(acqNumber>0 && acqNumber!=cycleID) {
       GetBadBCID();
@@ -268,6 +293,7 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
       treeInit(zerosupression);
     }
 
+    
 
     //save variables
     acqNumber=cycleID;
@@ -276,8 +302,8 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
     int previousBCID=-1000;
     int loopBCID=0;
 
-    slot[slabidx]=slabidx;
-    slboard_id[slabidx]=slabadd;
+    slot[mapping_z[slabidx]]=mapping_slot[slabidx];
+    slboard_id[mapping_z[slabidx]]=slabadd;
     
     for(int i=0; i<size; i++) {
       //##0 BCID 1627 SCA 1 #Hits 49
@@ -289,16 +315,16 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
       // cout<<bcid_tmp<<endl;
       //      if(slabid==slboard_index) {
       sca=size-(sca+1);
-      bcid[slabidx][chip][sca]=bcid_tmp;
-      nhits[slabidx][chip][sca]=nhits_tmp;
-      numCol[slabidx][chip]++;
+      bcid[mapping_z[slabidx]][chip][sca]=bcid_tmp;
+      nhits[mapping_z[slabidx]][chip][sca]=nhits_tmp;
+      numCol[mapping_z[slabidx]][chip]++;
       
-      if(bcid[slabidx][chip][sca] > 0 && bcid[slabidx][chip][sca]-previousBCID < 0) loopBCID++;
-      if(bcid[slabidx][chip][sca] > 0 ) corrected_bcid[slabidx][chip][sca] = bcid[slabidx][chip][sca]+loopBCID*4096;
+      if(bcid[mapping_z[slabidx]][chip][sca] > 0 && bcid[mapping_z[slabidx]][chip][sca]-previousBCID < 0) loopBCID++;
+      if(bcid[mapping_z[slabidx]][chip][sca] > 0 ) corrected_bcid[mapping_z[slabidx]][chip][sca] = bcid[mapping_z[slabidx]][chip][sca]+loopBCID*4096;
       previousBCID=bcid_tmp;
       
       if(chip>-1 && chip<16) {
-	chipID[slabidx][chip]=chip;
+	chipID[mapping_z[slabidx]][chip]=chip;
       } else {
 	cout<<"Wrong chipID = "<<chip<<endl;
 	break;
@@ -317,10 +343,10 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
 	reading_file >> tmpst >> chn >> tmpst >> lg >>  lg_bit >> tmpst >>  tmpst >> hg >> hg_bit >> tmpst;
 	//	cout << chn << " "<< hg <<" " <<hg_bit<<endl;
 	//	if(slabid==slboard_index) {
-	  charge_low[slabidx][chip][sca][chn]=lg;
-	  gain_hit_low[slabidx][chip][sca][chn]=lg_bit;
-	  charge_high[slabidx][chip][sca][chn]=hg;
-	  gain_hit_high[slabidx][chip][sca][chn]=hg_bit;
+	  charge_low[mapping_z[slabidx]][chip][sca][chn]=lg;
+	  gain_hit_low[mapping_z[slabidx]][chip][sca][chn]=lg_bit;
+	  charge_high[mapping_z[slabidx]][chip][sca][chn]=hg;
+	  gain_hit_high[mapping_z[slabidx]][chip][sca][chn]=hg_bit;
 	  //}
       }//end channel  
     }//end events of the chi

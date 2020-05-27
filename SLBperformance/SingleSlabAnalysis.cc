@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 //# Copyright 2020 Adrián Irles
+=======
+//# Copyright 2020 Adrián Irles IJCLab (CNRS/IN2P3)
+>>>>>>> abab2458134d850f9ab68580bedac4a57d9401fb
 
 #include "TROOT.h"
 #include "TFile.h"
@@ -25,6 +29,10 @@ void SingleSlabAnalysis(TString filename_in, TString output="", int i_layer=2){
   ss.PedestalAnalysis(i_layer,output,4);
   ss.SignalAnalysis(i_layer,output,4);
   ss.Retriggers(i_layer,output,10);
+<<<<<<< HEAD
+=======
+  
+>>>>>>> abab2458134d850f9ab68580bedac4a57d9401fb
   gSystem->Exit(0);
 
 }

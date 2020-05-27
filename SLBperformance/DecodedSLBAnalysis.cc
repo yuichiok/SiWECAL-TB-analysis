@@ -1,3 +1,5 @@
+//# Copyright 2020 Adrián Irles IJCLab (CNRS/IN2P3)
+
 #define DecodedSLBAnalysis_cxx
 #include "DecodedSLBAnalysis.h"
 #include <TPaveStats.h>
