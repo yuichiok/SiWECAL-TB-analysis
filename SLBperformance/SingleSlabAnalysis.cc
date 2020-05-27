@@ -24,7 +24,7 @@ void SingleSlabAnalysis(TString filename_in, TString output="", int i_layer=2){
   ss.ReadMap(map,i_layer);
   ss.PedestalAnalysis(i_layer,output,4);
   ss.SignalAnalysis(i_layer,output,4);
-  //ss.Retriggers(i_layer,output,10);
+  ss.Retriggers(i_layer,output,10);
   gSystem->Exit(0);
 
 }

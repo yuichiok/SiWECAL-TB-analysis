@@ -598,7 +598,7 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_layer, TString outputname="", int 
   for(int ichip=0; ichip<16; ichip++) {
     for(int ichn=0; ichn<65; ichn++) {
             
-      if(mip_histo.at(ichip).at(ichn)->GetEntries()>100){
+      if(mip_histo.at(ichip).at(ichn)->GetEntries()>10){
 
 	fr[0]=mip_histo.at(ichip).at(ichn)->GetMean()-0.8*mip_histo.at(ichip).at(ichn)->GetRMS();
 	if(fr[0]<30) fr[0]=30;
