@@ -4,7 +4,7 @@
 
 void test_read_masked_channels(TString filename="Run_Settings.txt", bool debug=true) {
 
-  read_configuration_file("05262020/Run_Settings_it14.txt",false);
+  read_configuration_file(filename,false);
 
   TH2F* mask_chip_chn[15];
   TH2F* mask_x_y[15];
@@ -12,8 +12,8 @@ void test_read_masked_channels(TString filename="Run_Settings.txt", bool debug=t
   float totalmasked[15];
   float totalmasked_chip[15][16];
   
-  
-  for(int islab=0; islab<2; islab++) {
+  int nslabs=15;
+  for(int islab=0; islab<nslabs; islab++) {
     TString map_name="../mapping/fev10_chip_channel_x_y_mapping.txt";
 
     // the two cobs are equipped with slboards 2.08 and 2.12 (26th May 2020)

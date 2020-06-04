@@ -4,14 +4,14 @@
 
 void test_read_thresholds(TString filename="Run_Settings.txt", bool debug=true) {
 
-  read_configuration_file("05262020/Run_Settings_it14.txt",false);
+  read_configuration_file(filename,false);
 
   TH2F* threshold_chip_chn[15];
   TH2F* threshold_x_y[15];
 
   TH2F* threshold_chip_chn_2[15];
   TH2F* threshold_x_y_2[15];
-  for(int islab=0; islab<2; islab++) {
+  for(int islab=0; islab<15; islab++) {
     TString map_name="../mapping/fev10_chip_channel_x_y_mapping.txt";
 
     // the two cobs are equipped with slboards 2.08 and 2.12 (26th May 2020)
