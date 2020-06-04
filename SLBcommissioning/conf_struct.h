@@ -14,6 +14,36 @@
 #include <sstream>
 using namespace std;
 
+Float_t map_pointX[16][64];
+Float_t map_pointY[16][64];
+
+void ReadMap(TString filename) 
+{
+
+  std::ifstream reading_file(filename);
+  if(!reading_file){
+    cout<<" dameyo - damedame"<<endl;
+  }
+  
+  for(int i=0; i<16; i++) {
+    for(int j=0; j<64; j++) {
+      map_pointX[i][j] = -1000.;
+      map_pointY[i][j] = -1000.;
+    }
+  }
+
+  Int_t tmp_chip = 0,tmp_channel = 0;
+  Float_t tmp_x0 = 0 ,tmp_y0 = 0 , tmp_x = 0 , tmp_y = 0 ;
+  TString tmpst;
+  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
+  while(reading_file){
+    reading_file >> tmp_chip >> tmp_x0 >> tmp_y0 >> tmp_channel >> tmp_x >> tmp_y ;
+    map_pointX[tmp_chip][tmp_channel] = -tmp_x ;
+    map_pointY[tmp_chip][tmp_channel] = -tmp_y ;
+  }
+
+}
+
 //# ASU: 0 
 //## ChipIndex: 0 ChipId: 0  FeedbackCap: 3 ThresholdDAC: 230 HoldDelay: 130 FSPeakTime: 2 GainSelectionThreshold: 255 
 //### Ch: 0 TrigMask: 0 ChThreshold: 0 PAMask: 0
