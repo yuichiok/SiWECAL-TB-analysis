@@ -38,3 +38,8 @@
 *.exe
 *.out
 *.app
+
+# Data Files
+*.root
+*_Ascii*
+*.log
