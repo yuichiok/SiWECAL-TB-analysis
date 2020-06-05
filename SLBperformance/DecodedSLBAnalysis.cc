@@ -28,10 +28,10 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay")
   TH3F* charge_12[300];
 
   for(int j=0; j<300; j++) {
-    charge_15[j]=new TH3F(TString::Format("charge_15layers_coinc_xyz_%i",j),TString::Format("charge_15layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-0.5,14.5);
-    charge_14[j]=new TH3F(TString::Format("charge_14layers_coinc_xyz_%i",j),TString::Format("charge_14layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-0.5,14.5);
-    charge_13[j]=new TH3F(TString::Format("charge_13layers_coinc_xyz_%i",j),TString::Format("charge_13layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-0.5,14.5);
-    charge_12[j]=new TH3F(TString::Format("charge_12layers_coinc_xyz_%i",j),TString::Format("charge_12layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-0.5,14.5);
+    charge_15[j]=new TH3F(TString::Format("charge_15layers_coinc_xyz_%i",j),TString::Format("charge_15layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
+    charge_14[j]=new TH3F(TString::Format("charge_14layers_coinc_xyz_%i",j),TString::Format("charge_14layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
+    charge_13[j]=new TH3F(TString::Format("charge_13layers_coinc_xyz_%i",j),TString::Format("charge_13layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
+    charge_12[j]=new TH3F(TString::Format("charge_12layers_coinc_xyz_%i",j),TString::Format("charge_12layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
   }
   
   // --------------
@@ -87,14 +87,15 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay")
 	    for(int isca=0; isca<15; isca++) {
 	      if(badbcid[islboard][ichip][isca]==0 && bcid[islboard][ichip][isca]==i) {
 		for(int ichn=0;ichn<64; ichn++) {
+		  double z=-15.*double(slot[islboard]);
 		  if(gain_hit_high[islboard][ichip][isca][ichn]==1 && bcid_seen[i]==12 && nhistos_12<300)
-		    charge_12[nhistos_12]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),double(slot[islboard]),double(charge_hiGain[islboard][ichip][isca][ichn]));
+		    charge_12[nhistos_12]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),z,double(charge_hiGain[islboard][ichip][isca][ichn]));
 		  if(gain_hit_high[islboard][ichip][isca][ichn]==1 && bcid_seen[i]==13 && nhistos_13<300)
-                    charge_13[nhistos_13]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),double(slot[islboard]),double(charge_hiGain[islboard][ichip][isca][ichn]));
+                    charge_13[nhistos_13]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),z,double(charge_hiGain[islboard][ichip][isca][ichn]));
 		  if(gain_hit_high[islboard][ichip][isca][ichn]==1 && bcid_seen[i]==14 && nhistos_14<300)
-                    charge_14[nhistos_14]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),double(slot[islboard]),double(charge_hiGain[islboard][ichip][isca][ichn]));
+                    charge_14[nhistos_14]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),z,double(charge_hiGain[islboard][ichip][isca][ichn]));
 		  if(gain_hit_high[islboard][ichip][isca][ichn]==1 && bcid_seen[i]==15 && nhistos_15<300)
-                    charge_15[nhistos_15]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),double(slot[islboard]),double(charge_hiGain[islboard][ichip][isca][ichn]));
+                    charge_15[nhistos_15]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),z,double(charge_hiGain[islboard][ichip][isca][ichn]));
 		}
 	      }
 	    }
@@ -116,26 +117,26 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay")
   monitoringfile_summary->cd();
 
   for(int i=0; i<300; i++) {
-    charge_12[i]->GetXaxis()->SetTitle("X");
-    charge_12[i]->GetYaxis()->SetTitle("Y");
-    charge_12[i]->GetZaxis()->SetTitle("Z");
+    charge_12[i]->GetXaxis()->SetTitle("X [mm]");
+    charge_12[i]->GetYaxis()->SetTitle("Y [mm]");
+    charge_12[i]->GetZaxis()->SetTitle("Z (0=upper module) [mm]");
     if(charge_12[i]->GetEntries()>0) charge_12[i]->Write();
 
-    charge_13[i]->GetXaxis()->SetTitle("X");
-    charge_13[i]->GetYaxis()->SetTitle("Y");
-    charge_13[i]->GetZaxis()->SetTitle("Z");
+    charge_13[i]->GetXaxis()->SetTitle("X [mm]");
+    charge_13[i]->GetYaxis()->SetTitle("Y [mm]");
+    charge_13[i]->GetZaxis()->SetTitle("Z (0=upper module) [mm]");
     if(charge_13[i]->GetEntries()>0)  charge_13[i]->Write();
 
 
-    charge_14[i]->GetXaxis()->SetTitle("X");
-    charge_14[i]->GetYaxis()->SetTitle("Y");
-    charge_14[i]->GetZaxis()->SetTitle("Z");
+    charge_14[i]->GetXaxis()->SetTitle("X [mm]");
+    charge_14[i]->GetYaxis()->SetTitle("Y [mm]");
+    charge_14[i]->GetZaxis()->SetTitle("Z (0=upper module) [mm]");
      if(charge_14[i]->GetEntries()>0) charge_14[i]->Write();
 
 
-    charge_15[i]->GetXaxis()->SetTitle("X");
-    charge_15[i]->GetYaxis()->SetTitle("Y");
-    charge_15[i]->GetZaxis()->SetTitle("Z");
+    charge_15[i]->GetXaxis()->SetTitle("X [mm]");
+    charge_15[i]->GetYaxis()->SetTitle("Y [mm]");
+    charge_15[i]->GetZaxis()->SetTitle("Z (0=upper module) [mm] ");
      if(charge_15[i]->GetEntries()>0) charge_15[i]->Write();
 
   }

@@ -177,7 +177,7 @@ void pedanalysis(TFile *file, TString run="Run_ILC_cosmic_test_11222019", int sl
   ReadMap(map);
 
   
-  TFile *_file0 = TFile::Open(TString::Format("../results_pedestal/Pedestal_layer_%i_%s.root",slboard,run.Data()));
+  TFile *_file0 = TFile::Open(TString::Format("../results_pedestal/Pedestal_slboard_%i_%s.root",slboard,run.Data()));
 
  
   TH2F* PedW[15];
@@ -259,7 +259,7 @@ void pedanalysis(TFile *file, TString run="Run_ILC_cosmic_test_11222019", int sl
 
   //  _file0 ->Close();
 
-  TCanvas* canvas= new TCanvas(TString::Format("PedAna_layer_%i",slboard),TString::Format("PedAna_layer_%i",slboard),1600,1600);   
+  TCanvas* canvas= new TCanvas(TString::Format("PedAna_slboard_%i",slboard),TString::Format("PedAna_slboard_%i",slboard),1600,1600);   
   canvas->Divide(4,4);
   
   for(int i=0; i<15; i++) {
@@ -288,9 +288,9 @@ void pedanalysis(TFile *file, TString run="Run_ILC_cosmic_test_11222019", int sl
     PedRMS[i]->Draw("COLZ");
     
   }
-  canvas->Print(TString::Format("plots/PedAna_%s_layer_%i.eps",run.Data(),slboard));
+  canvas->Print(TString::Format("plots/PedAna_%s_slboard_%i.eps",run.Data(),slboard));
 
-  TCanvas* canvas2= new TCanvas(TString::Format("PedAna2_layer_%i",slboard),TString::Format("PedAna2_layer_%i",slboard),1200,600);   
+  TCanvas* canvas2= new TCanvas(TString::Format("PedAna2_slboard_%i",slboard),TString::Format("PedAna2_slboard_%i",slboard),1200,600);   
   canvas2->Divide(2,1);
   
   canvas2->cd(1);
@@ -305,7 +305,7 @@ void pedanalysis(TFile *file, TString run="Run_ILC_cosmic_test_11222019", int sl
   PedW_sca->GetZaxis()->SetRangeUser(2,12);
   PedW_sca->Draw("colz");
    
-  canvas2->Print(TString::Format("plots/PedAna2_%s_layer_%i.eps",run.Data(),slboard));
+  canvas2->Print(TString::Format("plots/PedAna2_%s_slboard_%i.eps",run.Data(),slboard));
 
   file->cd();
   canvas->Write();
@@ -351,7 +351,7 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int sl
   ReadMap(map);
 
   
-  TFile *_file0 = TFile::Open(TString::Format("../results_mipcalibration/Signal_summary_layer_%i_%s.root",slboard,run.Data()));
+  TFile *_file0 = TFile::Open(TString::Format("../results_mipcalibration/Signal_summary_slboard_%i_%s.root",slboard,run.Data()));
 
  
   TH2F* MIPW =new TH2F("MIPW","MIPW",32,-90,90,32,-90,90);
@@ -362,7 +362,7 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int sl
   TCanvas* canvas_mip[16];
   for(int i=0;i<nchips;i++){
     
-    canvas_mip[i]= new TCanvas(TString::Format("MIPs_layer_%i_chip%i",slboard,i),TString::Format("MIPs_layer_%i_chip%i",slboard,i),1600,1600);   
+    canvas_mip[i]= new TCanvas(TString::Format("MIPs_slboard_%i_chip%i",slboard,i),TString::Format("MIPs_slboard_%i_chip%i",slboard,i),1600,1600);   
     canvas_mip[i]->Divide(8,8);
 
       for(int j=0; j<64; j++) {
@@ -417,7 +417,7 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int sl
 	 } 
       }
       file->cd();
-      canvas_mip[i]->Print(TString::Format("plots/MIPs_%s_layer_%i_chip%i.eps",run.Data(),slboard,i));
+      canvas_mip[i]->Print(TString::Format("plots/MIPs_%s_slboard_%i_chip%i.eps",run.Data(),slboard,i));
       canvas_mip[i]->Write();
       
   }
@@ -426,7 +426,7 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int sl
 
   //  _file0 ->Close();
 
-  TCanvas* canvas= new TCanvas(TString::Format("MIPAna_layer_%i",slboard),TString::Format("MIPAna_layer_%i",slboard),1600,1600);   
+  TCanvas* canvas= new TCanvas(TString::Format("MIPAna_slboard_%i",slboard),TString::Format("MIPAna_slboard_%i",slboard),1600,1600);   
   canvas->Divide(2,2);
   
   canvas->cd(1);
@@ -454,7 +454,7 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int sl
     MIPRMS->GetZaxis()->SetRangeUser(5,200);
     MIPRMS->Draw("COLZ");
 
-  canvas->Print(TString::Format("plots/MIPAna_%s_layer_%i.eps",run.Data(),slboard));
+  canvas->Print(TString::Format("plots/MIPAna_%s_slboard_%i.eps",run.Data(),slboard));
 
   file->cd();
   MIPM->Write();
@@ -494,7 +494,7 @@ void retriggeranalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", 
   ReadMap(map);
 
   
-  TFile *_file0 = TFile::Open(TString::Format("../results_retriggers/Retriggers_layer_%i_%s.root",slboard,run.Data()));
+  TFile *_file0 = TFile::Open(TString::Format("../results_retriggers/Retriggers_slboard_%i_%s.root",slboard,run.Data()));
    
   TH2F* f_ret_xy= (TH2F*)_file0->Get("first_retriggering_xy");
   TH2F* ret_xy= (TH2F*)_file0->Get("all_retriggering_xy");
@@ -504,7 +504,7 @@ void retriggeranalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", 
   TH2F* ret= (TH2F*)_file0->Get("all_retriggering");
   TH2F* trig= (TH2F*)_file0->Get("trig");
 
-  TCanvas* canvas= new TCanvas(TString::Format("Ret_layer_%i",slboard),TString::Format("Ret_layer_%i",slboard),1200,1600);   
+  TCanvas* canvas= new TCanvas(TString::Format("Ret_slboard_%i",slboard),TString::Format("Ret_slboard_%i",slboard),1200,1600);   
   canvas->Divide(2,3);
   
   canvas->cd(1);
@@ -522,7 +522,7 @@ void retriggeranalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", 
   canvas->cd(6);
   ret->Draw("colz"); 
 
-  canvas->Print(TString::Format("plots/Ret_%s_layer_%i.eps",run.Data(),slboard));
+  canvas->Print(TString::Format("plots/Ret_%s_slboard_%i.eps",run.Data(),slboard));
   
   file->cd();
   trig_xy->Write();

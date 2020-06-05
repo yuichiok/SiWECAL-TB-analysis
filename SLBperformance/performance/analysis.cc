@@ -2,7 +2,7 @@
 
 
  
-void analysis(TString run, int layer) {
+void analysis(TString run, int slboard) {
 
   gROOT->Reset();
   //SetIrlesStyle();
@@ -18,10 +18,10 @@ void analysis(TString run, int layer) {
   gStyle->SetTitleFontSize(0.05);
   gStyle->SetMarkerSize(1.2);
 
-  TFile *file = new TFile(TString::Format("plots/layer_%i_%s.root",layer,run.Data()) , "RECREATE");
-  pedanalysis(file,run, layer);
-  mipanalysis(file,run, layer);
-  retriggeranalysis(file,run, layer);
+  TFile *file = new TFile(TString::Format("plots/slboard_%i_%s.root",slboard,run.Data()) , "RECREATE");
+  pedanalysis(file,run, slboard);
+  mipanalysis(file,run, slboard);
+  retriggeranalysis(file,run, slboard);
   file->Close();
 
 }
