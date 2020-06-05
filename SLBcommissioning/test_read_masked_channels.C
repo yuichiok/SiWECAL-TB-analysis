@@ -59,7 +59,7 @@ void test_read_masked_channels(TString filename="Run_Settings.txt", bool debug=t
     mask_x_y[islab]->GetXaxis()->SetTitle("x");
     mask_x_y[islab]->GetYaxis()->SetTitle("y");
     mask_x_y[islab]->Draw("col");
-    
+    canvas->Print(TString::Format("masked_channels_slboard%i.eps",islab));
 
   }
 

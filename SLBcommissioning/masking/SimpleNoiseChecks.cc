@@ -8,55 +8,65 @@ int SimpleNoiseChecks(TString filename_in="05182020", TString round="first", int
  
  
   init(filename_in,true);
-  // --------------FIRST-------------------------------------
-  // Two short runs of 1-2min with acq of 1ms and 10 Hz, DAC=350
-  // We check that the noisy channels are noisy in both runs !
   
-  if(round=="first1") {
-    cout<<" First Round of masking runs: analyze file: "<<filename_in<<endl;
-    double_check(filename_in,iteration,1, 1, 0, 0, 0);
-  }
+  //each channel number of riggers, udnerflows, retriggers, etc is compared with the "expected number of cosmics" expected, via a threshold definded in triple check
+  
+  int voting=3;
 
-  if(round=="first2") {
-    cout<<" First Round of masking runs: analyze file: "<<filename_in<<endl;
-    double_check(filename_in,iteration,2,1, 0., 0.5,1);
-  }
-
-  if(round=="first3") {
-    cout<<" First Round of masking runs: analyze file: "<<filename_in<<endl;
-    double_check(filename_in,iteration,3,1, 0., 1,2);
-  } 
-  
-  //-----------------------------------------------------------------------------
-  
-  // --------------SECOND round of iterations-------------------------------------
-  // Trigger =350/325/300/2750, several iterations (after preliminary masking). Not search for coincidences between masking
-  // 1ms and 10 Hz
-  // 1-2 min (or a fixed number of cycles of at least 600 cycles)
-  if(round=="second") {
-    cout<<" Second Round of masking runs: analyze file: "<<filename_in<<"  iteration="<<iteration<<endl;
-    if(iteration<3 || iteration >7)  {
-      cout<<" EXIT --> Tell me at what iteration of round "<<round<<" are you (should be between 3, 7, both included)"<<endl;
-      return -1;
+  if(round=="masking") {
+    if(iteration<3)   {
+      cout<<" ------------------------------------------------------------------------"<<endl;
+      cout<<" ITERATION = "<<iteration<<endl;
+      cout<<" FIRST Round of MASKING runs (before threshold DAC optimization). File to analyze: "<<filename_in<<endl;
+      cout<<" We take runs with very high trhesholds and set noise level definitions very low (up to zero). "<<endl;
+      cout<<" In addition, we also look at channels that have pedestals with ADC ~ 0 (or very large) "<<endl;
+    } 
+    // Sets of short runs of 1min with acq of 1ms and 10 Hz, DAC=350,
+    // We check that the noisy channels by a triple voting (three consecutive runs of the type:
+    //          Run_ILC_06312020_masking_it0_0_Ascii.dat
+    //          Run_ILC_06312020_masking_it0_1_Ascii.dat
+    //          Run_ILC_06312020_masking_it0_2_Ascii.dat!
+    filename_in=filename_in+"_"+round+"_it"+iteration;
+    if(iteration==0) triple_check(filename_in,iteration,voting,1, 0., 0., 0., 0.);//1ms, threshold underflow trigger=0, threshold underflow all=0, threshold retrig=0, threshold trigger=0
+    if(iteration==1) triple_check(filename_in,iteration,voting,1, 0., 0., 0.5, 1.);//1ms, threshold underflow trigger=0, threshold underflow all=0, threshold retrig=0.5, threshold trigger=1
+    if(iteration==2) triple_check(filename_in,iteration,voting,1, 0., 0., 1.,  2.);//1ms, threshold underflow trigger=0, threshold underflow all=0, threshold retrig=1, threshold trigger=2
+    
+    
+    // Trigger =350/325/300/275, several iterations (after preliminary masking). 
+    // 1ms and 10 Hz
+    // 1 min 
+    // We check that the noisy channels by a triple voting (three consecutive runs of the type:
+    //          Run_ILC_06312020_masking_it3_0_Ascii.dat
+    //          Run_ILC_06312020_masking_it3_1_Ascii.dat
+    //          Run_ILC_06312020_masking_it3_2_Ascii.dat!
+    if(iteration>2)   {
+      cout<<" ------------------------------------------------------------------------"<<endl;
+      cout<<" ITERATION = "<<iteration<<endl;
+      cout<<" SECOND Round of MASKING runs: analyze file: "<<filename_in<<endl;
+      cout<<" We take runs with very high trhesholds and iteratively decrease it at the same time that we relax our noise level definitions. "<<endl;
+      cout<<" We only look at triggered cells this time."<<endl;
     }
-    if(iteration==3) single_check(filename_in,iteration,1, 1,1,1); // DAC=350
-    if(iteration==4) single_check(filename_in,iteration,1, 1,1,1); // DAC=325
-    if(iteration==5) single_check(filename_in,iteration,1, 1,1,1); // DAC=300
-    if(iteration==6) single_check(filename_in,iteration,1, 1, 2, 5);//DAC=275
-    if(iteration==7) single_check(filename_in,iteration,1, 1, 1, 2.5);//DAC=275
+    if(iteration==3) triple_check(filename_in,iteration,voting,1, 1.,9999.,1.,1.); // DAC=350
+    if(iteration==4) triple_check(filename_in,iteration,voting,1, 1.,9999.,1.,1.); // DAC=325
+    if(iteration==5) triple_check(filename_in,iteration,voting,1, 1.,9999.,1.,1.); // DAC=300
+    if(iteration==6) triple_check(filename_in,iteration,voting,1, 1.,9999.,2.,5.); // DAC=275
+    if(iteration==7) triple_check(filename_in,iteration,voting,1, 1.,9999.,1.,2.5); // DAC=275
+
   }//
   
  
   
   //-----------------------------------------------------------------------------
-
-  // --------------THIRD round of iterations-------------------------------------
-  // Primero elegimos los thresholds
-  // 3 long iterations for cosmics (150ms)
+  // ATTENTION: HAVE YOU PERFORMED THE ITERATION 8 ? It consists on a quick run with optimized threholds
+  // ex: Run_ILC_06312020_masking_it8_Ascii.dat
+  
+  // -------------- OPTIMIZATION OF THE MASKING WITH COSMICs
+  // few long iterations for cosmics (100ms)
   if(round=="cosmic") {
     cout<<" Cosmic Round of masking runs: analyze file: "<<filename_in<<"  iteration="<<iteration<<endl;
-    if(iteration<13) cosmics_check(filename_in,iteration, 100,3); // first iterations (9,10,11,12) are for fine threshold adjusting... I am assuming here that all slabs are equipped with SK2a
-    else cosmics_check(filename_in,iteration, 100,5);
+    if(iteration<13) cosmics_check(filename_in,iteration, 100,3,true); // first iterations (9-12) are for threshold adjusting... If too many channels in one chip are going to be masked (>25% of the available ones), the global chip trehshold in increased by 5, instead of masking the channels
+    else cosmics_check(filename_in,iteration, 100,5,true);
+    //run few times before launching a long cosmics...
     
   }
 

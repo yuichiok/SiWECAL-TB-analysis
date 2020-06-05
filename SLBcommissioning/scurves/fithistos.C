@@ -124,6 +124,7 @@ std::vector<double> MeanSigma(TGraph *scurve_threshold, TString type="SK2a",int 
   }
   mean/=nch;
   for(int ichn=0; ichn<64; ichn++) {
+    if(detector.slab[0][islab].asu[0].skiroc[iasic].mask[ichn]==1) continue;
     Double_t x,y;
     scurve_threshold->GetPoint(ichn, x, y);
     if(y<400 && y>100) sigma +=  (y-mean)*(y-mean);
