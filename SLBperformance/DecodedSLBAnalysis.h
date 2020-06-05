@@ -82,6 +82,8 @@ public :
    virtual void     ReadPedestals(TString filename);
    //Monitoring
    virtual void     Monitoring(TString outputname, int freq, bool shifter);
+   virtual void  QuickDisplay(TString outputname);
+
    virtual void     SynchronizationStudies(TString outputname, int freq, bool shifter);
    //signal analysis: MIP fitt and signal/noise 
    virtual void     SignalAnalysis(int slboard, TString outputname, int nmaxhits);
