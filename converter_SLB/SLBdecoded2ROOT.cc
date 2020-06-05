@@ -254,7 +254,7 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
   //2020 06 04,
   //mapping_z[0]=2; means that in the first position, we have the slboard=2
   //to be changed: ideally all this information should be in the data stream
-  mapping_z[0]=2;
+  /*  mapping_z[0]=2;
   mapping_z[1]=12;
   mapping_z[2]=3;
   mapping_z[3]=6;
@@ -268,11 +268,28 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
   mapping_z[11]=10;
   mapping_z[12]=9;
   mapping_z[13]=8;
-  mapping_z[14]=0;
+  mapping_z[14]=0;*/
 
+  //slboard 0 is in slot 14
+  mapping_z[0]=14;                                                                                                                                                                                       
+  mapping_z[1]=9; 
+  mapping_z[2]=0;  
+  mapping_z[3]=2;  
+  mapping_z[4]=4;  
+  mapping_z[5]=10; 
+  mapping_z[6]=3;  
+  mapping_z[7]=6; 
+  mapping_z[8]=13; 
+  mapping_z[9]=12;  
+  mapping_z[10]=11; 
+  mapping_z[11]=7;
+  mapping_z[12]=1; 
+  mapping_z[13]=8; 
+  mapping_z[14]=5;
+  
   int mapping_slot[15];
   //2020 06 04
-  for(int i=0; i<15; i++) mapping_slot[i]=i;
+  for(int i=0; i<15; i++) mapping_slot[i]=mapping_z[i];
 
   while (reading_file) {
     // output the line
