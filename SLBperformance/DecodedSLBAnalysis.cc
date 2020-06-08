@@ -159,8 +159,6 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=5)
   Long64_t nentries = fChain->GetEntriesFast();
   //nentries=200;
 
-  TString slboard = TString::Format("_%i_slboards_",n_slboards);
-  if(outputname!="") slboard=slboard+outputname;
     
  
   // histograms for all scas, chn, chip and slboards
@@ -251,6 +249,10 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=5)
     }// islboard 
   }  // end first loop analysis to fill pedestal historgrams
 
+
+  TString slboard = TString::Format("_%i_slboards_",n_slboards);
+  if(outputname!="") slboard=slboard+outputname;
+  
   // --------------------------------------------------------------------------------
   // PEDESTAL ANALYSIS
   TFile *pedfile = new TFile("results_proto/Pedestal"+slboard+".root" , "RECREATE");

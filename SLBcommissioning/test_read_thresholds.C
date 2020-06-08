@@ -52,10 +52,10 @@ void test_read_thresholds(TString filename="Run_Settings.txt", bool debug=true) 
       cout<<endl;
     }
 
-    TCanvas *canvas = new TCanvas(TString::Format("canvas_%i",islab),TString::Format("canvas_%i",islab),1600,600);
+    TCanvas *canvas = new TCanvas(TString::Format("canvas_%i",islab),TString::Format("canvas_%i",islab),800,1600);
     gStyle->SetOptStat(0);
     gStyle->SetPalette(kLightTemperature);//RainBow);
-    canvas->Divide(2,1);
+    canvas->Divide(1,2);
     canvas->cd(1);
     threshold_chip_chn_2[islab]->GetXaxis()->SetTitle("CHIP");
     threshold_chip_chn_2[islab]->GetYaxis()->SetTitle("CHANNEL");

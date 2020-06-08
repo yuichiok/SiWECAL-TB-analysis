@@ -293,7 +293,7 @@ void triple_check(TString filename_in, int iteration=1, int voting=3, int window
       if(debug==true && mask.at(noiselevels_0.at(i)[0]).at(noiselevels_0.at(i)[1]).at(noiselevels_0.at(i)[2])==0) cout_check(noiselevels_0.at(i),trig/5.,999999,trig/2.,trig,trig*5);
 
       if(detector.slab[0][noiselevels_0.at(i)[0]].asu[0].skiroc[noiselevels_0.at(i)[1]].chn_threshold_adj[noiselevels_0.at(i)[2]]>4) {
-	detector.slab[0][noiselevels_0.at(i)[0]].asu[0].skiroc[noiselevels_0.at(i)[1]].chn_threshold_adj[noiselevels_0.at(i)[2]]=detector.slab[0][noiselevels_0.at(i)[0]].asu[0].skiroc[noiselevels_0.at(i)[1]].chn_threshold_adj[noiselevels_0.at(i)[2]]-5;
+	detector.slab[0][noiselevels_0.at(i)[0]].asu[0].skiroc[noiselevels_0.at(i)[1]].chn_threshold_adj[noiselevels_0.at(i)[2]]-=5;
 	cout<<" Adjusting:  slab:"<<noiselevels_0.at(i)[0]<<" skiroc:"<<noiselevels_0.at(i)[1]<<" chn:"<<noiselevels_0.at(i)[2]<< " - " <<detector.slab[0][noiselevels_0.at(i)[0]].asu[0].skiroc[noiselevels_0.at(i)[1]].chn_threshold_adj[noiselevels_0.at(i)[2]]<<endl;
       } else {
 	//if ind threshold =0 , then mask the channel

@@ -46,11 +46,11 @@ void test_read_masked_channels(TString filename="Run_Settings.txt", bool debug=t
     cout<< "TOTAL Masked cells:"<<100.*totalmasked[islab]/1024.<<"%"<<endl;
     
 
-    TCanvas *canvas = new TCanvas(TString::Format("canvas_%i",islab),TString::Format("canvas_%i",islab),1600,800);
+    TCanvas *canvas = new TCanvas(TString::Format("canvas_%i",islab),TString::Format("canvas_%i",islab),800,1600);
     gStyle->SetOptStat(0);
     gStyle->SetPalette(kInvertedDarkBodyRadiator);//Cherry);
     //TColor::InvertPalette();
-    canvas->Divide(2,1);
+    canvas->Divide(1,2);
     canvas->cd(1);
     mask_chip_chn[islab]->GetXaxis()->SetTitle("CHIP");
     mask_chip_chn[islab]->GetYaxis()->SetTitle("CHANNEL");
