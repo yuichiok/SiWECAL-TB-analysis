@@ -73,6 +73,9 @@ public :
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
    virtual void     Init(TTree *tree);
+
+   virtual int     NSlabsAnalysis(TString, int);
+
    // write file with masked channels
    // analysis of pedestal and writting of the file with pedestals per chi/channel/sca
    virtual void     PedestalAnalysis(int slboard,TString grid, int nmaxhits);
@@ -102,6 +105,10 @@ private :
   std::vector<std::vector<std::vector<Double_t> > > ped_mean;
   std::vector<std::vector<std::vector<Double_t> > > ped_error;
   std::vector<std::vector<std::vector<Double_t> > > ped_width;
+
+  std::vector<std::vector<std::vector<std::vector<Double_t> > > > ped_mean_slboard;
+  std::vector<std::vector<std::vector<std::vector<Double_t> > > > ped_error_slboard;
+  std::vector<std::vector<std::vector<std::vector<Double_t> > > > ped_width_slboard;
 
 
 

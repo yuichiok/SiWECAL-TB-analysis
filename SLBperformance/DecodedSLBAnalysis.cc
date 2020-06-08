@@ -147,6 +147,454 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay")
 }
 
 
+int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=5)
+{
+
+  //Read the channel/chip -- x/y mapping
+  //  ReadMap(map_filename);
+
+  int nSLB=15;
+  if (fChain == 0) return -1;
+
+  Long64_t nentries = fChain->GetEntriesFast();
+  //nentries=200;
+
+  TString slboard = TString::Format("_%i_slboards_",n_slboards);
+  if(outputname!="") slboard=slboard+outputname;
+    
+ 
+  // histograms for all scas, chn, chip and slboards
+  std::vector<std::vector<std::vector<std::vector<TH1F*> > > > ped_sca;
+  std::vector<std::vector<std::vector<std::vector<TH1F*> > > > ped_sca_tagged;
+
+  for(int islboard=0; islboard<nSLB; islboard++) {
+    
+    std::vector<std::vector<std::vector<TH1F*> > > pedtemp_sca_slboard;
+    std::vector<std::vector<std::vector<TH1F*> > > pedtemp_sca_tagged_slboard;
+    
+    for(int ichip=0; ichip<16; ichip++) {
+      std::vector<std::vector<TH1F*> >pedtemp_sca;
+      std::vector<std::vector<TH1F*> >pedtemp_sca_tagged;
+      
+      for(int ichn=0; ichn<64; ichn++) {
+	std::vector<TH1F*> pedtemp_sca2;
+	std::vector<TH1F*> pedtemp_sca2_tagged;
+	
+	for(int isca=0; isca<15; isca++) {
+	  TH1F *ped_sca2 = new TH1F(TString::Format("ped_slboard%i_chip%i_chn%i_sca%i",islboard,ichip,ichn,isca),TString::Format("ped_slboard%i_chip%i_chn%i_sca%i",islboard,ichip,ichn,isca),1000,0.5,1000.5);
+	  TH1F *ped_sca2_tagged = new TH1F(TString::Format("ped_tagged_slboard%i_chip%i_chn%i_sca%i",islboard,ichip,ichn,isca),TString::Format("ped_tagged_slboard%i_chip%i_chn%i_sca%i",islboard,ichip,ichn,isca),1000,0.5,1000.5);
+	  pedtemp_sca2.push_back(ped_sca2);
+	  pedtemp_sca2_tagged.push_back(ped_sca2_tagged);
+	}
+	pedtemp_sca.push_back(pedtemp_sca2);
+	pedtemp_sca_tagged.push_back(pedtemp_sca2_tagged);
+      }
+      pedtemp_sca_slboard.push_back(pedtemp_sca);
+      pedtemp_sca_tagged_slboard.push_back(pedtemp_sca_tagged);
+    }
+    ped_sca.push_back(pedtemp_sca_slboard);
+    ped_sca_tagged.push_back(pedtemp_sca_tagged_slboard); 
+  }
+  TCanvas *tempcanvas = new TCanvas("temp","temp",400,400);
+  // -----------------------------------------------------------------------------------------------------   
+  // SCA analysis
+  Long64_t nbytes = 0, nb = 0;
+  for (Long64_t jentry=0; jentry<nentries;jentry++) {
+    Long64_t ientry = LoadTree(jentry);
+    if (ientry < 0) break;
+    nb = fChain->GetEntry(jentry);   nbytes += nb;
+
+    // --------------------
+    //  if(jentry==0) {
+    if(n_slboards>nSLB) nSLB=n_slboards;
+      //  }
+ 
+
+    if ( jentry > 1000 && jentry % 1000 ==0 ) std::cout << "Progress: " << 100.*jentry/nentries <<" %"<<endl;
+
+    for(int islboard=0; islboard<n_slboards; islboard++) {
+      for(int ichip=0; ichip<16; ichip++) {
+
+	for(int isca=0; isca<15; isca++) {
+
+	  bool gooddata=true;
+	  int ntaggedasbad = 0;
+	  for(int ichn=0; ichn<64; ichn++) {
+	    if(gain_hit_high[islboard][ichip][isca][ichn]==1 && charge_hiGain[islboard][ichip][isca][ichn]<15 && charge_hiGain[islboard][ichip][isca][ichn]>-1 ) 
+	      ntaggedasbad++;
+	  }//ichn 
+	  if ( ntaggedasbad > 0) gooddata=false;
+		
+	  for(int ichn=0; ichn<64; ichn++) {
+
+	    //good events
+	    bool selection=false;
+
+	    if( charge_hiGain[islboard][ichip][isca][ichn]>30 && badbcid[islboard][ichip][isca]==0 && nhits[islboard][ichip][isca]<maxnhit+1 && bcid[islboard][ichip][isca]>50) selection=true;
+		  
+	    // if(masked[islboard][ichip][ichn]==1) selection=false;
+	    if(gain_hit_high[islboard][ichip][isca][ichn]==0 && selection==true && gooddata==true)
+	      ped_sca.at(islboard).at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[islboard][ichip][isca][ichn]);
+
+	    //bad events
+	    //	  selection=false;
+	    //	  if( ( badbcid[islboard][ichip][isca]!=0  || nhits[islboard][ichip][isca]>maxnhit || gooddata==false) ) selection=true;
+	    //	  if(masked[islboard][ichip][ichn]==1) selection=false;
+	    if(gain_hit_high[islboard][ichip][isca][ichn]==0 && (selection==false || gooddata==false) )
+	      ped_sca_tagged.at(islboard).at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[islboard][ichip][isca][ichn]);
+	  }
+           
+	}//isca
+
+      }//ichip 
+
+    }// islboard 
+  }  // end first loop analysis to fill pedestal historgrams
+
+  // --------------------------------------------------------------------------------
+  // PEDESTAL ANALYSIS
+  TFile *pedfile = new TFile("results_proto/Pedestal"+slboard+".root" , "RECREATE");
+  pedfile->cd();
+  TDirectory *cdhisto[nSLB];
+  for(int islboard=0; islboard<nSLB; islboard++) {
+    cdhisto[islboard] = pedfile->mkdir(TString::Format("slboard_%i",islboard));
+  }
+    
+  for(int islboard=0; islboard<nSLB; islboard++) {
+    std::vector<std::vector<std::vector<Double_t> > > chip_ped_mean_slb;
+    std::vector<std::vector<std::vector<Double_t> > > chip_ped_error_slb;
+    std::vector<std::vector<std::vector<Double_t> > > chip_ped_width_slb;
+
+    //initialize pedestal vectors
+    for(int i=0; i<16; i++) {
+      std::vector<std::vector<Double_t> > chip_ped_mean;
+      std::vector<std::vector<Double_t> > chip_ped_error;
+      std::vector<std::vector<Double_t> > chip_ped_width;
+      
+      for(int j=0; j<64; j++) {
+	std::vector<Double_t> chn_ped_mean;
+	std::vector<Double_t> chn_ped_error;
+	std::vector<Double_t> chn_ped_width;
+
+	for(int isca=0; isca<15; isca++) {
+	  chn_ped_mean.push_back(-1);
+	  chn_ped_error.push_back(-1);
+	  chn_ped_width.push_back(-1);
+	}
+	chip_ped_mean.push_back(chn_ped_mean);
+	chip_ped_error.push_back(chn_ped_error);
+	chip_ped_width.push_back(chn_ped_width);
+      }  
+      chip_ped_mean_slb.push_back(chip_ped_mean);
+      chip_ped_error_slb.push_back(chip_ped_error);
+      chip_ped_width_slb.push_back(chip_ped_width);
+    }
+    ped_mean_slboard.push_back(chip_ped_mean_slb);
+    ped_error_slboard.push_back(chip_ped_error_slb);
+    ped_width_slboard.push_back(chip_ped_width_slb);
+  }
+
+  // do pedestal (slboard/chip/channel/sca based) analysis
+  for(int islboard=0; islboard<nSLB; islboard++) {
+    cdhisto[islboard]->cd();
+    
+    for(int ichip=0; ichip<16; ichip++) {
+      for(int ichn=0; ichn<64; ichn++) {
+	
+	for(int isca=0; isca<15; isca++) {
+	  ped_sca.at(islboard).at(ichip).at(ichn).at(isca)->SetTitle(TString::Format("ped_chip%i_chn%i_sca%i",ichip,ichn,isca));
+	  ped_sca.at(islboard).at(ichip).at(ichn).at(isca)->SetName(TString::Format("ped_chip%i_chn%i_sca%i",ichip,ichn,isca));
+	  ped_sca.at(islboard).at(ichip).at(ichn).at(isca)->Write();
+	  
+	  ped_sca_tagged.at(islboard).at(ichip).at(ichn).at(isca)->SetTitle(TString::Format("ped_tagged_chip%i_chn%i_sca%i",ichip,ichn,isca));
+	  ped_sca_tagged.at(islboard).at(ichip).at(ichn).at(isca)->SetName(TString::Format("ped_tagged_chip%i_chn%i_sca%i",ichip,ichn,isca));
+	  ped_sca_tagged.at(islboard).at(ichip).at(ichn).at(isca)->Write();
+
+
+	if(ped_sca.at(islboard).at(ichip).at(ichn).at(isca)->GetEntries()> 50 ){ //max_entries/2 ) {
+	  TSpectrum *s = new TSpectrum();
+	  int npeaks = s->Search(ped_sca.at(islboard).at(ichip).at(ichn).at(isca),2,"",0.8); 
+	  if(npeaks > 0) {
+            Double_t *mean_peak=s->GetPositionX();
+            Double_t *mean_high=s->GetPositionY();
+            double mean_peak_higher=0;
+            double mean_high_higher=0;
+	    int npeak_max=0;
+            for(int ipeak=0; ipeak<npeaks; ipeak ++) {
+              if(mean_high[ipeak]>mean_high_higher && mean_high[ipeak]>50) {
+                mean_high_higher=mean_high[ipeak];
+                mean_peak_higher=mean_peak[ipeak];
+		npeak_max=ipeak;
+              }
+            }
+        
+	    if(npeaks ==1 ) {
+	      Double_t *mean_peak=s->GetPositionX();
+	      mean_peak[0]=mean_peak_higher;
+	      
+	      TF1 *f0 = new TF1("f0","gaus",mean_peak[0]-ped_sca.at(islboard).at(ichip).at(ichn).at(isca)->GetRMS(),mean_peak[0]+ped_sca.at(islboard).at(ichip).at(ichn).at(isca)->GetRMS());
+	      ped_sca.at(islboard).at(ichip).at(ichn).at(isca)->Fit("f0","RQNOC");
+	      
+	      TF1 *f1 = new TF1("f1","gaus",f0->GetParameter(1)-f0->GetParameter(2),f0->GetParameter(1)+f0->GetParameter(2));
+	      ped_sca.at(islboard).at(ichip).at(ichn).at(isca)->Fit("f1","RQME");
+	 
+	      
+	      ped_mean_slboard.at(islboard).at(ichip).at(ichn).at(isca)=f1->GetParameter(1);
+	      ped_error_slboard.at(islboard).at(ichip).at(ichn).at(isca)=f1->GetParError(1);
+	      ped_width_slboard.at(islboard).at(ichip).at(ichn).at(isca)=f1->GetParameter(2);
+	  
+	      delete f0, f1;
+	    }
+	  }
+	  delete s;
+	}
+	}
+      }
+    }
+  }
+
+  ped_sca.clear();
+  ped_sca_tagged.clear();
+
+  pedfile->Close();
+  delete pedfile;
+
+
+  // --------------------------------------------------------------------------------------------
+  //****************************************************
+  // MIP ANALYSIS
+
+   //Objects to store the chip/channel results:
+  // numbers 
+  std::vector<std::vector<std::vector<TH1F*> > > mip_histo;
+  std::vector<std::vector<std::vector<TH1F*> > > s_n_histo;
+
+  for(int islboard=0; islboard<nSLB; islboard++) {
+    std::vector<std::vector<TH1F*> > mip_histo_slboard;
+    std::vector<std::vector<TH1F*> > s_n_histo_slboard;
+    for(int ichip=0; ichip<16; ichip++) {
+      std::vector<TH1F*>  tmpmip_histo;
+      std::vector<TH1F*>  tmps_n_histo;
+      
+      for(int ichn=0;ichn<65;ichn++) {
+	TString histo_title=TString::Format("charge_slboard%i_chip%i_chn%i",islboard,ichip,ichn);
+	if(ichn==64) histo_title=TString::Format("charge_slboard%i_chip%i",islboard,ichip);
+	TH1F *chn_mip = new TH1F(histo_title,histo_title,4197,-100.5,4096.5);
+	tmpmip_histo.push_back(chn_mip);
+	TString s_n_title=TString::Format("s_n_slboard%i_chip%i_chn%i",islboard,ichip,ichn);
+	if(ichn==64) s_n_title=TString::Format("s_n_slboard%i_chip%i",islboard,ichip);
+	TH1F *chn_s_n = new TH1F(s_n_title,s_n_title,4197,-100.5,4096.5);
+	tmps_n_histo.push_back(chn_s_n);
+      }
+      mip_histo_slboard.push_back(tmpmip_histo);
+      s_n_histo_slboard.push_back(tmps_n_histo);
+      
+    }
+    mip_histo.push_back(mip_histo_slboard);
+    s_n_histo.push_back(s_n_histo_slboard);
+  }
+
+  TH2F* h_trig[15];
+  TH2F* h_trig_xy[15];
+  
+  TH2F* h_first_retriggering[15];
+  TH2F* h_all_retriggering[15];
+  TH2F* h_first_retriggering_xy[15];
+  TH2F* h_all_retriggering_xy[15];
+  
+  for(int islboard=0; islboard<nSLB; islboard++) {
+    h_trig[islboard] = new TH2F(TString::Format("trig_slboard_%i",islboard),TString::Format("trig_slboard_%i",islboard),16,-0.5,15.5,64,-0.5,63.5);
+    h_trig_xy[islboard] = new TH2F(TString::Format("trig_xy_slboard_%i",islboard),TString::Format("trig_xy_slboard_%i",islboard),32,-90,90,32,-90,90);
+    
+    h_first_retriggering[islboard] = new TH2F(TString::Format("first_retriggering_slboard_%i",islboard),TString::Format("first_retriggering_slboard_%i",islboard),16,-0.5,15.5,64,-0.5,63.5);
+    h_all_retriggering[islboard] = new TH2F(TString::Format("all_retriggering_slboard_%i",islboard),TString::Format("all_retriggering_slboard_%i",islboard),16,-0.5,15.5,64,-0.5,63.5);
+    h_first_retriggering_xy[islboard] = new TH2F(TString::Format("first_retriggering_xy_slboard_%i",islboard),TString::Format("first_retriggering_xy_slboard_%i",islboard),32,-90,90,32,-90,90);
+    h_all_retriggering_xy[islboard] = new TH2F(TString::Format("all_retriggering_xy_slboard_%i",islboard),TString::Format("all_retriggering_xy_slboard_%i",islboard),32,-90,90,32,-90,90);
+  }
+      
+  // -----------------------------------------------------------------------------------------------------
+  // Signal readout
+  nbytes = 0;
+  nb = 0;
+  for (Long64_t jentry=0; jentry<nentries;jentry++) {
+    Long64_t ientry = LoadTree(jentry);
+    if (ientry < 0) break;
+    nb = fChain->GetEntry(jentry);   nbytes += nb;
+    if ( jentry > 1000 && jentry % 1000 ==0 ) std::cout << "Progress: " << 100.*jentry/nentries <<" %"<<endl;
+   
+    for(int islboard=0; islboard<n_slboards; islboard++) {
+      for(int ichip=0; ichip<16; ichip++) {
+	  // RETRIGGER STUFF
+	bool first_retrig=false;
+      
+	for(int isca=0; isca<15; isca++) {
+	  if(bcid[islboard][ichip][isca]<0) continue;
+	  if(bcid[islboard][ichip][isca]<50 || (bcid[islboard][ichip][isca]>890 && bcid[islboard][ichip][isca]<930)) continue;
+
+	  if(isca==0) {
+	    if(badbcid[islboard][ichip][isca]>2) first_retrig=true;
+	    for(int ichn=0; ichn<64; ichn++) {
+	      if(gain_hit_high[islboard][ichip][isca][ichn]==1) {
+		h_first_retriggering[islboard] -> Fill(ichip,ichn);
+		h_all_retriggering[islboard] -> Fill(ichip,ichn);
+
+		h_first_retriggering_xy[islboard] -> Fill(map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn]);
+		h_all_retriggering_xy [islboard]-> Fill(map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn]);     
+	      }
+	    }
+	  }
+	
+	  if(isca > 0 && badbcid[islboard][ichip][isca]>2 && first_retrig==false) {
+	    first_retrig=true;
+	    for(int ichn=0; ichn<64; ichn++) {
+	      if(gain_hit_high[islboard][ichip][isca][ichn]==1) {
+		h_first_retriggering[islboard] -> Fill(ichip,ichn);
+		h_all_retriggering[islboard] -> Fill(ichip,ichn);
+
+		h_first_retriggering_xy[islboard] -> Fill(map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn]);
+		h_all_retriggering_xy[islboard] -> Fill(map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn]);    
+	      }
+	    }
+	  }
+
+	  if(badbcid[islboard][ichip][isca]>2 && first_retrig==true){
+	    for(int ichn=0; ichn<64; ichn++) {
+	      if(gain_hit_high[islboard][ichip][isca][ichn]==1) {
+		h_all_retriggering[islboard] -> Fill(ichip,ichn);
+		h_all_retriggering_xy[islboard] -> Fill(map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn]);    
+
+	      }
+	    }
+	  }
+	}
+      
+	for(int isca=0; isca<15; isca++) {
+	  if(bcid[islboard][ichip][isca]<0) continue;
+	  if(bcid[islboard][ichip][isca]<50 || (bcid[islboard][ichip][isca]>890 && bcid[islboard][ichip][isca]<930)) continue;
+	  for(int ichn=0; ichn<64; ichn++) {
+
+	    if( ped_mean_slboard.at(islboard).at(ichip).at(ichn).at(isca)>50 &&  ped_width_slboard.at(islboard).at(ichip).at(ichn).at(isca)>0 ) {
+
+	      bool selection=false;
+	      if(charge_hiGain[islboard][ichip][isca][ichn]>0 && gain_hit_high[islboard][ichip][isca][ichn]==1 && badbcid[islboard][ichip][isca]==0 && nhits[islboard][ichip][isca]<maxnhit+1 ) {
+		if(bcid[islboard][ichip][isca]>15 ) selection=true;
+	      }
+
+	      if(selection==true) {
+		h_trig[islboard] -> Fill(ichip,ichn);
+		h_trig_xy[islboard] -> Fill(map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn]);   
+		mip_histo.at(islboard).at(ichip).at(ichn)->Fill(charge_hiGain[islboard][ichip][isca][ichn]-ped_mean_slboard.at(islboard).at(ichip).at(ichn).at(isca));
+		s_n_histo.at(islboard).at(ichip).at(ichn)->Fill( (charge_hiGain[islboard][ichip][isca][ichn]-ped_mean_slboard.at(islboard).at(ichip).at(ichn).at(isca)) / ped_width_slboard.at(islboard).at(ichip).at(ichn).at(isca));
+
+		mip_histo.at(islboard).at(ichip).at(64)->Fill(charge_hiGain[islboard][ichip][isca][ichn]-ped_mean_slboard.at(islboard).at(ichip).at(ichn).at(isca));
+		s_n_histo.at(islboard).at(ichip).at(64)->Fill( (charge_hiGain[islboard][ichip][isca][ichn]-ped_mean_slboard.at(islboard).at(ichip).at(ichn).at(isca)) / ped_width_slboard.at(islboard).at(ichip).at(ichn).at(isca));
+	      }
+	    }
+	    
+	  }//ichn
+	}//sca
+      }//ichip
+    }//islboard
+
+  }
+
+  ped_mean_slboard.clear();
+  ped_error_slboard.clear();
+  ped_width_slboard.clear();
+  
+  // -----------------------------------------------------------------------------------------------------   
+  // Signal analysis
+  TFile *signalfile_summary = new TFile("results_proto/MIPs"+slboard+".root" , "RECREATE");
+  signalfile_summary->cd();
+  TDirectory *cdhistomip[nSLB];
+  for(int islboard=0; islboard<nSLB; islboard++) {
+    cdhistomip[islboard] = signalfile_summary->mkdir(TString::Format("slboard_%i",islboard));
+  }
+
+  // Setting fit range and start values
+  Double_t fr[2];
+  Double_t sv[4], pllo[4], plhi[4], fp[4], fpe[4];   
+  pllo[0]=0.; pllo[1]=0.0; pllo[2]=10.0; pllo[3]=0.;
+  plhi[0]=100.0; plhi[1]=300.0; plhi[2]=100000000.0; plhi[3]=20.0;
+  sv[0]=15.0;
+  Double_t chisqr;
+  Int_t    ndf;
+
+  //   par[0]=Width (scale) parameter of Landau density
+  //   par[1]=Most Probable (MP, location) parameter of Landau density
+  //   par[2]=Total area (integral -inf to inf, normalization constant)
+  //   par[3]=Width (sigma) of convoluted Gaussian function
+  //
+
+  for(int islboard=0; islboard<nSLB; islboard++) {
+    cout<<"  MIP ANALYSIS OF SLBOARD: "<<islboard<<endl;;
+    cdhistomip[islboard]->cd();
+    h_trig[islboard]->Write();
+    h_trig_xy[islboard]->Write();
+    
+    h_first_retriggering[islboard]->Write();
+    h_all_retriggering[islboard]->Write();
+    h_first_retriggering_xy[islboard]->Write();
+    h_all_retriggering_xy[islboard]->Write();
+        
+    for(int ichip=0; ichip<16; ichip++) {
+      cout<<"     SK: "<<ichip << " "<<endl;;
+
+      for(int ichn=0; ichn<65; ichn++) {
+	if(mip_histo.at(islboard).at(ichip).at(ichn)->GetEntries()>10){
+
+	  fr[0]=mip_histo.at(islboard).at(ichip).at(ichn)->GetMean()-0.8*mip_histo.at(islboard).at(ichip).at(ichn)->GetRMS();
+	  if(fr[0]<30) fr[0]=30;
+	  fr[1]=fr[0]+0.5*mip_histo.at(islboard).at(ichip).at(ichn)->GetRMS();
+	  if(fr[0]==30) fr[1]=fr[0]+mip_histo.at(islboard).at(ichip).at(ichn)->GetRMS();
+	  sv[0]=mip_histo.at(islboard).at(ichip).at(ichn)->GetRMS()*0.5;
+	  sv[1]=mip_histo.at(islboard).at(ichip).at(ichn)->GetMean()*0.6;
+	  sv[2]=mip_histo.at(islboard).at(ichip).at(ichn)->Integral("width");
+	  sv[3]=mip_histo.at(islboard).at(ichip).at(ichn)->GetRMS()/5.;
+	  
+	  TF1 *fitsnr_temp=langaufit(mip_histo.at(islboard).at(ichip).at(ichn),fr,sv,pllo,plhi,fp,fpe,&chisqr,&ndf);
+	  mip_histo.at(islboard).at(ichip).at(ichn)->Write();
+	  
+	  double mpv=fitsnr_temp->GetParameter(1);
+	  double empv=fitsnr_temp->GetParError(1);
+	  double wmpv=fitsnr_temp->GetParameter(0);
+	  double chi2ndf=0;
+	  if(ndf>0) chi2ndf=chisqr/ndf;
+	  double mipentries=mip_histo.at(islboard).at(ichip).at(ichn)->GetEntries();
+	  
+	  
+	  /// Signal over NOISE:
+	  fr[0]=s_n_histo.at(islboard).at(ichip).at(ichn)->GetMean()-0.8*s_n_histo.at(islboard).at(ichip).at(ichn)->GetRMS();
+	  fr[1]=s_n_histo.at(islboard).at(ichip).at(ichn)->GetMean();//+0.1*s_n_histo.at(islboard).at(ichip).at(ichn)->GetRMS();                                                                                                         
+	  sv[0]=s_n_histo.at(islboard).at(ichip).at(ichn)->GetRMS()*0.5;
+	  sv[1]=s_n_histo.at(islboard).at(ichip).at(ichn)->GetMean()*0.6;
+	  sv[2]=s_n_histo.at(islboard).at(ichip).at(ichn)->Integral("width");
+	  sv[3]=s_n_histo.at(islboard).at(ichip).at(ichn)->GetRMS()/5.;
+	  
+	  TF1 *fitsnr_temp2=langaufit(s_n_histo.at(islboard).at(ichip).at(ichn),fr,sv,pllo,plhi,fp,fpe,&chisqr,&ndf);
+	  s_n_histo.at(islboard).at(ichip).at(ichn)->Write();
+
+
+	  delete fitsnr_temp;
+	  delete fitsnr_temp2;
+
+	}//nentries>10
+      }//ichn
+    }//ichip
+  }//islboard
+
+  cout<<"END"<<endl;
+  mip_histo.clear();
+  s_n_histo.clear();
+
+  signalfile_summary->Close();
+  delete signalfile_summary;
+
+  delete  tempcanvas;
+  return 1;
+
+}
+
 void DecodedSLBAnalysis::SynchronizationStudies(TString outputname="testMonitoring", int freq=10, bool shifter=false)
 {
   TH2F* adc_bcid[15][16];
@@ -626,8 +1074,8 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
     }      
     mip_histo.push_back(tmpmip_histo);
     s_n_histo.push_back(tmps_n_histo);
-  }
-
+  
+}
   //maps 
   TH2F* MPV_2d = new TH2F("MPV_2d","MPV_2d",32,-90,90,32,-90,90);
   TH2F* eMPV_2d = new TH2F("eMPV_2d","eMPV_2d",32,-90,90,32,-90,90);
@@ -894,6 +1342,7 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
     MPV_chip[ichip]->Draw("colz");
     MPV_chip[ichip]->Write();
   }
+
   for(int ichip=0; ichip<16; ichip ++) {
     TString subtitle=TString::Format("chip%i",ichip);
     canvas_summary_s_n->cd(ichip+1);
@@ -921,7 +1370,6 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
   S_N_slab->Draw("h");
   S_N_slab->Write();
   canvas_summary->Print("results_mipcalibration/Signal_summary"+slboard+".png");
-
 
   //Correlations 
   canvas_correlations_S_N->cd(1);
@@ -988,7 +1436,13 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
   canvas_summary_s_n->Write(); 
   canvas_summary->Write();
   canvas_correlations_S_N->Write();
-  
+
+  delete canvas_maps;
+  delete canvas_summary_mip;
+  delete canvas_summary_s_n;
+  delete canvas_summary;
+  delete canvas_correlations_S_N;
+
   signalfile_summary->Close();
 
 }
