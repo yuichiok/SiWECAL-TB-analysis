@@ -19,7 +19,7 @@
 
 using namespace std;
 
-std::vector<std::array<int,9>>  DecodedSLBAnalysis::NoiseLevels(int acqwindow=150)
+std::vector<std::array<int,9>>  DecodedSLBAnalysis::NoiseLevels(int acqwindow=150, bool calculate_expected=false)
 {
 
   
@@ -45,7 +45,7 @@ std::vector<std::array<int,9>>  DecodedSLBAnalysis::NoiseLevels(int acqwindow=15
   }
   
   Long64_t nentries = fChain->GetEntriesFast();
-
+  //  nentries=100000;
   float expected=0;
   // -----------------------------------------------------------------------------------------------------   
   // SCA analysis
@@ -60,6 +60,7 @@ std::vector<std::array<int,9>>  DecodedSLBAnalysis::NoiseLevels(int acqwindow=15
     if ( jentry > 1000 && jentry % 1000 ==0 ) std::cout << "Progress: " << 100.*jentry/nentries <<" %"<<endl;
 
     expected=0.25*acqNumber*float(acqwindow)/60.;
+  
     for(int ilayer=0; ilayer<n_slboards; ilayer++) {
       
       for(int ichip=0; ichip<16; ichip++) {
@@ -110,7 +111,23 @@ std::vector<std::array<int,9>>  DecodedSLBAnalysis::NoiseLevels(int acqwindow=15
       
   }
 
-
+  if(calculate_expected==true) {
+    float n_enabled_channels=0;
+    float ntriggers_total=0;
+    
+    for(int ilayer=0; ilayer<n_SLB; ilayer++) {
+      for(int ichip=0; ichip<16; ichip++) {
+	for(int ichn=0; ichn<64; ichn++) {
+	  if(trigger[ilayer][ichip][ichn]>0) {
+	    n_enabled_channels++;
+	    ntriggers_total+=trigger[ilayer][ichip][ichn];
+	  }
+	}
+      }
+    }
+    expected=int(ntriggers_total/n_enabled_channels);
+  }
+  
   std::vector<std::array<int,9>>  result;
   
   for(int ilayer=0; ilayer<n_SLB; ilayer++) {

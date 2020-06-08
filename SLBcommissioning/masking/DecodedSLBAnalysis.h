@@ -78,7 +78,7 @@ public :
    virtual void     Init(TTree *tree);
    // write file with masked channels
    // analysis of pedestal and writting of the file with pedestals per chi/channel/sca
-   virtual std::vector<std::array<int,9>>  NoiseLevels(int);
+   virtual std::vector<std::array<int,9>>  NoiseLevels(int,bool);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
 
