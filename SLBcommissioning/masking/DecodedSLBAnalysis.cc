@@ -126,6 +126,21 @@ std::vector<std::array<int,9>>  DecodedSLBAnalysis::NoiseLevels(int acqwindow=15
       }
     }
     expected=int(ntriggers_total/n_enabled_channels);
+
+    n_enabled_channels=0;
+    ntriggers_total=0;
+    for(int ilayer=0; ilayer<n_SLB; ilayer++) {
+      for(int ichip=0; ichip<16; ichip++) {
+	for(int ichn=0; ichn<64; ichn++) {
+	  if(trigger[ilayer][ichip][ichn]>0 && trigger[ilayer][ichip][ichn]<(float(expected)+3.*sqrt(float(expected)))) {
+	    n_enabled_channels++;
+	    ntriggers_total+=trigger[ilayer][ichip][ichn];
+	  }
+	}
+      }
+    }
+    expected=int(ntriggers_total/n_enabled_channels);
+    
   }
   
   std::vector<std::array<int,9>>  result;

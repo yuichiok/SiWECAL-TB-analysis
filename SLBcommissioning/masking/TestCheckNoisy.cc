@@ -43,7 +43,7 @@ void cosmics_check_test(TString filename_in, TString settings, TString settings_
 }
 
 
-int TestCheckNoisy(TString filename_in="../../converter_SLB/convertedfiles/Run_ILC_06072020_weekend_3_Ascii/Run_ILC_06072020_weekend_3_Ascii.root", TString settingsfile="/mnt/win2/Run_data/Run_ILC_06072020_weekend_3_Ascii/Run_Settings.txt", TString settings_new="Run_settings_longcosmicrun_1.txt"){
+int TestCheckNoisy(TString filename_in="../../converter_SLB/convertedfiles/Run_ILC_06082020_cosmic_2_Ascii/Run_ILC_06082020_cosmic_2_Ascii.root", TString settingsfile="/mnt/win2/Run_data/Run_ILC_06082020_cosmic_2_Ascii/Run_Settings.txt", TString settings_new="Run_settings_longcosmicrun_3.txt"){
 
   //filename_in is the full name of the converted root file
   // setingfile is the full name of the settings file
