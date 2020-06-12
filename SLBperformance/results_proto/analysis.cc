@@ -18,12 +18,13 @@ void analysis(TString run, int slboard) {
   gStyle->SetTitleFontSize(0.05);
   gStyle->SetMarkerSize(1.2);
 
+
   int cob=0;
   if(slboard==8 || slboard==12) cob=1;
   triggers(run, slboard,cob);
 
-  //  TFile *file = new TFile(TString::Format("plots/slboard_%i_%s.root",slboard,run.Data()) , "RECREATE");  
-  //mipanalysis(file,run, slboard,cob);
-  //  file->Close();
+  TFile *file = new TFile(TString::Format("plots/slboard_%i_%s.root",slboard,run.Data()) , "RECREATE");  
+  mipanalysis(file,run, slboard,cob);
+  file->Close();
 
 }

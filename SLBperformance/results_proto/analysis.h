@@ -166,12 +166,15 @@ void triggers( TString run="Run_ILC_cosmic_test_11222019", int slboard=2, int co
   gStyle->SetOptTitle(1);
   
   gStyle->SetTitleBorderSize(0);
-  gStyle->SetTitleX(0.2);
+  gStyle->SetTitleX(0.4);
   gStyle->SetTitleY(1.0);
   gStyle->SetTitleStyle(0);
   gStyle->SetTitleFontSize(0.05);
   gStyle->SetMarkerSize(1.2);
-
+  gStyle->SetPadRightMargin(0.2);
+  //gStyle->SetPalette(kTemperatureMap);
+  ////gStyle->SetPalette(kThermometer);
+  gStyle->SetPalette(kLightTemperature);
 
     // Comparing nbr entries in tag or not tag // GetWidth and Mean
   TString map="../../mapping/fev10_chip_channel_x_y_mapping.txt";
@@ -186,31 +189,74 @@ void triggers( TString run="Run_ILC_cosmic_test_11222019", int slboard=2, int co
   TH1F *all_retriggering_xy=(TH1F*)_file0->Get(TString::Format("slboard_%i/all_retriggering_xy_slboard_%i",slboard,slboard));
   
 
-  TCanvas* canvas= new TCanvas(TString::Format("Triggers_slboard_%i",slboard),TString::Format("Triggers_slboard_%i",slboard),1600,1600);   
+  TCanvas* canvas= new TCanvas(TString::Format("Triggers_slboard_%i",slboard),TString::Format("Triggers_slboard_%i",slboard),1400,1200);   
   canvas->Divide(2,2);
   
   canvas->cd(1);
   trig->GetXaxis()->SetTitle("CHIP");
   trig->GetYaxis()->SetTitle("chn");
-  //  trig->GetZaxis()->SetRangeUser(50,150);
+  float nchn=1024.;
+  if(cob==1) nchn=256.;
+  float zmin=trig->GetEntries()/nchn-5*trig->GetEntries()/nchn;
+  float zmax=trig->GetEntries()/nchn+5*trig->GetEntries()/nchn;
+  float n_average=0;
+  float average=0;
+  for(int i=0; i<32; i++) {
+    for(int j=0; j<32; j++) {
+      if(trig->GetBinContent(i+1,j+1)<zmax && trig->GetBinContent(i+1,j+1)>zmin)  {
+	average+=trig->GetBinContent(i+1,j+1);
+	n_average++;
+      }
+    }
+  }
+  average/=n_average;
+  zmin=average*(1-3);
+  zmax=average*(1+3);
+  if(zmin<0) zmin =0;
+  if(cob==1) zmax=550;
+
+  trig->GetZaxis()->SetRangeUser(zmin,zmax);
   trig->Draw("colz");
   
   canvas->cd(2);
-  all_retriggering_xy->GetXaxis()->SetTitle("x");
-  all_retriggering_xy->GetYaxis()->SetTitle("y");
-  //  all_retriggering_xy->GetZaxis()->SetRangeUser(1,30);
-  all_retriggering_xy->Draw("COLZ");
+  // gPad->SetLogz();
+  trig_xy->GetXaxis()->SetTitle("x");
+  trig_xy->GetYaxis()->SetTitle("y");
+  trig_xy->GetZaxis()->SetRangeUser(zmin,zmax);
+  trig_xy->Draw("COLZ");
   
   canvas->cd(3);
+  zmin=all_retriggering->GetEntries()/nchn-5*all_retriggering->GetEntries()/nchn;
+  zmax=all_retriggering->GetEntries()/nchn+5*all_retriggering->GetEntries()/nchn;
+  n_average=0;
+  average=0;
+  for(int i=0; i<32; i++) {
+    for(int j=0; j<32; j++) {
+      if(all_retriggering->GetBinContent(i+1,j+1)<zmax && all_retriggering->GetBinContent(i+1,j+1)>zmin)  {
+	average+=all_retriggering->GetBinContent(i+1,j+1);
+	n_average++;
+      }
+    }
+  }
+  average/=n_average;
+  zmin=average*(1-3);
+  zmax=average*(1+3);
+  if(zmin<0) zmin =0;
+  
+  
   all_retriggering->GetXaxis()->SetTitle("CHIP");
   all_retriggering->GetYaxis()->SetTitle("chn");
-  //  all_retriggering->GetZaxis()->SetRangeUser(50,150);
+  //all_retriggering->GetZaxis()->SetRangeUser(50,150);
+  all_retriggering->GetZaxis()->SetRangeUser(zmin,zmax);
   all_retriggering->Draw("colz");
   
   canvas->cd(4);
+  // gPad->SetLogz();
+
   all_retriggering_xy->GetXaxis()->SetTitle("x");
   all_retriggering_xy->GetYaxis()->SetTitle("y");
   //all_retriggering_xy->GetZaxis()->SetRangeUser(1,30);
+  all_retriggering_xy->GetZaxis()->SetRangeUser(zmin,zmax);
   all_retriggering_xy->Draw("COLZ");
 
   canvas->Print(TString::Format("plots/Triggers_%s_slboard_%i.eps",run.Data(),slboard));
@@ -234,7 +280,8 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int sl
   gStyle->SetTitleStyle(0);
   gStyle->SetTitleFontSize(0.05);
   gStyle->SetMarkerSize(1.2);
-
+  gStyle->SetPadRightMargin(0.2);
+  gStyle->SetPalette(kLightTemperature);
 
   file->cd();
   TDirectory *cdhisto = file->GetDirectory("histograms_mip");
@@ -251,15 +298,15 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int sl
 
   cout<< TString::Format("MIPs_15_slboards_%s.root",run.Data()) <<endl;
   TH2F* MIPW =new TH2F("MIPW","MIPW",32,-90,90,32,-90,90);
-  TH2F* MIPM=new TH2F("MIPM","MIPM",32,-90,90,32,-90,90);
+  TH2F* MIPM_xy=new TH2F("MIPM_xy","MIPM_xy",32,-90,90,32,-90,90);
+  TH2F* MIPM=new TH2F(TString::Format("MIPM_slbooard_%i",slboard),TString::Format("MIPM_slbooard_%i",slboard),16,-0.5,15.5,64,-0.5,63.5);
   TH2F* MIPRMS=new TH2F("MIPRMS","MIPRMS",32,-90,90,32,-90,90);
   TH2F* MIPN=new TH2F("MIPN","MIPN",32,-90,90,32,-90,90);
 
-  TCanvas* canvas_mip[16];
   for(int i=0;i<nchips;i++){
     
-    canvas_mip[i]= new TCanvas(TString::Format("MIPs_slboard_%i_chip%i",slboard,i),TString::Format("MIPs_slboard_%i_chip%i",slboard,i),1600,1600);   
-    canvas_mip[i]->Divide(8,8);
+      TCanvas* canvas_mip= new TCanvas(TString::Format("MIPs_slboard_%i_chip%i",slboard,i),TString::Format("MIPs_slboard_%i_chip%i",slboard,i),1600,1600);   
+      canvas_mip->Divide(8,8);
 
       for(int j=0; j<64; j++) {
 	TCanvas* canvastemp= new TCanvas("temp","temp",100,100);   
@@ -273,15 +320,15 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int sl
 
 	 Double_t fr[2];
 	 Double_t sv[4], pllo[4], plhi[4], fp[4], fpe[4];   
-	 pllo[0]=1.0; pllo[1]=20; pllo[2]=100.0; pllo[3]=1;
-	 plhi[0]=100.0; plhi[1]=100.0; plhi[2]=100000000.0; plhi[3]=30.0;
+	 pllo[0]=1.0; pllo[1]=15; pllo[2]=1.0; pllo[3]=1;
+	 plhi[0]=100.0; plhi[1]=100.0; plhi[2]=100000000.0; plhi[3]=20.0;
 	 sv[0]=15.0;
 	 Double_t chisqr;
 	 Int_t    ndf;
 
 	 
 	 if(temp->GetEntries()>10){
-	   fr[0]=30;
+	   fr[0]=15;
 	   fr[1]=150;//fr[0]+0.5*temp->GetRMS();
 	   TF1 *fitsnr_temp=langaufit(temp,fr,sv,pllo,plhi,fp,fpe,&chisqr,&ndf);
 	
@@ -291,11 +338,12 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int sl
 	   double chi2ndf=0;
 	   if(ndf>0) chi2ndf=chisqr/ndf;
 
-	   MIPM->Fill(map_pointX[i][j],map_pointY[i][j],mpv);
+	   MIPM->Fill(i,j,mpv);
+	   MIPM_xy->Fill(map_pointX[i][j],map_pointY[i][j],mpv);
 	   MIPRMS->Fill(map_pointX[i][j],map_pointY[i][j],fitsnr_temp->GetParameter(3));
 	   MIPW->Fill(map_pointX[i][j],map_pointY[i][j],wmpv);
 
-	   canvas_mip[i]->cd(j+1);
+	   canvas_mip->cd(j+1);
 	   temp->GetXaxis()->SetRangeUser(0,200);
 	   temp->GetXaxis()->SetLabelSize(0.1);
 	   temp->GetYaxis()->SetLabelSize(0.1);
@@ -313,21 +361,39 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int sl
 	 } 
       }
       file->cd();
-      canvas_mip[i]->Print(TString::Format("plots/MIPs_%s_slboard_%i_chip%i.eps",run.Data(),slboard,i));
-      canvas_mip[i]->Write();
-      
+      //canvas_mip->Print(TString::Format("plots/MIPs_%s_slboard_%i_chip%i.eps",run.Data(),slboard,i));
+      canvas_mip->Write();
+      delete canvas_mip;
   }
 
 
   //  _file0 ->Close();
 
-  TCanvas* canvas= new TCanvas(TString::Format("MIPAna_slboard_%i",slboard),TString::Format("MIPAna_slboard_%i",slboard),1600,1600);   
+  TCanvas* canvas2= new TCanvas(TString::Format("MIPAna_slboard_%i",slboard),TString::Format("MIPAna_slboard_%i",slboard),800,1600);   
+  canvas2->Divide(1,2);
+  
+  canvas2->cd(1);
+  MIPM->GetXaxis()->SetTitle("CHIP");
+  MIPM->GetYaxis()->SetTitle("chn");
+  MIPM->GetZaxis()->SetRangeUser(15,80);
+  MIPM->Draw("colz");
+
+
+  canvas2->cd(2);
+  MIPM_xy->GetXaxis()->SetTitle("x");
+  MIPM_xy->GetYaxis()->SetTitle("y");
+  MIPM_xy->GetZaxis()->SetRangeUser(15,80);
+  MIPM_xy->Draw("colz");
+
+  canvas2->Print(TString::Format("plots/MIPAna_%s_slboard_%i.eps",run.Data(),slboard));
+
+  TCanvas* canvas= new TCanvas(TString::Format("MIPAna2_slboard_%i",slboard),TString::Format("MIPAna2_slboard_%i",slboard),1600,1600);   
   canvas->Divide(2,2);
   
   canvas->cd(1);
     MIPM->GetXaxis()->SetTitle("x");
     MIPM->GetYaxis()->SetTitle("y");
-    MIPM->GetZaxis()->SetRangeUser(50,150);
+    MIPM->GetZaxis()->SetRangeUser(20,80);
     MIPM->Draw("colz");
 
     canvas->cd(2);
@@ -349,14 +415,19 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int sl
     MIPRMS->GetZaxis()->SetRangeUser(5,200);
     MIPRMS->Draw("COLZ");
 
-  canvas->Print(TString::Format("plots/MIPAna_%s_slboard_%i.eps",run.Data(),slboard));
+    // canvas->Print(TString::Format("plots/MIPAna_%s_slboard_%i.eps",run.Data(),slboard));
 
   file->cd();
   MIPM->Write();
+  MIPM_xy->Write();
   MIPW->Write();
   MIPN->Write();
   MIPRMS->Write();
+  canvas2->Write();
   canvas->Write();
+  delete  canvas;
+  delete  canvas2;
+  file->Close();
   
 }
 
