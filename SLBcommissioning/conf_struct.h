@@ -165,6 +165,22 @@ void read_configuration_file(TString filename="Run_Settings.txt", bool debug=tru
 
 }
 
+void mask_full_chip(int idaughter, int islab, int iasu, int ichip) {
+  for(int i=0; i<detector.slab[idaughter][islab].asu[iasu].skiroc[ichip].n_channels; i++) detector.slab[idaughter][islab].asu[iasu].skiroc[ichip].mask[i]=1;
+}
+
+
+void enable_trig_row(int idaughter, int islab, int iasu, int ichip, int irow) {
+  //row 0 --> chns 0-7
+  //row 2--> chns 8-15
+  //etc
+  cout<<irow<<endl;
+  for(int i=irow*8; i<(irow*8+8); i++) {
+    cout<<idaughter<<" "<<islab<<" "<<iasu<<" "<< ichip<<" "<<i <<endl;
+    detector.slab[idaughter][islab].asu[iasu].skiroc[ichip].mask[i]=0;
+  }
+}
+
 TString trigger_type_string(int i) {
 
   TString result="SELF_TRIGGER";
