@@ -2,9 +2,18 @@
 ## A. Irles, 6th February 2020
 ## irles NOT SPAM @lal.in2p3.fr
 
-Five functions in DecodedSLBAnalysis.cc
-Analyzes single slabs.
+Functions in DecodedSLBAnalysis.cc
 uses the output of SLBdecoded2ROOT.cc
+//----------------------------------------
+Analyzes ALL SLABS at the same time.
+Examples of how to run the different functions are in
+
+- Proto.cc  --> Pedestal + MIP analysis
+- DummyDisplay.cc --> Save some 3D plots with a simplistic event building
+- Monitoring.cc --> Dummy Monitoring tools. More for Debugging that for monitoring so far.
+
+//----------------------------------------
+Analyzes SINGLE SLABS.
 Examples of how to run the different functions are in SingleSlabAnalysis.cc
 
 To run it you need to create the following folders:
