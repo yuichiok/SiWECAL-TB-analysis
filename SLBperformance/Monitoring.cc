@@ -13,9 +13,9 @@ void Monitoring(TString filename_in, TString output="", int freq=1, bool shifter
 
   TString map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis/mapping/fev10_chip_channel_x_y_mapping.txt";
 
-  for(int i_layer=0; i_layer<8; i_layer++) {
-    if(i_layer==5) map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis/mapping/fev11_cob_chip_channel_x_y_mapping.txt";
-    else map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis/mapping/fev10_chip_channel_x_y_mapping.txt"; 
+  for(int i_layer=0; i_layer<15; i_layer++) {
+    if(i_layer==8 || i_layer==12) map="../mapping/fev11_cob_chip_channel_x_y_mapping.txt";
+    else map="../mapping/fev10_chip_channel_x_y_mapping.txt"; 
     
     ss.ReadMap(map,i_layer);
   }
