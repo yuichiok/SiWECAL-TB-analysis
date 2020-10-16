@@ -18,6 +18,202 @@
 
 using namespace std;
 
+void DecodedSLBAnalysis::SlowControlMonitoring(TString outputname="SlowControlMonitoring")
+{
+
+  TGraph* temp[30];
+  TGraph* avdd0[30];
+  TGraph* avdd_diff[30];
+  TGraph* avdd_temp[30];
+
+  // --------------
+  if (fChain == 0) return;
+  Long64_t nentries = fChain->GetEntriesFast();
+
+  int ngraph=nentries/1000;
+  if(ngraph<1) ngraph=1;
+  //-----------------
+  cout<<"Total number of entries: "<< nentries<<endl;
+  cout<<"Fill graph every "<< ngraph <<" cycles"<<endl;
+
+  double x[30][1000]={0};
+  double temp_y[30][1000]={0};
+  double avdd_y[30][1000]={0};
+  double avdd_diff_y[30][1000]={0};
+  double avdd_temp_y[30][1000]={0};
+  int n[30]={0};
+  // -----------------------------------------------------------------------------------------------------
+  // Signal readout
+  Long64_t nbytes = 0, nb = 0;
+  int n_SLB=0;
+  for (Long64_t jentry=0; jentry<nentries;jentry+=ngraph) {
+    Long64_t ientry = LoadTree(jentry);
+    if (ientry < 0) break;
+    nb = fChain->GetEntry(jentry);   nbytes += nb;
+    if ( jentry > 1000 && jentry % 1000 ==0 ) std::cout << "Progress: " << 100.*jentry/nentries <<" %"<<endl;
+
+    if(jentry==0) n_SLB=n_slboards;
+
+    if ( jentry % (ngraph) !=0 ) continue;
+   
+    for(int islboard=0; islboard<n_slboards; islboard++) {
+      if(TSD[islboard]>0) {
+	x[slboard_id[islboard]][n[slboard_id[islboard]]]=jentry;
+	temp_y[slboard_id[islboard]][n[slboard_id[islboard]]]=TSD[islboard];
+	avdd_y[slboard_id[islboard]][n[slboard_id[islboard]]]=AVDD0[islboard];
+	avdd_diff_y[slboard_id[islboard]][n[slboard_id[islboard]]]=(AVDD1[islboard]-AVDD0[islboard]);
+	avdd_temp_y[slboard_id[islboard]][n[slboard_id[islboard]]]=AVDD0[islboard]/TSD[islboard];
+
+	n[slboard_id[islboard]]++;
+      }
+    }
+    
+
+  }
+
+  for(int i=0; i<30; i++) {
+    for(int j=0; j<n[i]; j++) {
+      temp_y[i][j]= ( temp_y[i][j] -  temp_y[i][10]);
+    }
+  }
+
+  // -----------------------------------------------------------------------------------------------------   
+  for(int i=0; i<30; i++) {
+    if(n[i]!=0) {
+      temp[i] = new TGraph(n[i],x[i],temp_y[i]);
+      avdd0[i] = new TGraph(n[i],x[i],avdd_y[i]);
+      avdd_diff[i] = new TGraph(n[i],x[i],avdd_diff_y[i]);
+      avdd_temp[i] = new TGraph(n[i],x[i],avdd_temp_y[i]);
+    }
+  }
+
+  TFile *monitoringfile_summary = new TFile("results_monitoring/SlowControl_"+outputname+".root" , "RECREATE");
+  monitoringfile_summary->cd();
+  
+  for(int i=0; i<11; i++) {
+    if(n[i]!=0) {
+      temp[i]->SetName(TString::Format("temp_slboard_%i",i));
+      temp[i]->Write();
+      avdd0[i]->SetName(TString::Format("AVDD0_slboard_%i",i));
+      avdd0[i]->Write();
+      avdd_diff[i]->SetName(TString::Format("AVDDdiff_slboard_%i",i));
+      avdd_diff[i]->Write();
+      avdd_temp[i]->SetName(TString::Format("AVDDtemp_slboard_%i",i));
+      avdd_temp[i]->Write();
+    }
+  }
+  
+  TCanvas * canvas = new TCanvas("canvas","canvas",1600,1600);
+  canvas->Divide(2,2);
+  canvas->cd(1);
+  TLegend * leg = new TLegend(0.7,0.2,0.9,0.7);
+  bool first=true;
+  for(int i=0; i<30; i++) {
+   if(n[i]!=0 && first==false) {
+      temp[i]->SetLineColor(i+1);
+      temp[i]->SetLineWidth(2);
+      temp[i]->SetMarkerColor(i+1);
+      temp[i]->SetMarkerStyle(20+i);
+      temp[i]->SetLineStyle( i % 2 + 1);
+      //   temp[i]->Draw("lp");
+      leg->AddEntry(temp[i],TString::Format("SL@ %i",i),"lp");
+    }
+   if(n[i]!=0 && first==true) {
+      temp[i]->GetXaxis()->SetTitle("# Acq. Since Start");
+      temp[i]->GetYaxis()->SetTitle("Temp Variation since start [Celsius] ");
+      temp[i]->SetLineColor(i+1);
+      temp[i]->SetLineWidth(2);
+      temp[i]->SetMarkerColor(i+1);
+      temp[i]->SetMarkerStyle(20+i);
+      temp[i]->SetLineStyle( i % 2 + 1);
+      //  temp[i]->Draw("alp");
+      first=false;
+      leg->AddEntry(temp[i],TString::Format("SL@ %i",i),"lp");
+    }
+  }
+  leg->Draw();
+  
+  canvas->cd(2);
+  first=true;
+  for(int i=0; i<30; i++) {
+    if(n[i]!=0 && first==false) {
+      avdd0[i]->SetLineColor(i+1);
+      avdd0[i]->SetLineWidth(2);
+      avdd0[i]->SetMarkerColor(i+1);
+      avdd0[i]->SetMarkerStyle(20+i);
+      avdd0[i]->SetLineStyle( i % 2 + 1);
+      avdd0[i]->Draw("lp");
+    }
+    if(n[i]!=0 && first==true) {
+      avdd0[i]->GetXaxis()->SetTitle("# Acq. Since Start");
+      avdd0[i]->GetYaxis()->SetTitle("Avdd start ACQ [mV] ");
+      avdd0[i]->GetYaxis()->SetRangeUser(3000,3700);
+      avdd0[i]->SetLineColor(i+1);
+      avdd0[i]->SetLineWidth(2);
+      avdd0[i]->SetMarkerColor(i+1);
+      avdd0[i]->SetMarkerStyle(20+i);
+      avdd0[i]->SetLineStyle( i % 2 + 1);
+      avdd0[i]->Draw("alp");
+      first=false;
+    }
+  }
+
+  canvas->cd(3);
+   first=true;
+  for(int i=0; i<30; i++) {
+    if(n[i]!=0 && first==false) {
+      avdd_diff[i]->SetLineColor(i+1);
+      avdd_diff[i]->SetLineWidth(2);
+      avdd_diff[i]->SetMarkerColor(i+1);
+      avdd_diff[i]->SetMarkerStyle(20+i);
+      avdd_diff[i]->SetLineStyle( i % 2 + 1);
+      avdd_diff[i]->Draw("lp");
+    }
+    if(n[i]!=0 && first==true) {
+      avdd_diff[i]->GetXaxis()->SetTitle("# Acq. Since Start");
+      avdd_diff[i]->GetYaxis()->SetTitle("Avdd Start ACQ - Stop Acq [mV] ");
+      avdd_diff[i]->GetYaxis()->SetRangeUser(-20,10);
+      avdd_diff[i]->SetLineColor(i+1);
+      avdd_diff[i]->SetLineWidth(2);
+      avdd_diff[i]->SetMarkerColor(i+1);
+      avdd_diff[i]->SetMarkerStyle(20+i);
+      avdd_diff[i]->SetLineStyle( i % 2 + 1);
+      avdd_diff[i]->Draw("alp");
+      first=false;
+    }
+  }
+  canvas->cd(4);
+   first=true;
+   for(int i=0; i<30; i++) {
+   if(n[i]!=0 && first==false) {
+      temp[i]->SetLineColor(i+1);
+      temp[i]->SetLineWidth(2);
+      temp[i]->SetMarkerColor(i+1);
+      temp[i]->SetMarkerStyle(20+i);
+      temp[i]->SetLineStyle( i % 2 + 1);
+      temp[i]->Draw("lp");
+      //leg->AddEntry(temp[i],TString::Format("SL@ %i",i),"lp");
+    }
+   if(n[i]!=0 && first==true) {
+      temp[i]->GetXaxis()->SetTitle("# Acq. Since Start");
+      temp[i]->GetYaxis()->SetTitle("Temp Variation since start [Celsius] ");
+      temp[i]->SetLineColor(i+1);
+      temp[i]->SetLineWidth(2);
+      temp[i]->SetMarkerColor(i+1);
+      temp[i]->SetMarkerStyle(20+i);
+      temp[i]->SetLineStyle( i % 2 + 1);
+      temp[i]->Draw("alp");
+      first=false;
+      // leg->AddEntry(temp[i],TString::Format("SL@ %i",i),"lp");
+    }
+  }
+  
+  canvas->Write();
+  
+  monitoringfile_summary->Close();
+
+}
+
 
 void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay")
 {
@@ -26,12 +222,22 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay")
   TH3F* charge_14[300];
   TH3F* charge_13[300];
   TH3F* charge_12[300];
+  TH3F* charge_11[300];
+  TH3F* charge_10[300];
+  TH3F* charge_8[300];
+  TH3F* charge_6[300];
+
 
   for(int j=0; j<300; j++) {
     charge_15[j]=new TH3F(TString::Format("charge_15layers_coinc_xyz_%i",j),TString::Format("charge_15layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
     charge_14[j]=new TH3F(TString::Format("charge_14layers_coinc_xyz_%i",j),TString::Format("charge_14layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
     charge_13[j]=new TH3F(TString::Format("charge_13layers_coinc_xyz_%i",j),TString::Format("charge_13layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
     charge_12[j]=new TH3F(TString::Format("charge_12layers_coinc_xyz_%i",j),TString::Format("charge_12layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
+    charge_11[j]=new TH3F(TString::Format("charge_11layers_coinc_xyz_%i",j),TString::Format("charge_11layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
+    charge_10[j]=new TH3F(TString::Format("charge_10layers_coinc_xyz_%i",j),TString::Format("charge_10layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
+    charge_8[j]=new TH3F(TString::Format("charge_8layers_coinc_xyz_%i",j),TString::Format("charge_8layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
+    charge_6[j]=new TH3F(TString::Format("charge_6layers_coinc_xyz_%i",j),TString::Format("charge_6layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
+
   }
   
   // --------------
@@ -40,7 +246,7 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay")
   //-----------------
   cout<<"Total number of entries: "<< nentries<<endl;
 
-  int nhistos_15=0, nhistos_14=0, nhistos_13=0, nhistos_12=0;
+  int nhistos_15=0, nhistos_14=0, nhistos_13=0, nhistos_12=0, nhistos_11=0, nhistos_10=0, nhistos_8=0, nhistos_6=0;
 
   // -----------------------------------------------------------------------------------------------------
   // Signal readout
@@ -81,13 +287,21 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay")
     }
     
     for(int i=0; i<4096; i++) {
-      if( (bcid_seen[i]==12 && nhistos_12<300) || (bcid_seen[i]==13 && nhistos_13<300) || (bcid_seen[i]==14 && nhistos_14<300) || (bcid_seen[i]==15 && nhistos_15<300)  ) {  
+      if( (bcid_seen[i]==6 && nhistos_12<300) || (bcid_seen[i]==8 && nhistos_12<300) || (bcid_seen[i]==10 && nhistos_12<300) || (bcid_seen[i]==11 && nhistos_12<300) || (bcid_seen[i]==12 && nhistos_12<300) || (bcid_seen[i]==13 && nhistos_13<300) || (bcid_seen[i]==14 && nhistos_14<300) || (bcid_seen[i]==15 && nhistos_15<300)  ) {  
 	for(int islboard=0; islboard<n_slboards; islboard++) {
 	  for(int ichip=0; ichip<16; ichip++) {
 	    for(int isca=0; isca<15; isca++) {
 	      if(badbcid[islboard][ichip][isca]==0 && bcid[islboard][ichip][isca]==i) {
 		for(int ichn=0;ichn<64; ichn++) {
 		  double z=-15.*double(slot[islboard]);
+		  if(gain_hit_high[islboard][ichip][isca][ichn]==1 && bcid_seen[i]==6 && nhistos_6<300)
+		    charge_6[nhistos_6]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),z,double(charge_hiGain[islboard][ichip][isca][ichn]));
+		  if(gain_hit_high[islboard][ichip][isca][ichn]==1 && bcid_seen[i]==8 && nhistos_8<300)
+		    charge_8[nhistos_8]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),z,double(charge_hiGain[islboard][ichip][isca][ichn]));
+		  if(gain_hit_high[islboard][ichip][isca][ichn]==1 && bcid_seen[i]==10 && nhistos_10<300)
+		    charge_10[nhistos_10]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),z,double(charge_hiGain[islboard][ichip][isca][ichn]));
+		  if(gain_hit_high[islboard][ichip][isca][ichn]==1 && bcid_seen[i]==11 && nhistos_11<300)
+		    charge_11[nhistos_11]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),z,double(charge_hiGain[islboard][ichip][isca][ichn]));
 		  if(gain_hit_high[islboard][ichip][isca][ichn]==1 && bcid_seen[i]==12 && nhistos_12<300)
 		    charge_12[nhistos_12]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),z,double(charge_hiGain[islboard][ichip][isca][ichn]));
 		  if(gain_hit_high[islboard][ichip][isca][ichn]==1 && bcid_seen[i]==13 && nhistos_13<300)
@@ -101,6 +315,10 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay")
 	    }
 	  }
 	}
+	if(bcid_seen[i]==6) nhistos_6++;
+	if(bcid_seen[i]==8) nhistos_8++;
+	if(bcid_seen[i]==10) nhistos_10++;
+	if(bcid_seen[i]==11) nhistos_11++;
 	if(bcid_seen[i]==12) nhistos_12++;
 	if(bcid_seen[i]==13) nhistos_13++;
         if(bcid_seen[i]==14) nhistos_14++;
@@ -108,7 +326,8 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay")
       }
     }
 
-    if(nhistos_12>300 && nhistos_13>300 && nhistos_14>300 && nhistos_15>300) break;
+    //  if(nhistos_12>300 && nhistos_13>300 && nhistos_14>300 && nhistos_15>300) break;
+    if(nhistos_6>300 && nhistos_8>300 && nhistos_10>300 && nhistos_11>300 ) break;//&& nhistos_12>300 && nhistos_13>300 && nhistos_14>300 && nhistos_15>300) break;
 
   }
   // -----------------------------------------------------------------------------------------------------   
@@ -117,6 +336,26 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay")
   monitoringfile_summary->cd();
 
   for(int i=0; i<300; i++) {
+    charge_6[i]->GetXaxis()->SetTitle("X [mm]");
+    charge_6[i]->GetYaxis()->SetTitle("Y [mm]");
+    charge_6[i]->GetZaxis()->SetTitle("Z (0=upper module) [mm]");
+    if(charge_6[i]->GetEntries()>0) charge_6[i]->Write();
+
+    charge_8[i]->GetXaxis()->SetTitle("X [mm]");
+    charge_8[i]->GetYaxis()->SetTitle("Y [mm]");
+    charge_8[i]->GetZaxis()->SetTitle("Z (0=upper module) [mm]");
+    if(charge_8[i]->GetEntries()>0) charge_8[i]->Write();
+
+    charge_10[i]->GetXaxis()->SetTitle("X [mm]");
+    charge_10[i]->GetYaxis()->SetTitle("Y [mm]");
+    charge_10[i]->GetZaxis()->SetTitle("Z (0=upper module) [mm]");
+    if(charge_10[i]->GetEntries()>0) charge_10[i]->Write();
+
+    charge_11[i]->GetXaxis()->SetTitle("X [mm]");
+    charge_11[i]->GetYaxis()->SetTitle("Y [mm]");
+    charge_11[i]->GetZaxis()->SetTitle("Z (0=upper module) [mm]");
+    if(charge_11[i]->GetEntries()>0) charge_11[i]->Write();
+    
     charge_12[i]->GetXaxis()->SetTitle("X [mm]");
     charge_12[i]->GetYaxis()->SetTitle("Y [mm]");
     charge_12[i]->GetZaxis()->SetTitle("Z (0=upper module) [mm]");
@@ -137,7 +376,7 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay")
     charge_15[i]->GetXaxis()->SetTitle("X [mm]");
     charge_15[i]->GetYaxis()->SetTitle("Y [mm]");
     charge_15[i]->GetZaxis()->SetTitle("Z (0=upper module) [mm] ");
-     if(charge_15[i]->GetEntries()>0) charge_15[i]->Write();
+    if(charge_15[i]->GetEntries()>0) charge_15[i]->Write();
 
   }
   
@@ -153,12 +392,11 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=5)
   //Read the channel/chip -- x/y mapping
   //  ReadMap(map_filename);
 
-  int nSLB=15;
+  int nSLB=1;// get it as argument or read it from ntuple or somethng ? 
   if (fChain == 0) return -1;
 
   Long64_t nentries = fChain->GetEntriesFast();
-  //nentries=200;
-
+  //  nentries/=10;
     
  
   // histograms for all scas, chn, chip and slboards
@@ -249,7 +487,7 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=5)
     }// islboard 
   }  // end first loop analysis to fill pedestal historgrams
 
-
+  
   TString slboard = TString::Format("_%i_slboards_",n_slboards);
   if(outputname!="") slboard=slboard+outputname;
   
@@ -360,7 +598,7 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=5)
 
   pedfile->Close();
   delete pedfile;
-
+  
 
   // --------------------------------------------------------------------------------------------
   //****************************************************
@@ -425,11 +663,13 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=5)
     if ( jentry > 1000 && jentry % 1000 ==0 ) std::cout << "Progress: " << 100.*jentry/nentries <<" %"<<endl;
    
     for(int islboard=0; islboard<n_slboards; islboard++) {
+      cout<<islboard<<endl;
+      
       for(int ichip=0; ichip<16; ichip++) {
 	  // RETRIGGER STUFF
 	bool first_retrig=false;
       
-	for(int isca=0; isca<15; isca++) {
+      	for(int isca=0; isca<15; isca++) {
 	  if(bcid[islboard][ichip][isca]<0) continue;
 	  if(bcid[islboard][ichip][isca]<50 || (bcid[islboard][ichip][isca]>890 && bcid[islboard][ichip][isca]<930)) continue;
 
@@ -494,6 +734,7 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=5)
 	    }
 	    
 	  }//ichn
+	  
 	}//sca
       }//ichip
     }//islboard
@@ -503,6 +744,7 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=5)
   ped_mean_slboard.clear();
   ped_error_slboard.clear();
   ped_width_slboard.clear();
+  
   
   // -----------------------------------------------------------------------------------------------------   
   // Signal analysis
@@ -1036,7 +1278,7 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
 }
 
 
-void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", int maxnhit=5)
+void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", int maxnhit=1)
 {
 
   TString slboard = TString::Format("_slboard_%i_",i_slboard);
@@ -1113,6 +1355,7 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
   // -----------------------------------------------------------------------------------------------------
   // Signal readout
   Long64_t nbytes = 0, nb = 0;
+
   for (Long64_t jentry=0; jentry<nentries;jentry++) {
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;
@@ -1137,6 +1380,7 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
 	      }
 
 	      if(selection==true) {
+		//	if( ( charge_hiGain[islboard][ichip][isca][ichn]-ped_mean.at(ichip).at(ichn).at(isca) ) <60 ) cout<<badbcid[islboard][ichip][isca]<<" "<<nhits[islboard][ichip][isca]<<" "<<bcid[islboard][ichip][isca]<<" "<<bcid[islboard][ichip][isca+1]<<" "<<bcid[islboard][ichip][isca+1]-bcid[islboard][ichip][isca]<<endl;
 		mip_histo.at(ichip).at(ichn)->Fill(charge_hiGain[islboard][ichip][isca][ichn]-ped_mean.at(ichip).at(ichn).at(isca));
 		s_n_histo.at(ichip).at(ichn)->Fill( (charge_hiGain[islboard][ichip][isca][ichn]-ped_mean.at(ichip).at(ichn).at(isca)) / ped_width.at(ichip).at(ichn).at(isca));
 
@@ -1636,10 +1880,7 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
     ped_sca_tagged.push_back(pedtemp_sca_tagged);
   }
 
- 
 
-
-  
   // -----------------------------------------------------------------------------------------------------   
   // SCA analysis
   Long64_t nbytes = 0, nb = 0;
@@ -1650,8 +1891,9 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 
     if ( jentry > 1000 && jentry % 1000 ==0 ) std::cout << "Progress: " << 100.*jentry/nentries <<" %"<<endl;
 
+
     for(int islboard=0; islboard<n_slboards; islboard++) {
-      if(islboard != i_slboard) continue;
+      //if(islboard != i_slboard) continue;
     
       for(int ichip=0; ichip<16; ichip++) {
 
@@ -1671,7 +1913,6 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 
 	    //good events
 	    bool selection=false;
-
 	    if( charge_hiGain[islboard][ichip][isca][ichn]>30 && badbcid[islboard][ichip][isca]==0 && nhits[islboard][ichip][isca]<maxnhit+1 && bcid[islboard][ichip][isca]>50) selection=true;
 		  
 	    // if(masked[islboard][ichip][ichn]==1) selection=false;
@@ -2158,6 +2399,7 @@ void DecodedSLBAnalysis::Retriggers(int i_slboard, TString outputname="",int max
   // -----------------------------------------------------------------------------------------------------   
   // SCA analysis
   Long64_t nbytes = 0, nb = 0;
+  // nentries=50000;
   for (Long64_t jentry=0; jentry<nentries;jentry++) {
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;
