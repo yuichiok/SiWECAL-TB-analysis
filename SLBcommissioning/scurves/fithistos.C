@@ -136,6 +136,7 @@ std::vector<double> MeanSigma(TGraph *scurve_threshold, TString type="SK2a",int 
 
   if( (max-min)>15)  max=mean+15;//3*sigma;
   if(type=="SK2") max=TMath::Max(mean,235.0);
+  if(type=="SK2a") max=TMath::Max(max,225);
   result.push_back(max);
 
   int th[64];
@@ -223,7 +224,9 @@ void fithistos(TString filename, std::vector<int> slboards , int iteration=0){
 
   for(int i=0; i<slboards.size(); i++) {
     TString type="SK2";
-    if(slboards.at(i)==3 || slboards.at(i)==7 || slboards.at(i)==8|| slboards.at(i)==12) type="SK2a";			       
+    if(detector.slab[0][i].add==3 || detector.slab[0][i].add==7 )
+      type = "SK2a";
+    //    if(slboards.at(i)==2 || slboards.at(i)==6 || slboards.at(i)==7|| slboards.at(i)==11) type="SK2a";			       
     for(int iasic=0; iasic<16; iasic++) {
       cout<<" Thresholds for layer:" <<i<<" skiroc:"<<iasic <<" "<<type<<" ";
       std::vector<double> mean_sigma = MeanSigma(scurve_threshold[i][iasic],type,slboards.at(i),iasic);

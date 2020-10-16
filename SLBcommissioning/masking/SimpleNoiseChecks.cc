@@ -27,9 +27,9 @@ int SimpleNoiseChecks(TString filename_in="05182020", TString round="first", int
     //          Run_ILC_06312020_masking_it0_1_Ascii.dat
     //          Run_ILC_06312020_masking_it0_2_Ascii.dat!
     filename_in=filename_in+"_"+round+"_it"+iteration;
-    if(iteration==0) triple_check(filename_in,iteration,voting,1, 0., 0., 0., 0.);//1ms, threshold underflow trigger=0, threshold underflow all=0, threshold retrig=0, threshold trigger=0
-    if(iteration==1) triple_check(filename_in,iteration,voting,1, 0., 0., 0.5, 1.);//1ms, threshold underflow trigger=0, threshold underflow all=0, threshold retrig=0.5, threshold trigger=1
-    if(iteration==2) triple_check(filename_in,iteration,voting,1, 0., 0., 1.,  2.);//1ms, threshold underflow trigger=0, threshold underflow all=0, threshold retrig=1, threshold trigger=2
+    if(iteration==0) triple_check(filename_in,iteration,voting,acqwindow, 0., 0., 0.5, 1.);// underflow trig, underflow trig, retrig, trig 
+    if(iteration==1) triple_check(filename_in,iteration,voting,acqwindow, 0., 0., 0.5, 1.);//
+    if(iteration==2) triple_check(filename_in,iteration,voting,acqwindow, 0., 0., 1.,  2.);//
     
     
     // Trigger =350/325/300/275, several iterations (after preliminary masking). 
@@ -46,11 +46,11 @@ int SimpleNoiseChecks(TString filename_in="05182020", TString round="first", int
       cout<<" We take runs with very high trhesholds and iteratively decrease it at the same time that we relax our noise level definitions. "<<endl;
       cout<<" We only look at triggered cells this time."<<endl;
     }
-    if(iteration==3) triple_check(filename_in,iteration,voting,1, 1.,9999.,1.,1.); // DAC=350
-    if(iteration==4) triple_check(filename_in,iteration,voting,1, 1.,9999.,1.,1.); // DAC=325
-    if(iteration==5) triple_check(filename_in,iteration,voting,1, 1.,9999.,1.,1.); // DAC=300
-    if(iteration==6) triple_check(filename_in,iteration,voting,1, 1.,9999.,2.,5.); // DAC=275
-    if(iteration==7) triple_check(filename_in,iteration,voting,1, 1.,9999.,1.,2.5); // DAC=275
+    if(iteration==3) triple_check(filename_in,iteration,voting,acqwindow, 1.,9999.,1.,1.); // DAC=350
+    if(iteration==4) triple_check(filename_in,iteration,voting,acqwindow, 1.,9999.,1.,1.); // DAC=325
+    if(iteration==5) triple_check(filename_in,iteration,voting,acqwindow, 1.,9999.,1.,1.); // DAC=300
+    if(iteration==6) triple_check(filename_in,iteration,voting,acqwindow, 1.,9999.,2.,5.); // DAC=275
+    if(iteration==7) triple_check(filename_in,iteration,voting,acqwindow, 1.,9999.,1.,2.5); // DAC=275
 
   }//
   
@@ -61,12 +61,12 @@ int SimpleNoiseChecks(TString filename_in="05182020", TString round="first", int
   // ex: Run_ILC_06312020_masking_it8_Ascii.dat
   
   // -------------- OPTIMIZATION OF THE MASKING WITH COSMICs
-  // few long iterations for cosmics (100ms)
+  // few, long iterations for cosmics (100ms)
   if(round=="cosmic") {
     cout<<" Cosmic Round of masking runs: analyze file: "<<filename_in<<"  iteration="<<iteration<<endl;
-    if(iteration<13) cosmics_check(filename_in,iteration, 100,3,true); // first iterations (9-12) are for threshold adjusting... If too many channels in one chip are going to be masked (>25% of the available ones), the global chip trehshold in increased by 5, instead of masking the channels
-    else cosmics_check(filename_in,iteration, 100,5,true);
-    //run few times before launching a long cosmics...
+    if(iteration<13) cosmics_check(filename_in,iteration, acqwindow_cosm,5,true); // first iterations (9-12) are for threshold adjusting... If too many channels in one chip are going to be masked (>25% of the available ones), the global chip trehshold in increased by 5, instead of masking the channels
+    else cosmics_check(filename_in,iteration, acqwindow_cosm,5,true);
+    //run few,times before launching a long cosmics...
     
   }
 

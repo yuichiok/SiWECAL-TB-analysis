@@ -4,7 +4,7 @@
 
 void test_read_masked_channels(TString filename="Run_Settings.txt", bool debug=true) {
 
-  read_configuration_file(filename,false);
+  read_configuration_file(filename,true);
 
   TH2F* mask_chip_chn[15];
   TH2F* mask_x_y[15];
@@ -12,21 +12,21 @@ void test_read_masked_channels(TString filename="Run_Settings.txt", bool debug=t
   float totalmasked[15];
   float totalmasked_chip[15][16];
   
-  int nslabs=15;
+  int nslabs=11;
   for(int islab=0; islab<nslabs; islab++) {
     TString map_name="../mapping/fev10_chip_channel_x_y_mapping.txt";
 
     // the two cobs are equipped with slboards 2.08 and 2.12 (26th May 2020)
-    if(detector.slab[0][islab].add==8 || detector.slab[0][islab].add==12)
-      map_name="../mapping/fev11_cob_chip_channel_x_y_mapping.txt";
+    //    if(detector.slab[0][islab].add==8 || detector.slab[0][islab].add==12)
+    //  map_name="../mapping/fev11_cob_chip_channel_x_y_mapping.txt";
     
     cout<<" -------------------------------------------------------------------------------------------- " <<endl;
     cout<<"Slab idx" << islab<< "with slabAdd: "<<detector.slab[0][islab].add<< " and mapping file: "<< map_name<<endl;
     
     ReadMap(map_name);
     
-    mask_chip_chn[islab]= new TH2F(TString::Format("mask_chip_chn_%i",islab),TString::Format("mask_chip_chn_%i",islab),16,-0.5,15.5,64,-0.5,63.5);
-    mask_x_y[islab]= new TH2F(TString::Format("mask_x_y_%i",islab),TString::Format("mask_x_y_%i",islab),32,-90,90,32,-90,90);
+    mask_chip_chn[islab]= new TH2F(TString::Format("mask_chip_chn_SLB%i",detector.slab[0][islab].add),TString::Format("mask_chip_chn_SLB%i",detector.slab[0][islab].add),16,-0.5,15.5,64,-0.5,63.5);
+    mask_x_y[islab]= new TH2F(TString::Format("mask_x_y_SLB%i",detector.slab[0][islab].add),TString::Format("mask_x_y_SLB%i",detector.slab[0][islab].add),32,-90,90,32,-90,90);
 
     totalmasked[islab]=0;
     for(int ichip=0; ichip<16; ichip++) {

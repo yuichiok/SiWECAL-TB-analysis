@@ -111,10 +111,13 @@ std::vector<std::array<int,9>>  DecodedSLBAnalysis::NoiseLevels(int acqwindow=15
       
   }
 
+  std::vector<std::array<int,9>>  result;
+
+  
   if(calculate_expected==true) {
     float n_enabled_channels=0;
     float ntriggers_total=0;
-    
+
     for(int ilayer=0; ilayer<n_SLB; ilayer++) {
       for(int ichip=0; ichip<16; ichip++) {
 	for(int ichn=0; ichn<64; ichn++) {
@@ -124,12 +127,12 @@ std::vector<std::array<int,9>>  DecodedSLBAnalysis::NoiseLevels(int acqwindow=15
 	  }
 	}
       }
-    }
-    expected=int(ntriggers_total/n_enabled_channels);
-
-    n_enabled_channels=0;
-    ntriggers_total=0;
-    for(int ilayer=0; ilayer<n_SLB; ilayer++) {
+      //}
+      expected=int(ntriggers_total/n_enabled_channels);
+      
+      n_enabled_channels=0;
+      ntriggers_total=0;
+      //   for(int ilayer=0; ilayer<n_SLB; ilayer++) {
       for(int ichip=0; ichip<16; ichip++) {
 	for(int ichn=0; ichn<64; ichn++) {
 	  if(trigger[ilayer][ichip][ichn]>0 && trigger[ilayer][ichip][ichn]<(float(expected)+3.*sqrt(float(expected)))) {
@@ -138,30 +141,45 @@ std::vector<std::array<int,9>>  DecodedSLBAnalysis::NoiseLevels(int acqwindow=15
 	  }
 	}
       }
-    }
-    expected=int(ntriggers_total/n_enabled_channels);
-    
-  }
-  
-  std::vector<std::array<int,9>>  result;
-  
-  for(int ilayer=0; ilayer<n_SLB; ilayer++) {
-    for(int ichip=0; ichip<16; ichip++) {     
-      for(int ichn=0; ichn<64; ichn++) {
-	std::array<int,9> temp;
-	temp[0]=ilayer;
-	temp[1]=ichip;
-	temp[2]=ichn;
-	temp[3]=int(expected);
-	temp[4]=trigger[ilayer][ichip][ichn];
-	temp[5]=retrigger_start[ilayer][ichip][ichn];
-	temp[6]=retrigger_train[ilayer][ichip][ichn];
-	temp[7]=under_or_over_flow_trig[ilayer][ichip][ichn];
-        temp[8]=under_or_over_flow_all[ilayer][ichip][ichn];
-	result.push_back(temp);
+      expected=int(ntriggers_total/n_enabled_channels);
+      for(int ichip=0; ichip<16; ichip++) {     
+	for(int ichn=0; ichn<64; ichn++) {
+	  std::array<int,9> temp;
+	  temp[0]=ilayer;
+	  temp[1]=ichip;
+	  temp[2]=ichn;
+	  temp[3]=int(expected);
+	  temp[4]=trigger[ilayer][ichip][ichn];
+	  temp[5]=retrigger_start[ilayer][ichip][ichn];
+	  temp[6]=retrigger_train[ilayer][ichip][ichn];
+	  temp[7]=under_or_over_flow_trig[ilayer][ichip][ichn];
+	  temp[8]=under_or_over_flow_all[ilayer][ichip][ichn];
+	  result.push_back(temp);
+	}
       }
     }
-  }
+	
+    } else  {
+      
+      
+      for(int ilayer=0; ilayer<n_SLB; ilayer++) {
+	for(int ichip=0; ichip<16; ichip++) {     
+	  for(int ichn=0; ichn<64; ichn++) {
+	    std::array<int,9> temp;
+	    temp[0]=ilayer;
+	    temp[1]=ichip;
+	    temp[2]=ichn;
+	    temp[3]=int(expected);
+	    temp[4]=trigger[ilayer][ichip][ichn];
+	    temp[5]=retrigger_start[ilayer][ichip][ichn];
+	    temp[6]=retrigger_train[ilayer][ichip][ichn];
+	    temp[7]=under_or_over_flow_trig[ilayer][ichip][ichn];
+	    temp[8]=under_or_over_flow_all[ilayer][ichip][ichn];
+	    result.push_back(temp);
+	  }
+	}
+      }
+    }
 	
 
   return result;

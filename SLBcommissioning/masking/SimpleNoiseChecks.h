@@ -14,6 +14,8 @@ std::vector<std::vector<std::vector<int> > > mask3;
 TString run_settings;
 TString scurves;
 bool debug;
+int acqwindow=1;
+int acqwindow_cosm=100;
 
 void init(TString s1="", bool debug_=false) {
 
@@ -74,7 +76,7 @@ bool all_check(std::array<int,9> noiselevels, float threshold) {
 }
 
 void cout_check(std::array<int,9> noiselevels, float th_underflow=9999999, float th_underflow_all=9999999, float th_retr_first=9999999, float th_trig=9999999, float th_retr_all=9999999) {
-  cout<<"Noisy channel candidate from SLboard:"<<noiselevels[0]<<" skiroc:"<<noiselevels[1]<<" chn:"<<noiselevels[2]<<
+  cout<<"Noisy channel candidate from SLboard:"<<detector.slab[0][noiselevels[0]].add<<" skiroc:"<<noiselevels[1]<<" chn:"<<noiselevels[2]<<
     "  Exp. Cosmics:"<<noiselevels[3]<<" underflows (trig): "<<noiselevels[7]<<"(th:"<<th_underflow<<"xExp.)"<<
     " underflows (all): "<<noiselevels[8]<<"(th:"<<th_underflow<<"xExp.)"<<
     " retriger_start: "<<noiselevels[5]<<"(th:"<<th_retr_first<<"xExp.)"<<
@@ -103,15 +105,15 @@ void apply_mask(bool global_threshold=false) {
 	if(detector.slab[0][i].asu[0].skiroc[j].mask[k]==0) channels_notmasked++;
       }
 
-      if(global_threshold==true && detector.slab[0][i].asu[0].skiroc[j].threshold_dac<260 && float(channels_to_mask)/float(channels_notmasked)>0.25) {
-	cout<<" WARNING!! TOO MANY CHANNELS TO BE MASKED ("<<channels_to_mask <<") in  Slboard:"<<i<<" skiroc:"<<j<<endl;
+      if(global_threshold==true && detector.slab[0][i].asu[0].skiroc[j].threshold_dac<260 && float(channels_to_mask)/float(channels_notmasked+channels_to_mask)>0.25) {
+	cout<<" WARNING!! TOO MANY CHANNELS TO BE MASKED ("<<channels_to_mask <<") in  Slboard:"<<detector.slab[0][i].add<<" skiroc:"<<j<<endl;
       	cout<<" instead we increase the global thershold, from"<<detector.slab[0][i].asu[0].skiroc[j].threshold_dac<<" to: "<<detector.slab[0][i].asu[0].skiroc[j].threshold_dac+5<<endl;
 	detector.slab[0][i].asu[0].skiroc[j].threshold_dac+=5;
       } else {
 	for(int k=0; k<64; k++) {
 	  if(detector.slab[0][i].asu[0].skiroc[j].mask[k]==0 && mask.at(i).at(j).at(k)==1) {
 	    detector.slab[0][i].asu[0].skiroc[j].mask[k]=1;
-	    cout<<" Masking:  Slboard:"<<i<<" skiroc:"<<j<<" chn:"<<k<<endl;
+	    cout<<" Masking:  Slboard idx"<<i<< " add:"<< detector.slab[0][i].add <<"  skiroc:"<<j<<" chn:"<<k<<endl;
 	  }
 	}
       }
@@ -294,7 +296,7 @@ void triple_check(TString filename_in, int iteration=1, int voting=3, int window
 
       if(detector.slab[0][noiselevels_0.at(i)[0]].asu[0].skiroc[noiselevels_0.at(i)[1]].chn_threshold_adj[noiselevels_0.at(i)[2]]>4) {
 	detector.slab[0][noiselevels_0.at(i)[0]].asu[0].skiroc[noiselevels_0.at(i)[1]].chn_threshold_adj[noiselevels_0.at(i)[2]]-=5;
-	cout<<" Adjusting:  slab:"<<noiselevels_0.at(i)[0]<<" skiroc:"<<noiselevels_0.at(i)[1]<<" chn:"<<noiselevels_0.at(i)[2]<< " - " <<detector.slab[0][noiselevels_0.at(i)[0]].asu[0].skiroc[noiselevels_0.at(i)[1]].chn_threshold_adj[noiselevels_0.at(i)[2]]<<endl;
+	cout<<" Adjusting:  slabidx:"<<noiselevels_0.at(i)[0]<<" SLB:"<<detector.slab[0][noiselevels_0.at(i)[0]].add<<" skiroc:"<<noiselevels_0.at(i)[1]<<" chn:"<<noiselevels_0.at(i)[2]<< " - " <<detector.slab[0][noiselevels_0.at(i)[0]].asu[0].skiroc[noiselevels_0.at(i)[1]].chn_threshold_adj[noiselevels_0.at(i)[2]]<<endl;
       } else {
 	//if ind threshold =0 , then mask the channel
 	if(detector.slab[0][noiselevels_0.at(i)[0]].asu[0].skiroc[noiselevels_0.at(i)[1]].chn_threshold_adj[noiselevels_0.at(i)[2]]==0) {
