@@ -18,6 +18,46 @@
 
 using namespace std;
 
+std::array<int,4096> DecodedSLBAnalysis::SimpleCoincidenceTagger(int jentry, int maxnhit)
+{
+
+
+  // so far we only look for coincicendes for exact same values of bcids... in principle, we could lookf for bcid+-1
+  std::array<int,4096> bcid_seen={0};
+
+  for(int islboard=0; islboard<n_slboards; islboard++) {
+    int bcid_seen_slb[4096]={0};
+
+    for(int ichip=0; ichip<16; ichip++) {
+      for(int isca=0; isca<15; isca++) {
+	if(bcid[islboard][ichip][isca]<0) break; //not include elements with no value (-999)
+
+	if( badbcid[islboard][ichip][isca]==0 && nhits[islboard][ichip][isca]<(maxnhit+1)) {
+	  bool gooddata=true;
+	  for(int i=0; i<64; i++) {
+	    if(charge_hiGain[islboard][ichip][isca][i]<150) {
+	      gooddata=false;
+	      break;
+	    }
+	  }
+	  if(gooddata==true)  bcid_seen_slb[bcid[islboard][ichip][isca]]++; //save the recorded bcids, we add a count for each time that the bcid has been recorded
+	}
+      }//end isca
+    }
+    
+    for(int i=0; i<4096; i++) {
+      if(bcid_seen_slb[i]==1 ) {//only count bcids with signal in one chip, not in several
+	bcid_seen.at(i)++;
+      }
+    }
+    //requiring ==1 we filter events in which the same bcid has triggered in several chips at the same time in the same board
+    // unfortunately we also remvoe events with that eventually happen for the same bcid after overcyclying...
+  }
+
+  return bcid_seen;
+  
+}
+
 void DecodedSLBAnalysis::SlowControlMonitoring(TString outputname="SlowControlMonitoring")
 {
 
@@ -215,29 +255,13 @@ void DecodedSLBAnalysis::SlowControlMonitoring(TString outputname="SlowControlMo
 }
 
 
-void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay")
+void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay", int nlayers_minimum=8)
 {
 
-  TH3F* charge_15[300];
-  TH3F* charge_14[300];
-  TH3F* charge_13[300];
-  TH3F* charge_12[300];
-  TH3F* charge_11[300];
-  TH3F* charge_10[300];
-  TH3F* charge_8[300];
-  TH3F* charge_6[300];
+  TH3F* event_display[1000];
 
-
-  for(int j=0; j<300; j++) {
-    charge_15[j]=new TH3F(TString::Format("charge_15layers_coinc_xyz_%i",j),TString::Format("charge_15layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
-    charge_14[j]=new TH3F(TString::Format("charge_14layers_coinc_xyz_%i",j),TString::Format("charge_14layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
-    charge_13[j]=new TH3F(TString::Format("charge_13layers_coinc_xyz_%i",j),TString::Format("charge_13layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
-    charge_12[j]=new TH3F(TString::Format("charge_12layers_coinc_xyz_%i",j),TString::Format("charge_12layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
-    charge_11[j]=new TH3F(TString::Format("charge_11layers_coinc_xyz_%i",j),TString::Format("charge_11layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
-    charge_10[j]=new TH3F(TString::Format("charge_10layers_coinc_xyz_%i",j),TString::Format("charge_10layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
-    charge_8[j]=new TH3F(TString::Format("charge_8layers_coinc_xyz_%i",j),TString::Format("charge_8layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
-    charge_6[j]=new TH3F(TString::Format("charge_6layers_coinc_xyz_%i",j),TString::Format("charge_6layers_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
-
+  for(int j=0; j<1000; j++) {
+    event_display[j]=new TH3F(TString::Format("event_display_coinc_xyz_%i",j),TString::Format("event_display_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
   }
   
   // --------------
@@ -246,12 +270,12 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay")
   //-----------------
   cout<<"Total number of entries: "<< nentries<<endl;
 
-  int nhistos_15=0, nhistos_14=0, nhistos_13=0, nhistos_12=0, nhistos_11=0, nhistos_10=0, nhistos_8=0, nhistos_6=0;
 
   // -----------------------------------------------------------------------------------------------------
   // Signal readout
   Long64_t nbytes = 0, nb = 0;
   int n_SLB=0;
+  int n=0;
   for (Long64_t jentry=0; jentry<nentries;jentry++) {
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;
@@ -260,124 +284,50 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay")
 
     if(jentry==0) n_SLB=n_slboards;
 
-    int bcid_seen[4096];
-    for(int i=0; i<4096; i++) bcid_seen[i]=0;
+    if(n>999) break;
+    std::array<int,4096> bcid_seen = SimpleCoincidenceTagger(jentry,5);
 
-    int nhits[15];
+    int nhistos[4096]={0};
+    int counter_events=0;
+    for(int i=0; i<4096; i++) {
+      if(bcid_seen.at(i)>(nlayers_minimum-1) ){
+	counter_events++;
+	nhistos[i]=counter_events;
+      }
+    }
+
+    if( n+counter_events > 999) break;
+
     for(int islboard=0; islboard<n_slboards; islboard++) {
-      nhits[islboard]=0;
-      // cout<<"slboard: "<<islboard<<" slot: "<< slot[islboard]<<endl;
-      int bcid_seen_slboard[4096];
-      for(int i=0; i<4096; i++) bcid_seen_slboard[i]=0;
       for(int ichip=0; ichip<16; ichip++) {
 	for(int isca=0; isca<15; isca++) {
-	  if(badbcid[islboard][ichip][isca]==0) {
-	    bcid_seen_slboard[bcid[islboard][ichip][isca]]=1;
+	  if(bcid[islboard][ichip][isca]<0) continue;
+	  
+	  if(badbcid[islboard][ichip][isca]==0 && bcid_seen.at(bcid[islboard][ichip][isca])>(nlayers_minimum-1)) {
 	    for(int ichn=0;ichn<64; ichn++) {
-		  if(gain_hit_high[islboard][ichip][isca][ichn]==1) nhits[islboard]++;
-	    }
-	  }
-        }//end isca
-      }
-    
-      for(int i=0; i<4096; i++) {
-	if( bcid_seen_slboard[i]==1) bcid_seen[i]++;
-      }
-
-    }
-    
-    for(int i=0; i<4096; i++) {
-      if( (bcid_seen[i]==6 && nhistos_12<300) || (bcid_seen[i]==8 && nhistos_12<300) || (bcid_seen[i]==10 && nhistos_12<300) || (bcid_seen[i]==11 && nhistos_12<300) || (bcid_seen[i]==12 && nhistos_12<300) || (bcid_seen[i]==13 && nhistos_13<300) || (bcid_seen[i]==14 && nhistos_14<300) || (bcid_seen[i]==15 && nhistos_15<300)  ) {  
-	for(int islboard=0; islboard<n_slboards; islboard++) {
-	  for(int ichip=0; ichip<16; ichip++) {
-	    for(int isca=0; isca<15; isca++) {
-	      if(badbcid[islboard][ichip][isca]==0 && bcid[islboard][ichip][isca]==i) {
-		for(int ichn=0;ichn<64; ichn++) {
-		  double z=-15.*double(slot[islboard]);
-		  if(gain_hit_high[islboard][ichip][isca][ichn]==1 && bcid_seen[i]==6 && nhistos_6<300)
-		    charge_6[nhistos_6]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),z,double(charge_hiGain[islboard][ichip][isca][ichn]));
-		  if(gain_hit_high[islboard][ichip][isca][ichn]==1 && bcid_seen[i]==8 && nhistos_8<300)
-		    charge_8[nhistos_8]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),z,double(charge_hiGain[islboard][ichip][isca][ichn]));
-		  if(gain_hit_high[islboard][ichip][isca][ichn]==1 && bcid_seen[i]==10 && nhistos_10<300)
-		    charge_10[nhistos_10]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),z,double(charge_hiGain[islboard][ichip][isca][ichn]));
-		  if(gain_hit_high[islboard][ichip][isca][ichn]==1 && bcid_seen[i]==11 && nhistos_11<300)
-		    charge_11[nhistos_11]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),z,double(charge_hiGain[islboard][ichip][isca][ichn]));
-		  if(gain_hit_high[islboard][ichip][isca][ichn]==1 && bcid_seen[i]==12 && nhistos_12<300)
-		    charge_12[nhistos_12]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),z,double(charge_hiGain[islboard][ichip][isca][ichn]));
-		  if(gain_hit_high[islboard][ichip][isca][ichn]==1 && bcid_seen[i]==13 && nhistos_13<300)
-                    charge_13[nhistos_13]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),z,double(charge_hiGain[islboard][ichip][isca][ichn]));
-		  if(gain_hit_high[islboard][ichip][isca][ichn]==1 && bcid_seen[i]==14 && nhistos_14<300)
-                    charge_14[nhistos_14]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),z,double(charge_hiGain[islboard][ichip][isca][ichn]));
-		  if(gain_hit_high[islboard][ichip][isca][ichn]==1 && bcid_seen[i]==15 && nhistos_15<300)
-                    charge_15[nhistos_15]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),z,double(charge_hiGain[islboard][ichip][isca][ichn]));
-		}
-	      }
+	      double z=-15.*double(slot[islboard]);
+	      if(gain_hit_high[islboard][ichip][isca][ichn]==1)
+		event_display[n+nhistos[bcid[islboard][ichip][isca]]-1]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),z,double(charge_hiGain[islboard][ichip][isca][ichn]));
 	    }
 	  }
 	}
-	if(bcid_seen[i]==6) nhistos_6++;
-	if(bcid_seen[i]==8) nhistos_8++;
-	if(bcid_seen[i]==10) nhistos_10++;
-	if(bcid_seen[i]==11) nhistos_11++;
-	if(bcid_seen[i]==12) nhistos_12++;
-	if(bcid_seen[i]==13) nhistos_13++;
-        if(bcid_seen[i]==14) nhistos_14++;
-        if(bcid_seen[i]==15) nhistos_15++;
       }
     }
-
-    //  if(nhistos_12>300 && nhistos_13>300 && nhistos_14>300 && nhistos_15>300) break;
-    if(nhistos_6>300 && nhistos_8>300 && nhistos_10>300 && nhistos_11>300 ) break;//&& nhistos_12>300 && nhistos_13>300 && nhistos_14>300 && nhistos_15>300) break;
-
+  
+    n+=counter_events;
+    
   }
+
   // -----------------------------------------------------------------------------------------------------   
   // Signal analysis
   TFile *monitoringfile_summary = new TFile("results_monitoring/Cosmics_"+outputname+".root" , "RECREATE");
   monitoringfile_summary->cd();
-
-  for(int i=0; i<300; i++) {
-    charge_6[i]->GetXaxis()->SetTitle("X [mm]");
-    charge_6[i]->GetYaxis()->SetTitle("Y [mm]");
-    charge_6[i]->GetZaxis()->SetTitle("Z (0=upper module) [mm]");
-    if(charge_6[i]->GetEntries()>0) charge_6[i]->Write();
-
-    charge_8[i]->GetXaxis()->SetTitle("X [mm]");
-    charge_8[i]->GetYaxis()->SetTitle("Y [mm]");
-    charge_8[i]->GetZaxis()->SetTitle("Z (0=upper module) [mm]");
-    if(charge_8[i]->GetEntries()>0) charge_8[i]->Write();
-
-    charge_10[i]->GetXaxis()->SetTitle("X [mm]");
-    charge_10[i]->GetYaxis()->SetTitle("Y [mm]");
-    charge_10[i]->GetZaxis()->SetTitle("Z (0=upper module) [mm]");
-    if(charge_10[i]->GetEntries()>0) charge_10[i]->Write();
-
-    charge_11[i]->GetXaxis()->SetTitle("X [mm]");
-    charge_11[i]->GetYaxis()->SetTitle("Y [mm]");
-    charge_11[i]->GetZaxis()->SetTitle("Z (0=upper module) [mm]");
-    if(charge_11[i]->GetEntries()>0) charge_11[i]->Write();
-    
-    charge_12[i]->GetXaxis()->SetTitle("X [mm]");
-    charge_12[i]->GetYaxis()->SetTitle("Y [mm]");
-    charge_12[i]->GetZaxis()->SetTitle("Z (0=upper module) [mm]");
-    if(charge_12[i]->GetEntries()>0) charge_12[i]->Write();
-
-    charge_13[i]->GetXaxis()->SetTitle("X [mm]");
-    charge_13[i]->GetYaxis()->SetTitle("Y [mm]");
-    charge_13[i]->GetZaxis()->SetTitle("Z (0=upper module) [mm]");
-    if(charge_13[i]->GetEntries()>0)  charge_13[i]->Write();
-
-
-    charge_14[i]->GetXaxis()->SetTitle("X [mm]");
-    charge_14[i]->GetYaxis()->SetTitle("Y [mm]");
-    charge_14[i]->GetZaxis()->SetTitle("Z (0=upper module) [mm]");
-     if(charge_14[i]->GetEntries()>0) charge_14[i]->Write();
-
-
-    charge_15[i]->GetXaxis()->SetTitle("X [mm]");
-    charge_15[i]->GetYaxis()->SetTitle("Y [mm]");
-    charge_15[i]->GetZaxis()->SetTitle("Z (0=upper module) [mm] ");
-    if(charge_15[i]->GetEntries()>0) charge_15[i]->Write();
-
+  
+  for(int i=0; i<1000; i++) {
+    event_display[i]->GetXaxis()->SetTitle("X [mm]");
+    event_display[i]->GetYaxis()->SetTitle("Y [mm]");
+    event_display[i]->GetZaxis()->SetTitle("Z (0=upper module) [mm]");
+    if(event_display[i]->GetEntries()>0) event_display[i]->Write();
   }
   
   
@@ -1278,10 +1228,10 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
 }
 
 
-void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", int maxnhit=1)
+void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", int maxnhit=1, int ncoinc=7)
 {
 
-  TString slboard = TString::Format("_slboard_%i_",i_slboard);
+  TString slboard = TString::Format("_slboard_%i_",slboard_array_mapping[i_slboard]);
   if(outputname!="") slboard=slboard+outputname;
 
   //Read the list of pedestals (this information contains, implicitily, the masked channels information )
@@ -1355,35 +1305,33 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_slboard, TString outputname="", in
   // -----------------------------------------------------------------------------------------------------
   // Signal readout
   Long64_t nbytes = 0, nb = 0;
-
+  //  nentries=1000;
   for (Long64_t jentry=0; jentry<nentries;jentry++) {
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;
     nb = fChain->GetEntry(jentry);   nbytes += nb;
     if ( jentry > 1000 && jentry % 1000 ==0 ) std::cout << "Progress: " << 100.*jentry/nentries <<" %"<<endl;
 
+    std::array<int,4096> bcid_seen = SimpleCoincidenceTagger(jentry,maxnhit);
+
     for(int islboard=0; islboard<n_slboards; islboard++) {
       if(islboard != i_slboard) continue;
       for(int ichip=0; ichip<16; ichip++) {
-	for(int ichn=0; ichn<64; ichn++) {
-	  for(int isca=0; isca<15; isca++) {
+	for(int isca=0; isca<15; isca++) {
+	  
+	  if(bcid[islboard][ichip][isca]<0 ) break;
+	  
+	  bool gooddata=true;
+	  if( bcid_seen.at(bcid[islboard][ichip][isca]) < ncoinc ) gooddata=false;
+	  for(int ichn=0; ichn<64; ichn++) if(charge_hiGain[islboard][ichip][isca][ichn]<100) gooddata=false;
+	  
+	  for(int ichn=0; ichn<64; ichn++) {
 
-	    if( ped_mean.at(ichip).at(ichn).at(isca)>50 &&  ped_width.at(ichip).at(ichn).at(isca)>0 ) {
-
-	      bool selection=false;
-	      if(charge_hiGain[islboard][ichip][isca][ichn]>0 && gain_hit_high[islboard][ichip][isca][ichn]==1 && badbcid[islboard][ichip][isca]==0 && nhits[islboard][ichip][isca]<maxnhit+1 ) {
-		//	if ( (slboard=="_slboard_0" || slboard=="_slboard_1" || slboard=="_slboard_2" || slboard=="_slboard_3")  &&
-		//	     bcid[islboard][ichip][isca]>50 && (bcid[islboard][ichip][isca]<890 ||bcid[islboard][ichip][isca]>930)  ) selection=true;
-
-		//	if( (slboard!="_slboard_0" && slboard!="_slboard_1" && slboard!="_slboard_2" && slboard!="_slboard_3")  &&
-		if(bcid[islboard][ichip][isca]>15 ) selection=true;
-	      }
-
-	      if(selection==true) {
-		//	if( ( charge_hiGain[islboard][ichip][isca][ichn]-ped_mean.at(ichip).at(ichn).at(isca) ) <60 ) cout<<badbcid[islboard][ichip][isca]<<" "<<nhits[islboard][ichip][isca]<<" "<<bcid[islboard][ichip][isca]<<" "<<bcid[islboard][ichip][isca+1]<<" "<<bcid[islboard][ichip][isca+1]-bcid[islboard][ichip][isca]<<endl;
+	    if( gooddata == true && ped_mean.at(ichip).at(ichn).at(isca)>50 &&  ped_width.at(ichip).at(ichn).at(isca)>0  && badbcid[islboard][ichip][isca]==0 && nhits[islboard][ichip][isca]<maxnhit+1 && bcid[islboard][ichip][isca]>15 ) {
+	      if(charge_hiGain[islboard][ichip][isca][ichn]>0 && gain_hit_high[islboard][ichip][isca][ichn]==1) {
 		mip_histo.at(ichip).at(ichn)->Fill(charge_hiGain[islboard][ichip][isca][ichn]-ped_mean.at(ichip).at(ichn).at(isca));
 		s_n_histo.at(ichip).at(ichn)->Fill( (charge_hiGain[islboard][ichip][isca][ichn]-ped_mean.at(ichip).at(ichn).at(isca)) / ped_width.at(ichip).at(ichn).at(isca));
-
+		
 		mip_histo.at(ichip).at(64)->Fill(charge_hiGain[islboard][ichip][isca][ichn]-ped_mean.at(ichip).at(ichn).at(isca));
 		s_n_histo.at(ichip).at(64)->Fill( (charge_hiGain[islboard][ichip][isca][ichn]-ped_mean.at(ichip).at(ichn).at(isca)) / ped_width.at(ichip).at(ichn).at(isca));
 	      }
@@ -1780,13 +1728,13 @@ void DecodedSLBAnalysis::ReadPedestals(TString filename)
 
 }
 
-void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", int maxnhit=5)
+void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", int maxnhit=5, int ncoinc=7)
 {
 
   //Read the channel/chip -- x/y mapping
   //  ReadMap(map_filename);
 
-  TString slboard = TString::Format("_slboard_%i_",i_slboard);
+  TString slboard = TString::Format("_slboard_%i_",slboard_array_mapping[i_slboard]);
   if(outputname!="") slboard=slboard+outputname;
   
   //Read the list of masked channels
@@ -1802,7 +1750,7 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
   if (fChain == 0) return;
 
   Long64_t nentries = fChain->GetEntriesFast();
-
+  //  nentries=10000;
   TH2F* pedestal_map[15];
   TH2F* pedestal_width_map[15];
   TH2F* pedestal_error_map[15];
@@ -1884,6 +1832,7 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
   // -----------------------------------------------------------------------------------------------------   
   // SCA analysis
   Long64_t nbytes = 0, nb = 0;
+  //  nentries=1000;
   for (Long64_t jentry=0; jentry<nentries;jentry++) {
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;
@@ -1892,14 +1841,21 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
     if ( jentry > 1000 && jentry % 1000 ==0 ) std::cout << "Progress: " << 100.*jentry/nentries <<" %"<<endl;
 
 
+    std::array<int,4096> bcid_seen = SimpleCoincidenceTagger(jentry,maxnhit);
+
+    
     for(int islboard=0; islboard<n_slboards; islboard++) {
       //if(islboard != i_slboard) continue;
     
       for(int ichip=0; ichip<16; ichip++) {
 
 	for(int isca=0; isca<15; isca++) {
+	  if(bcid[islboard][ichip][isca]<0) break;
 
 	  bool gooddata=true;
+	  if( bcid_seen.at(bcid[islboard][ichip][isca]) < ncoinc ) gooddata=false; //only analyze events with at least ncoinc slabs with hit in such bcid
+	  for(int ichn=0; ichn<64; ichn++) if(charge_hiGain[islboard][ichip][isca][ichn]<150 && charge_hiGain[islboard][ichip][isca][ichn]>-1 ) gooddata=false;
+	  /*bool gooddata=true;
 	  if(global == true) {
 	    int ntaggedasbad = 0;
 	    for(int ichn=0; ichn<64; ichn++) {
@@ -1907,7 +1863,7 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 		ntaggedasbad++;
 	    }//ichn 
 	    if ( ntaggedasbad > 0) gooddata=false;
-	  }
+	    }*/
 	
 	  for(int ichn=0; ichn<64; ichn++) {
 
@@ -1916,7 +1872,7 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 	    if( charge_hiGain[islboard][ichip][isca][ichn]>30 && badbcid[islboard][ichip][isca]==0 && nhits[islboard][ichip][isca]<maxnhit+1 && bcid[islboard][ichip][isca]>50) selection=true;
 		  
 	    // if(masked[islboard][ichip][ichn]==1) selection=false;
-	    if(gain_hit_high[islboard][ichip][isca][ichn]==0 && selection==true && gooddata==true)
+	    if(gain_hit_high[islboard][ichip][isca][ichn]==0 && gooddata==true && selection==true)
 	      ped_sca.at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[islboard][ichip][isca][ichn]);
 
 	    //bad events
@@ -1985,6 +1941,7 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 	  TSpectrum *s = new TSpectrum();
 	  int npeaks = s->Search(ped_sca.at(ichip).at(ichn).at(isca),2,"",0.8); 
 	  pedestal_npeaks_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , npeaks);
+	  float mean_for_fit=0;
 	  if(npeaks > 0) {
             Double_t *mean_peak=s->GetPositionX();
             Double_t *mean_high=s->GetPositionY();
@@ -2001,55 +1958,54 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
             for(int ipeak=0; ipeak<npeaks; ipeak ++) {
 	      if(ipeak != npeak_max) pedestal_slboard_chip.at(ichip)->Fill( mean_peak[npeak_max] - mean_peak[ipeak]);
 	    }
-	    if(npeaks ==1 ) {
-	      Double_t *mean_peak=s->GetPositionX();
-	      mean_peak[0]=mean_peak_higher;
+	    //	    if(npeaks ==1 ) {
+	    //Double_t *mean_peak=s->GetPositionX();
+	    mean_peak[0]=mean_peak_higher;
+	    mean_for_fit=mean_peak[0];
+	  } else mean_for_fit=ped_sca.at(ichip).at(ichn).at(isca)->GetMean();
 	      
-	      TF1 *f0 = new TF1("f0","gaus",mean_peak[0]-ped_sca.at(ichip).at(ichn).at(isca)->GetRMS(),mean_peak[0]+ped_sca.at(ichip).at(ichn).at(isca)->GetRMS());
-	      ped_sca.at(ichip).at(ichn).at(isca)->Fit("f0","RQNOC");
-	      
-	      TF1 *f1 = new TF1("f1","gaus",f0->GetParameter(1)-f0->GetParameter(2),f0->GetParameter(1)+f0->GetParameter(2));
-	      ped_sca.at(ichip).at(ichn).at(isca)->Fit("f1","RQME");
-	      fout_ped<<f1->GetParameter(1) << " " << f1->GetParError(1)<<" "<<f1->GetParameter(2)<< " ";
-	      
-	      ped_mean.at(ichip).at(ichn).at(isca)=f1->GetParameter(1);
-	      ped_error.at(ichip).at(ichn).at(isca)=f1->GetParError(1);
-	      ped_width.at(ichip).at(ichn).at(isca)=f1->GetParameter(2);
-	      pedestal_chip.at(ichip)->Fill(f1->GetParameter(1));
-	      pedestal_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , f1->GetParameter(1));
-	      pedestal_width_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , f1->GetParameter(2));
-	      pedestal_error_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , f1->GetParError(1));
-	      pedestal_chi2ndf_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , f1->GetChisquare() / f1->GetNDF());
-	      
-	    } else {
+	  TF1 *f0 = new TF1("f0","gaus",mean_for_fit-ped_sca.at(ichip).at(ichn).at(isca)->GetRMS()/2.,mean_for_fit+ped_sca.at(ichip).at(ichn).at(isca)->GetRMS()/2.);
+	  ped_sca.at(ichip).at(ichn).at(isca)->Fit("f0","RQNOC");
+	  
+	  TF1 *f1 = new TF1("f1","gaus",f0->GetParameter(1)-f0->GetParameter(2)/2.,f0->GetParameter(1)+f0->GetParameter(2)/2.);
+	  ped_sca.at(ichip).at(ichn).at(isca)->Fit("f1","RQME");
+	  fout_ped<<f1->GetParameter(1) << " " << f1->GetParError(1)<<" "<<f1->GetParameter(2)<< " ";
+	  
+	  ped_mean.at(ichip).at(ichn).at(isca)=f1->GetParameter(1);
+	  ped_error.at(ichip).at(ichn).at(isca)=f1->GetParError(1);
+	  ped_width.at(ichip).at(ichn).at(isca)=f1->GetParameter(2);
+	  pedestal_chip.at(ichip)->Fill(f1->GetParameter(1));
+	  pedestal_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , f1->GetParameter(1));
+	  pedestal_width_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , f1->GetParameter(2));
+	  pedestal_error_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , f1->GetParError(1));
+	  pedestal_chi2ndf_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , f1->GetChisquare() / f1->GetNDF());
+	    
+	    /*} else {
 	      fout_ped<<ped_sca.at(ichip).at(ichn).at(isca)->GetMean()<< " " << ped_sca.at(ichip).at(ichn).at(isca)->GetRMS()/sqrt(ped_sca.at(ichip).at(ichn).at(isca)->GetEntries())<<" "<<ped_sca.at(ichip).at(ichn).at(isca)->GetRMS()<<" ";
 	      pedestal_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , ped_sca.at(ichip).at(ichn).at(isca)->GetMean());
 	      pedestal_width_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , ped_sca.at(ichip).at(ichn).at(isca)->GetRMS() );
 	      pedestal_error_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , ped_sca.at(ichip).at(ichn).at(isca)->GetRMS()/sqrt(ped_sca.at(ichip).at(ichn).at(isca)->GetMean()));
 	      pedestal_chi2ndf_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , 0);
-	    }
+	      }*/
 	    
-	  } else fout_ped<<0<< " " << 0<<" "<<0<<" ";
-	  
-	}else {
-	  fout_ped<<0<< " " << 0<<" "<<0<<" ";
-	}
+	} else {
+	  fout_ped<<0<< " " << 0<<" "<<0<<" "; 
+	} 
      
-
 	// analyze pedestal for tagged events
 	if(ped_sca_tagged.at(ichip).at(ichn).at(isca)->GetEntries()> 250) {
 	  TSpectrum *s = new TSpectrum();
 	  int npeaks = s->Search(ped_sca_tagged.at(ichip).at(ichn).at(isca),2,"",0.2);
 	  pedestal_tagged_npeaks_map[isca] -> Fill( map_pointX[i_slboard][ichip][ichn] , map_pointY[i_slboard][ichip][ichn] , npeaks);
-
+	  
 	  if(npeaks > 0) {
-
+	    
 	    Double_t *mean_peak=s->GetPositionX();
 	    Double_t *mean_high=s->GetPositionY();
 	    double mean_peak_higher=0;
 	    double mean_high_higher=0;
 	    int npeak_max=0;
-
+	    
 	    for(int ipeak=0; ipeak<npeaks; ipeak ++) {
 	      if(mean_high[ipeak]>mean_high_higher && mean_high[ipeak]>50) {
 		mean_high_higher=mean_high[ipeak];
@@ -2057,11 +2013,11 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 		npeak_max=ipeak;
 	      }
 	    }
-
+	    
 	    for(int ipeak=0; ipeak<npeaks; ipeak ++) {
               if(ipeak != npeak_max) pedestal_tagged_slboard_chip.at(ichip)->Fill( mean_peak[npeak_max] - mean_peak[ipeak] );
             }
-
+	    
 	    if(mean_peak_higher>0) {
 	      TF1 *f0 = new TF1("f0","gaus",mean_peak_higher-10.,mean_peak_higher+10.);
 	      ped_sca_tagged.at(ichip).at(ichn).at(isca)->Fit("f0","RQNOC");
@@ -2085,10 +2041,10 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_slboard,TString outputname="", i
 	}
 
 
-      }
+      }//isca
       fout_ped<<endl;
-    }
-  }
+    }//ichn
+  }//ichip
 
   pedfile->Close();
 
@@ -2362,7 +2318,7 @@ void DecodedSLBAnalysis::Retriggers(int i_slboard, TString outputname="",int max
   //function that reads a root file and check which channels have or not signal (hit bit ==1).
   //should be used for root files that contain a full position scan, in order to provide meaninful list of masked channels.
  
-  TString slboard = TString::Format("_slboard_%i_",i_slboard);
+  TString slboard = TString::Format("_slboard_%i_",slboard_array_mapping[i_slboard]);
   if(outputname!="") slboard=slboard+outputname;
   if (fChain == 0) return;
   Long64_t nentries = fChain->GetEntriesFast();

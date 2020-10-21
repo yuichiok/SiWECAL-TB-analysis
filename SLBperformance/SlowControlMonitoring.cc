@@ -12,6 +12,6 @@ void SlowControlMonitoring(TString filename_in, TString output=""){
   DecodedSLBAnalysis ss(filename_in);
 
   ss.SlowControlMonitoring(output);
-  // gSystem->Exit(0);
+  gSystem->Exit(0);
 
 }

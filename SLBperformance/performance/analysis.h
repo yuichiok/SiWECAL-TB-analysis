@@ -172,8 +172,8 @@ void pedanalysis(TFile *file, TString run="Run_ILC_cosmic_test_11222019", int sl
   gStyle->SetMarkerSize(1.2);
   
   // Comparing nbr entries in tag or not tag // GetWidth and Mean
-  TString map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis/mapping/fev10_chip_channel_x_y_mapping.txt";
-  if(slboard==0 || slboard==2)  map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis/mapping/fev11_cob_chip_channel_x_y_mapping.txt";
+  TString map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis-git/mapping/fev10_chip_channel_x_y_mapping.txt";
+  //  if(slboard==0 || slboard==2)  map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis/mapping/fev11_cob_chip_channel_x_y_mapping.txt";
   ReadMap(map);
 
   
@@ -211,7 +211,9 @@ void pedanalysis(TFile *file, TString run="Run_ILC_cosmic_test_11222019", int sl
 	if(temp->GetEntries()> 200 ){ //max_entries/2 ) {
           TSpectrum *s = new TSpectrum();
           int npeaks = s->Search(temp,2,"",0.8); 
-          if(npeaks > 0) {
+	  float mean_start_fit=0;
+
+	  if(npeaks > 0) {
             Double_t *mean_peak=s->GetPositionX();
             Double_t *mean_high=s->GetPositionY();
             double mean_peak_higher=0;
@@ -224,30 +226,32 @@ void pedanalysis(TFile *file, TString run="Run_ILC_cosmic_test_11222019", int sl
                 npeak_max=ipeak;
               }
             }
+	  
 	    PedNPeaks[n]->Fill(map_pointX[i][j],map_pointY[i][j],npeaks);
-	    
-            if(npeaks ==1 ) {
-	      nch++;
-
-              Double_t *mean_peak=s->GetPositionX();
-              mean_peak[0]=mean_peak_higher;
-              
-              TF1 *f0 = new TF1("f0","gaus",mean_peak[0]-temp->GetRMS()/2,mean_peak[0]+temp->GetRMS()/2);
-              temp->Fit("f0","RQNOC");
-              
-              TF1 *f1 = new TF1("f1","gaus",f0->GetParameter(1)-f0->GetParameter(2)/2,f0->GetParameter(1)+f0->GetParameter(2)/2);
-              temp->Fit("f1","RQME");
-	      avmean+=f1->GetParameter(1);
-	      avwidth+=f1->GetParameter(2);
-	      PedW[n]->Fill(map_pointX[i][j],map_pointY[i][j],f1->GetParameter(2));
-	      PedRMS[n]->Fill(map_pointX[i][j],map_pointY[i][j],temp->GetRMS());
-	      PedM[n]->Fill(map_pointX[i][j],map_pointY[i][j],f1->GetParameter(1));
-            }
+	    mean_start_fit=mean_peak_higher;
 	  }
-       }
 
+	  if(npeaks ==0 ) mean_start_fit=temp->GetMean();
+
+	  
+	  TF1 *f0 = new TF1("f0","gaus",mean_start_fit-temp->GetRMS()/2,mean_start_fit+temp->GetRMS()/2.);
+	  temp->Fit("f0","RQNOC");
+	  
+	  TF1 *f1 = new TF1("f1","gaus",f0->GetParameter(1)-f0->GetParameter(2)/2.,f0->GetParameter(1)+f0->GetParameter(2)/2.);
+	  temp->Fit("f1","RQME");
+	  if(npeaks==1) {
+	    avmean+=f1->GetParameter(1);
+	    avwidth+=f1->GetParameter(2);
+	    nch++;
+	    //we only use the nice distributions for the average/sumamry plots
+	  }
+	  PedW[n]->Fill(map_pointX[i][j],map_pointY[i][j],f1->GetParameter(2));
+	  PedRMS[n]->Fill(map_pointX[i][j],map_pointY[i][j],temp->GetRMS());
+	  PedM[n]->Fill(map_pointX[i][j],map_pointY[i][j],f1->GetParameter(1));
+          
+	}
       }
-      
+
       if(nch>20) {
 	PedW_sca->Fill(i,n,avwidth/nch);
 	PedM_sca->Fill(i,n,avmean/nch);
@@ -346,8 +350,8 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int sl
   cdhisto->cd();
 
     // Comparing nbr entries in tag or not tag // GetWidth and Mean
-  TString map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis/mapping/fev10_chip_channel_x_y_mapping.txt";
-  if(slboard==0 || slboard==2)  map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis/mapping/fev11_cob_chip_channel_x_y_mapping.txt";
+  TString map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis-git/mapping/fev10_chip_channel_x_y_mapping.txt";
+  //  if(slboard==0 || slboard==2)  map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis/mapping/fev11_cob_chip_channel_x_y_mapping.txt";
   ReadMap(map);
 
   
@@ -489,8 +493,8 @@ void retriggeranalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", 
   cdhisto->cd();
 
     // Comparing nbr entries in tag or not tag // GetWidth and Mean
-  TString map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis/mapping/fev10_chip_channel_x_y_mapping.txt";
-  if(slboard==0 || slboard==2)  map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis/mapping/fev11_cob_chip_channel_x_y_mapping.txt";
+  TString map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis-git/mapping/fev10_chip_channel_x_y_mapping.txt";
+  //  if(slboard==0 || slboard==2)  map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis/mapping/fev11_cob_chip_channel_x_y_mapping.txt";
   ReadMap(map);
 
   

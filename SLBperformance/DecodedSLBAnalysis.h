@@ -25,6 +25,8 @@
 class DecodedSLBAnalysis {
 public :
 
+  int slboard_array_mapping[15]={-1};
+    
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
    Int_t           fCurrent; //!current Tree number in a TChain
    TString         datadir;
@@ -90,9 +92,10 @@ public :
 
    virtual int     NSlabsAnalysis(TString, int);
 
+   virtual std::array<int,4096>   SimpleCoincidenceTagger(int,int);
    // write file with masked channels
    // analysis of pedestal and writting of the file with pedestals per chi/channel/sca
-   virtual void     PedestalAnalysis(int slboard,TString grid, int nmaxhits);
+   virtual void     PedestalAnalysis(int slboard,TString grid, int nmaxhits, int ncoinc);
    // read pedestals, maps, masked channels
    virtual void     ReadMap(TString filename, int slboard);
    virtual void     ReadMasked(TString filename);
@@ -100,11 +103,11 @@ public :
    //Monitoring
    virtual void    SlowControlMonitoring(TString outputname);
    virtual void     Monitoring(TString outputname, int freq, bool shifter);
-   virtual void  QuickDisplay(TString outputname);
+   virtual void  QuickDisplay(TString outputname, int);
 
    virtual void     SynchronizationStudies(TString outputname, int freq, bool shifter);
    //signal analysis: MIP fitt and signal/noise 
-   virtual void     SignalAnalysis(int slboard, TString outputname, int nmaxhits);
+   virtual void     SignalAnalysis(int slboard, TString outputname, int nmaxhits, int ncoinc);
    virtual TF1 *langaufit(TH1F *his, Double_t *fitrange, Double_t *startvalues, Double_t *parlimitslo, Double_t *parlimitshi, Double_t *fitparams, Double_t *fiterrors, Double_t *ChiSqr, Int_t *NDF);
    //   virtual Double_t langaufun(Double_t *x, Double_t *par);
    // bcid correlations of retriggers (good vs bad events)
