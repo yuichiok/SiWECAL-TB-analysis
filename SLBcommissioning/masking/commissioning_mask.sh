@@ -33,6 +33,7 @@ if [ ! -d "${softw_path}/SLBcommissioning/masking/histos" ]; then
 fi
 
 data_path="/mnt/win2/"
+# data_path="/mnt/win1/"
 
 
 if [[ $round == "masking" ]]
@@ -64,7 +65,7 @@ then
     echo "DID you properly setup the address of the sk2 and sk2a versions in ../scurves/fithistos.C function fithistos ?? (it uses the slab idx, not slab address"
     cp ${data_path}/Histos/RateVsThresholdScan_${date}_SLBoard.txt ../${date}/.
     cp ${data_path}/Run_Data/Run_ILC_${date}_masking_it${it}_Ascii/Run_Settings.txt ${softw_path}/SLBcommissioning/${date}/Run_Settings_it${it}.txt
-    
+
     root -l -q scurves.C\(\"${date}\",${it}\)
     it2=$((it+1))
     cp ${softw_path}/SLBcommissioning/${date}/Run_Settings_comm_it${it2}.txt ${data_path}/Setup/.

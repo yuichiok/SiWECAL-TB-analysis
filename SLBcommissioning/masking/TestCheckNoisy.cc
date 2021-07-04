@@ -50,7 +50,13 @@ void cosmics_check_test(TString filename_in, TString settings, TString settings_
 }
 
 
-int TestCheckNoisy(TString filename_in="../../converter_SLB/convertedfiles/Run_ILC_10152020_3_cosmic_it19_Ascii/Run_ILC_10152020_3_cosmic_it19_Ascii.root", TString settingsfile="/mnt/win2/Run_data/Run_ILC_10152020_3_cosmic_it19_Ascii/Run_Settings.txt", TString settings_new="Run_Settings_longcosmicrun_6.txt"){
+// int TestCheckNoisy(TString filename_in="../../converter_SLB/convertedfiles/Run_ILC_10152020_3_cosmic_it19_Ascii/Run_ILC_10152020_3_cosmic_it19_Ascii.root", TString settingsfile="/mnt/win2/Run_data/Run_ILC_10152020_3_cosmic_it19_Ascii/Run_Settings.txt", TString settings_new="Run_Settings_longcosmicrun_6.txt"){
+int TestCheckNoisy(TString filename_in="default", TString settingsfile="default", TString settings_new="default"){
+
+  if(filename_in=="default" || settingsfile=="default" || settings_new=="default"){
+    std::cout << "ERROR: files not properly set!" << std::endl;
+    return 0;
+  }
 
   //filename_in is the full name of the converted root file
   // setingfile is the full name of the settings file
