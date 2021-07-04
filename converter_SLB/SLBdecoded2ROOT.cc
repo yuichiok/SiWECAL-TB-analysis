@@ -257,11 +257,19 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
 
   std::string strheader;
   std::getline(reading_file, strheader);
+  std::cout << "header 1: " << strheader << std::endl;
   std::getline(reading_file, strheader);
-
+  std::cout << "header 2: " << strheader << std::endl;
+  std::cout << "FTDI Interface? " << strheader.find("SL_DIRECT_INTERFACE") << std::endl;
+  std::cout << "COREMODULE " << strheader.find("COREMODULE") << std::endl;
+  std::cout << "std::string::npos " << std::string::npos   << std::endl;
   TString readout_type="COREMODULE";
+  //CRP 24/11/20 Correct analysis of std::string  
   //FTDI readout DIRECT Interface, only one slab
-  if(strheader.find("SL_DIRECT_INTERFACE")==0) {
+  std::size_t found = strheader.find("SL_DIRECT_INTERFACE");
+  if (found!=std::string::npos) {
+//if(strheader.find("SL_DIRECT_INTERFACE")!=0) {
+    std::cout << "FTDI found" << std::endl;
     readout_type="FTDI";
     tmp_n_slboards=1;
     std::getline(reading_file, strheader);
@@ -377,6 +385,7 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
     int previousBCID=-1000;
     int loopBCID=0;
 
+    startACQ[slabidx]=start_acq;
     rawTSD[slabidx]=raw_tsd;
     TSD[slabidx]=_tsd;
     rawAVDD0[slabidx]=raw_avdd0;

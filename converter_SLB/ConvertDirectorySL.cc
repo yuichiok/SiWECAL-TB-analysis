@@ -39,7 +39,10 @@ vector<TString>* list_files(const char *dirname, const char *ext=".dat")
 
 void ConvertDirectorySL(string dirname, bool zerosupression=false, TString outputname="default")
 {
-  for(int j=0; j<2000; j++) {
+
+  std::cout << "dirname " << dirname << std::endl; 
+
+  for(int j=0; j<5000; j++) {
     //for(int j=0; j<1; j++) {
     
     TString filen=".dat";

@@ -9,8 +9,9 @@
 
 #source analysis.sh 21010 1
 
-for run in "Run_ILC_10162020_17h38min_cosmic_Ascii" "Run_ILC_10192020_17h38min_cosmic_Ascii" "Run_ILC_10202020_11h44min_cosmic_Ascii"
+for run in "Run_ILC_10212020_10h54min_cosmic_Ascii"
 do
+#"Run_ILC_10162020_17h38min_cosmic_Ascii" "Run_ILC_10192020_17h38min_cosmic_Ascii" "Run_ILC_10202020_11h44min_cosmic_Ascii"
 #run="Run_ILC_10162020_17h38min_cosmic_Ascii"
     
     data_folder="/mnt/win2/Run_Data/"${run}"/"
@@ -26,21 +27,19 @@ do
     root -l SlowControlMonitoring.cc\(\"${output}/${run}\",\"${run}\"\) 
     root -l DummyDisplay.cc\(\"${output}/${run}\",\"${run}\"\)
     
-    #root -l Monitoring.cc\(\"${output}/${run}\",\"${run}\",1\) 
+    ##root -l Monitoring.cc\(\"${output}/${run}\",\"${run}\",1\) 
     
     root -l SingleSlabAnalysis.cc\(\"${output}/${run}\",\"${run}\",0\) &
-    root -l SingleSlabAnalysis.cc\(\"${output}/${run}\",\"${run}\",1\) &
+    root -l SingleSlabAnalysis.cc\(\"${output}/${run}\",\"${run}\",1\) 
     root -l SingleSlabAnalysis.cc\(\"${output}/${run}\",\"${run}\",2\) &
     root -l SingleSlabAnalysis.cc\(\"${output}/${run}\",\"${run}\",3\) 
     root -l SingleSlabAnalysis.cc\(\"${output}/${run}\",\"${run}\",4\) &
     root -l SingleSlabAnalysis.cc\(\"${output}/${run}\",\"${run}\",5\) 
     root -l SingleSlabAnalysis.cc\(\"${output}/${run}\",\"${run}\",6\) &
-    root -l SingleSlabAnalysis.cc\(\"${output}/${run}\",\"${run}\",7\) &
-    root -l SingleSlabAnalysis.cc\(\"${output}/${run}\",\"${run}\",8\) 
-    root -l SingleSlabAnalysis.cc\(\"${output}/${run}\",\"${run}\",9\) &
+    root -l SingleSlabAnalysis.cc\(\"${output}/${run}\",\"${run}\",7\) 
+    root -l SingleSlabAnalysis.cc\(\"${output}/${run}\",\"${run}\",8\) &
+    root -l SingleSlabAnalysis.cc\(\"${output}/${run}\",\"${run}\",9\) 
     root -l SingleSlabAnalysis.cc\(\"${output}/${run}\",\"${run}\",10\) 
-    
-    sleep 10
     
     cd performance
     source analysis.sh $run 1 &
@@ -54,6 +53,6 @@ do
     source analysis.sh $run 11
     source analysis.sh $run 13 &
     source analysis.sh $run 14
-
     cd -
+    
 done
