@@ -13,13 +13,14 @@ int Proto(TString filename_in, TString output=""){
 
   TString map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis-git/mapping/fev10_chip_channel_x_y_mapping.txt";
 
-  for(int i_slboard=0; i_slboard<15; i_slboard++) {
-    if(i_slboard==8 || i_slboard==12) map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis-git/mapping/fev11_cob_chip_channel_x_y_mapping.txt";
-    else map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis-git/mapping/fev10_chip_channel_x_y_mapping.txt"; 
-    
-    ss.ReadMap(map,i_slboard);
-  }
-
+  //  for(int i_slboard=0; i_slboard<14; i_slboard++) {
+  //  if(i_slboard==8 || i_slboard==12) map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis-git/mapping/fev11_cob_chip_channel_x_y_mapping.txt";
+  //  else map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis-git/mapping/fev10_chip_channel_x_y_mapping.txt"; 
+  //
+  // ss.ReadMap(map,0);
+  //}
+  ss.ReadMap(map,0);
+ 
   //  ss.n_slboards=3;
   int result=ss.NSlabsAnalysis(output);
   return result;
