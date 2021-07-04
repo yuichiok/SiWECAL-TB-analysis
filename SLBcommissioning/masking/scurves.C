@@ -17,24 +17,26 @@ void scurves(TString date, int iteration) {
 
   savehistos(date);
   std::vector<int> nslboards;
-  //  for(int i=0; i<11; i++)  nslboards.push_back(i+1);
+  for(int i=0; i<15; i++)  nslboards.push_back(i);
   //first  found slboard
-  nslboards.push_back(1);
-  nslboards.push_back(2);
-  nslboards.push_back(3);
-  nslboards.push_back(4);
-  nslboards.push_back(5);
-  nslboards.push_back(6);
-  nslboards.push_back(7);
-  nslboards.push_back(10);
-  nslboards.push_back(11);
-  nslboards.push_back(13);
-  nslboards.push_back(14);
+  // nslboards.push_back(1);
+  // nslboards.push_back(2);
+  // nslboards.push_back(3);
+  // nslboards.push_back(4);
+  // nslboards.push_back(5);
+  // nslboards.push_back(6);
+  // nslboards.push_back(7);
+  // nslboards.push_back(10);
+  // nslboards.push_back(11);
+  // nslboards.push_back(13);
+  // nslboards.push_back(14);
 
   //    nslboards.push_back(3);
   //nslboards.push_back(12);
   //  nslboards.push_back(13);
-  
+
+  // nslboards.push_back(3);
+
   fithistos(date,nslboards,iteration);
   
 }
