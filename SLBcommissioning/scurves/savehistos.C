@@ -35,6 +35,8 @@ void ReadScurves(TString filename)
 === Hit Rate Vs Threshold Scan,for All Channels modulo 64 at once, AcqWindow 2 ms, MinThreshold = 170, MaxThreshold= 240, Nb Of Steps: 7, Nb Of Cycles per Step= 5 === 
   */
 
+
+ 
  
   cout<<"Reading scurve file: "<<filename<<endl;
   std::ifstream reading_file(filename);
@@ -83,7 +85,7 @@ void ReadScurves(TString filename)
    
   reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst>> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >>  tmpst >> nsteps_tmp >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
 
-  std::cout<< ndaughter<< " " <<nslabs[0] << " " << nslabs[1] << " " << std::endl;
+  std::cout<< "-----" << ndaughter<< " " <<nslabs[0] << " " << nslabs[1] << " " << std::endl;
   /*  for(int i=0; i<2; i++) {
     for(int j=0; j<15; j++) {
       std::cout<< nasu[i][j]<< " "<< idslab[i][j] << std::endl;
@@ -124,7 +126,7 @@ void savehistos(TString filename = ""){//TString filename, int slabadd){
   TString filename_input = "../"+filename+"/RateVsThresholdScan_"+filename+"_SLBoard.txt";
   TGraphErrors *scurve[15][16][64];
 
-
+  cout<<filename_input<<endl;
  ReadScurves(filename_input);
 
  for(int i=0; i<nslabs[0]; i++) {

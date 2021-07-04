@@ -176,6 +176,7 @@ void fithistos(TString filename, std::vector<int> slboards , int iteration=0){
   for(int i=0; i<slboards.size(); i++) {
     for(int iasic=0; iasic<16; iasic++) {
       for(int ichn=0; ichn<64; ichn++) {
+
 	scurve[i][iasic][ichn]=(TGraphErrors*)file_summary->Get(TString::Format("scurve_slboard%i_chip%i_chn%i",slboards.at(i),iasic,ichn));
 	scurvefit[i][iasic][ichn]=FitScurve(scurve[i][iasic][ichn]);
       }
@@ -224,7 +225,7 @@ void fithistos(TString filename, std::vector<int> slboards , int iteration=0){
 
   for(int i=0; i<slboards.size(); i++) {
     TString type="SK2";
-    if(detector.slab[0][i].add==3 || detector.slab[0][i].add==7 )
+    if(detector.slab[0][i].add==0 || detector.slab[0][i].add==1 || detector.slab[0][i].add==7 || detector.slab[0][i].add==9 )
       type = "SK2a";
     //    if(slboards.at(i)==2 || slboards.at(i)==6 || slboards.at(i)==7|| slboards.at(i)==11) type="SK2a";			       
     for(int iasic=0; iasic<16; iasic++) {
