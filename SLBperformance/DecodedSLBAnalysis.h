@@ -32,7 +32,7 @@ public :
    TString         datadir;
 
    // Declaration of leaf types
-      Int_t           event;
+   Int_t           event;
    Int_t           acqNumber;
    Int_t           n_slboards;
    Int_t           slot[15];
@@ -90,7 +90,7 @@ public :
    virtual Long64_t LoadTree(Long64_t entry);
    virtual void     Init(TTree *tree);
 
-   virtual int     NSlabsAnalysis(TString, int);
+   virtual int     NSlabsAnalysis(TString, TString, int, TString);
 
    virtual std::array<int,4096>   SimpleCoincidenceTagger(int,int);
    // write file with masked channels
@@ -100,10 +100,13 @@ public :
    virtual void     ReadMap(TString filename, int slboard);
    virtual void     ReadMasked(TString filename);
    virtual void     ReadPedestals(TString filename);
+   virtual void     ReadPedestalsProto(TString filename);
    //Monitoring
    virtual void    SlowControlMonitoring(TString outputname);
    virtual void     Monitoring(TString outputname, int freq, bool shifter);
    virtual void  QuickDisplay(TString outputname, int);
+   virtual void  HitMapsSimpleTracks(TString outputname, int);
+
 
    virtual void     SynchronizationStudies(TString outputname, int freq, bool shifter);
    //signal analysis: MIP fitt and signal/noise 

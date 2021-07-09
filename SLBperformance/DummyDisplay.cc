@@ -11,17 +11,20 @@ void DummyDisplay(TString filename_in, TString output=""){
   cout<<" Display of file: "<<filename_in<<endl;
   DecodedSLBAnalysis ss(filename_in);
 
-  TString map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis-git/mapping/fev10_chip_channel_x_y_mapping.txt";
+  TString map="/mnt/HardDrive/cernbox_hd/SiWECAL/TB2021/SiWECAL-TB-analysis/mapping/fev10_chip_channel_x_y_mapping.txt";
+
 
   for(int i_slboard=0; i_slboard<15; i_slboard++) {
     //  if(i_slboard==8 || i_slboard==12) map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis-git/mapping/fev11_cob_chip_channel_x_y_mapping.txt";
     /// else map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis-git/mapping/fev10_chip_channel_x_y_mapping.txt"; 
-    
     ss.ReadMap(map,i_slboard);
   }
 
   //  ss.n_slboards=3;
-  ss.QuickDisplay(output,8);/// using coincidences from 7 layers
+  ss.QuickDisplay(output,10);/// using coincidences from 7 layers
+  ss.SlowControlMonitoring(output);
+  ss.Monitoring(output,10,false);
+  ss.HitMapsSimpleTracks(output,10);//
   gSystem->Exit(0);
 
 }
