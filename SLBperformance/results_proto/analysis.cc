@@ -20,10 +20,10 @@ void analysis(TString run, int slboard) {
 
 
   int cob=0;
-  if(slboard==8 || slboard==12) cob=1;
+  //  if(slboard==8 || slboard==12) cob=1;
   triggers(run, slboard,cob);
 
-  TFile *file = new TFile(TString::Format("plots/slboard_%i_%s.root",slboard,run.Data()) , "RECREATE");  
+  TFile *file = new TFile(TString::Format("plots/layer_%i_%s.root",slboard,run.Data()) , "RECREATE");  
   mipanalysis(file,run, slboard,cob);
   file->Close();
 

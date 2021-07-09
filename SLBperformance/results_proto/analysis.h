@@ -156,7 +156,7 @@ void ReadMap(TString filename="../../mapping/fev10_chip_channel_x_y_mapping.txt"
 }
 
 
-void triggers( TString run="Run_ILC_cosmic_test_11222019", int slboard=2, int cob=0){
+void triggers( TString run="Run_ILC_cosmic_test_11222019", int layer=2, int cob=0){
   
   gROOT->Reset();
   //SetIrlesStyle();
@@ -181,15 +181,15 @@ void triggers( TString run="Run_ILC_cosmic_test_11222019", int slboard=2, int co
   if(cob==1)  map="../../mapping/fev11_cob_chip_channel_x_y_mapping.txt";
   ReadMap(map);
 
-  TFile *_file0 = TFile::Open(TString::Format("MIPs_15_slboards_%s.root",run.Data()));
+  TFile *_file0 = TFile::Open(TString::Format("MIPs_15_layers_%s.root",run.Data()));
   
-  TH1F *trig=(TH1F*)_file0->Get(TString::Format("slboard_%i/trig_slboard_%i",slboard,slboard));
-  TH1F *trig_xy=(TH1F*)_file0->Get(TString::Format("slboard_%i/trig_xy_slboard_%i",slboard,slboard));
-  TH1F *all_retriggering=(TH1F*)_file0->Get(TString::Format("slboard_%i/all_retriggering_slboard_%i",slboard,slboard));
-  TH1F *all_retriggering_xy=(TH1F*)_file0->Get(TString::Format("slboard_%i/all_retriggering_xy_slboard_%i",slboard,slboard));
+  TH1F *trig=(TH1F*)_file0->Get(TString::Format("layer_%i/trig_layer_%i",layer,layer));
+  TH1F *trig_xy=(TH1F*)_file0->Get(TString::Format("layer_%i/trig_xy_layer_%i",layer,layer));
+  TH1F *all_retriggering=(TH1F*)_file0->Get(TString::Format("layer_%i/all_retriggering_layer_%i",layer,layer));
+  TH1F *all_retriggering_xy=(TH1F*)_file0->Get(TString::Format("layer_%i/all_retriggering_xy_layer_%i",layer,layer));
   
 
-  TCanvas* canvas= new TCanvas(TString::Format("Triggers_slboard_%i",slboard),TString::Format("Triggers_slboard_%i",slboard),1400,1200);   
+  TCanvas* canvas= new TCanvas(TString::Format("Triggers_layer_%i",layer),TString::Format("Triggers_layer_%i",layer),1400,1200);   
   canvas->Divide(2,2);
   
   canvas->cd(1);
@@ -259,13 +259,13 @@ void triggers( TString run="Run_ILC_cosmic_test_11222019", int slboard=2, int co
   all_retriggering_xy->GetZaxis()->SetRangeUser(zmin,zmax);
   all_retriggering_xy->Draw("COLZ");
 
-  canvas->Print(TString::Format("plots/Triggers_%s_slboard_%i.eps",run.Data(),slboard));
+  canvas->Print(TString::Format("plots/Triggers_%s_layer_%i.eps",run.Data(),layer));
   
 }
 
 
 
-void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int slboard=2, int cob=0){
+void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int layer=2, int cob=0){
   
   gROOT->Reset();
   //SetIrlesStyle();
@@ -294,25 +294,37 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int sl
   ReadMap(map);
 
   
-  TFile *_file0 = TFile::Open(TString::Format("MIPs_15_slboards_%s.root",run.Data()));
+  TFile *_file0 = TFile::Open(TString::Format("MIPs_15_layers_%s.root",run.Data()));
 
-  cout<< TString::Format("MIPs_15_slboards_%s.root",run.Data()) <<endl;
+  cout<< TString::Format("MIPs_15_layers_%s.root",run.Data()) <<endl;
   TH2F* MIPW =new TH2F("MIPW","MIPW",32,-90,90,32,-90,90);
   TH2F* MIPM_xy=new TH2F("MIPM_xy","MIPM_xy",32,-90,90,32,-90,90);
-  TH2F* MIPM=new TH2F(TString::Format("MIPM_slbooard_%i",slboard),TString::Format("MIPM_slbooard_%i",slboard),16,-0.5,15.5,64,-0.5,63.5);
+  TH2F* MIPM=new TH2F(TString::Format("MIPM_slbooard_%i",layer),TString::Format("MIPM_slbooard_%i",layer),16,-0.5,15.5,64,-0.5,63.5);
   TH2F* MIPRMS=new TH2F("MIPRMS","MIPRMS",32,-90,90,32,-90,90);
   TH2F* MIPN=new TH2F("MIPN","MIPN",32,-90,90,32,-90,90);
 
+  ofstream fout_mip(TString::Format("MIPs_layer_%i_%s",layer,run.Data()).Data(),ios::out);
+  fout_mip<<"#mip results PROTO15"<<endl;
+  fout_mip<<"#layer chip channel mpv empv widthmpv chi2ndf nentries"<<endl;
+
+  for(int i=0; i<15; i++) {
+    for(int j=0; j<16; j++) {
+      for(int k=0; k<64; k++) {
+        fout_mip<<i<<" "<<j<<" "<<k<<" "<<mip_value[i]<<" "<<0<<" "<<0<<" "<<0<<" "<<0<<endl;
+      }
+    }
+  }
+
   for(int i=0;i<nchips;i++){
     
-      TCanvas* canvas_mip= new TCanvas(TString::Format("MIPs_slboard_%i_chip%i",slboard,i),TString::Format("MIPs_slboard_%i_chip%i",slboard,i),1600,1600);   
+      TCanvas* canvas_mip= new TCanvas(TString::Format("MIPs_layer_%i_chip%i",layer,i),TString::Format("MIPs_layer_%i_chip%i",layer,i),1600,1600);   
       canvas_mip->Divide(8,8);
 
       for(int j=0; j<64; j++) {
 	TCanvas* canvastemp= new TCanvas("temp","temp",100,100);   
 	canvastemp->cd();
 	//GetGoodEntries
-	TH1F *temp=(TH1F*)_file0->Get(TString::Format("slboard_%i/charge_slboard%i_chip%i_chn%i",slboard,slboard,i,j));
+	TH1F *temp=(TH1F*)_file0->Get(TString::Format("layer_%i/charge_layer%i_chip%i_chn%i",layer,layer,i,j));
 	if(temp==NULL) continue;
 	temp->Rebin(4);
 
@@ -336,6 +348,8 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int sl
 	   double empv=fitsnr_temp->GetParError(1);
 	   double wmpv=fitsnr_temp->GetParameter(0);
 	   double chi2ndf=0;
+	   fout_mip<<layer<<" "<<i<<" "<<j<<" "<<mpv<<" "<<empv<<" "<<wmpv<<" "<<chi2ndf<<" "<<temp->GetEntries();
+
 	   if(ndf>0) chi2ndf=chisqr/ndf;
 
 	   MIPM->Fill(i,j,mpv);
@@ -358,10 +372,12 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int sl
 	   t.SetTextAlign(13);  //align at top
  	   t.DrawLatex(10,ymax*1.5,TString::Format("N=%i",int(temp->GetEntries())));
 	   t.DrawLatex(10,ymax*1.15,TString::Format("MPV=%.1f",mpv));
-	 } 
+	 } else {
+           fout_mip<<layer<<" "<<i<<" "<<j<<" "<<m0<<" "<<0<<" "<<0<<" "<<0<<" "<<0;
+	 }
       }
       file->cd();
-      //canvas_mip->Print(TString::Format("plots/MIPs_%s_slboard_%i_chip%i.eps",run.Data(),slboard,i));
+      //canvas_mip->Print(TString::Format("plots/MIPs_%s_layer_%i_chip%i.eps",run.Data(),layer,i));
       canvas_mip->Write();
       delete canvas_mip;
   }
@@ -369,7 +385,7 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int sl
 
   //  _file0 ->Close();
 
-  TCanvas* canvas2= new TCanvas(TString::Format("MIPAna_slboard_%i",slboard),TString::Format("MIPAna_slboard_%i",slboard),800,1600);   
+  TCanvas* canvas2= new TCanvas(TString::Format("MIPAna_layer_%i",layer),TString::Format("MIPAna_layer_%i",layer),800,1600);   
   canvas2->Divide(1,2);
   
   canvas2->cd(1);
@@ -385,9 +401,9 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int sl
   MIPM_xy->GetZaxis()->SetRangeUser(15,80);
   MIPM_xy->Draw("colz");
 
-  canvas2->Print(TString::Format("plots/MIPAna_%s_slboard_%i.eps",run.Data(),slboard));
+  canvas2->Print(TString::Format("plots/MIPAna_%s_layer_%i.eps",run.Data(),layer));
 
-  TCanvas* canvas= new TCanvas(TString::Format("MIPAna2_slboard_%i",slboard),TString::Format("MIPAna2_slboard_%i",slboard),1600,1600);   
+  TCanvas* canvas= new TCanvas(TString::Format("MIPAna2_layer_%i",layer),TString::Format("MIPAna2_layer_%i",layer),1600,1600);   
   canvas->Divide(2,2);
   
   canvas->cd(1);
@@ -415,7 +431,7 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int sl
     MIPRMS->GetZaxis()->SetRangeUser(5,200);
     MIPRMS->Draw("COLZ");
 
-    // canvas->Print(TString::Format("plots/MIPAna_%s_slboard_%i.eps",run.Data(),slboard));
+    // canvas->Print(TString::Format("plots/MIPAna_%s_layer_%i.eps",run.Data(),layer));
 
   file->cd();
   MIPM->Write();
