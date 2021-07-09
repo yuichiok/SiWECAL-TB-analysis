@@ -12,7 +12,7 @@ void test_read_masked_channels(TString filename="Run_Settings.txt", bool debug=t
   float totalmasked[15];
   float totalmasked_chip[15][16];
   
-  int nslabs=11;
+  int nslabs=15;
   for(int islab=0; islab<nslabs; islab++) {
     TString map_name="../mapping/fev10_chip_channel_x_y_mapping.txt";
 

@@ -4,6 +4,7 @@
 
 void test_read_write(TString filename="Run_Settings.txt", bool debug=true) {
 
-  read_configuration_file("Run_Settings.txt",false);
+  // read_configuration_file("Run_Settings.txt",false);
+  read_configuration_file(filename,false);
   write_configuration_file("Run_Settings_new.txt");
 }
