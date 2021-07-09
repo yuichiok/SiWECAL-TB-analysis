@@ -84,7 +84,7 @@ protected:
   int acqNumber;
 
   //slowcontrol
-  int startACQ[SLBDEPTH];
+  double startACQ[SLBDEPTH];
   int rawTSD[SLBDEPTH];
   float TSD[SLBDEPTH];
   int rawAVDD0[SLBDEPTH];
@@ -120,7 +120,7 @@ void SLBdecoded2ROOT::Initialisation() {
   name= TString::Format("nColumns[%i][%i]/I",SLBDEPTH,NCHIP);
   tree->Branch("nColumns",numCol,name);
 
-  name= TString::Format("startACQ[%i]/I",SLBDEPTH);
+  name= TString::Format("startACQ[%i]/F",SLBDEPTH);
   tree->Branch("startACQ",startACQ,name);
 
   name= TString::Format("rawTSD[%i]/I",SLBDEPTH);
@@ -279,14 +279,18 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
   } else {
     reading_file >> tmpst >> tmpst >> tmpst  >> tmpst >>  tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst  >> tmpst >> tmp_n_slboards >> tmpst;
     cout<<" NB OF CONNECTED SLABs = " << tmp_n_slboards <<endl;
-    for(int islboard=0; islboard<tmp_n_slboards; islboard++) 
+    std::getline(reading_file, strheader);
+
+    for(int islboard=0; islboard<tmp_n_slboards; islboard++) {
       std::getline(reading_file, strheader);
+      std::cout<<islboard<<" "<<strheader<< std::endl;
+    }
 
     std::getline(reading_file, strheader);
     std::getline(reading_file, strheader);
     std::getline(reading_file, strheader);
     std::getline(reading_file, strheader);
-    std::getline(reading_file, strheader);
+
   }
 
   
@@ -296,7 +300,7 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
   
   // int bcid_cycle[20][16][15];
 
-  int mapping_z[100];
+  int mapping_slboard[100];
 
   //FTDI
   if( readout_type=="COREMODULE") {
@@ -322,21 +326,30 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
     // array_idx=5, slot 4, slboard 6, slab23 
     // array_idx=2, slot 3, slboard 3, slab26 
     // array_idx=1, slot 1, slboard 2, slab18
-    
-    mapping_z[0]=12-10;
-    mapping_z[1]=12-1;
-    mapping_z[2]=12-3;
-    mapping_z[3]=12-5;
-    mapping_z[4]=12-11;
-    mapping_z[5]=12-4;
-    mapping_z[6]=12-7;
-    mapping_z[7]=12-12;
-    mapping_z[8]=12-8;
-    mapping_z[9]=12-9;
-    mapping_z[10]=12-6;
+
+    //2021 July
+    //15 slabs, we modified the slabb address to fit the position (0 is the one closest to the sky, 14 the one in the bottom)
+    //the original SLB-ID (slboard ID, sorted by production time) is:
+    // now slboard_add = slabidx = slot
+
+    mapping_slboard[0]=17;
+    mapping_slboard[1]=8;
+    mapping_slboard[2]=10;
+    mapping_slboard[3]=5;
+    mapping_slboard[4]=1;
+    mapping_slboard[5]=13;
+    mapping_slboard[6]=11;
+    mapping_slboard[7]=7;
+    mapping_slboard[8]=14;
+    mapping_slboard[9]=3;
+    mapping_slboard[11]=6;
+    mapping_slboard[12]=9;
+    mapping_slboard[13]=2;
+    mapping_slboard[14]=0;
+
 
   } else {
-    mapping_z[0]=0;
+    mapping_slboard[0]=0;
   }
   
   // int mapping_slot[15];
@@ -351,7 +364,7 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
     int chip=-1;
     int slabidx=-1;
     int slabadd=-1;
-    int start_acq=-1;
+    double start_acq=-1;
     int raw_tsd=-1;
     float _tsd=-1;
     int raw_avdd0=-1;
@@ -361,7 +374,7 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
 
     reading_file >> tmpst1 >> tmpst >> size >> tmpst >> chip >> tmpst >>  tmpst >> tmpst >> slabidx >> tmpst >> slabadd >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst >> cycleID >> tmpst >> start_acq >> tmpst >> raw_tsd >> tmpst >> raw_avdd0 >>  tmpst >> raw_avdd1 >> tmpst >> _tsd >> tmpst >> _avdd0 >>  tmpst >> _avdd1;
     //    if(slabidx>20)
-    //    std::cout << " -----" <<tmpst1<<" "<<size<< " "<<chip<<" "<<slabidx<<" "<<slabadd<<" "<<cycleID <<" "<<acqNumber<< std::endl;
+    //std::cout << " -----" <<tmpst1<<" "<<size<< " "<<chip<<" "<<slabidx<<" "<<slabadd<<" "<<cycleID <<" "<<acqNumber<<" "<<start_acq<<" "<<tmpst1<<std::endl;
     //  if(slabidx<0) break;
     if( readout_type=="COREMODULE" && slabidx==-1) break;//ftdi
     if( readout_type=="FTDI"  && slabidx!=-1) break;
@@ -393,8 +406,8 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
     AVDD0[slabidx]=raw_avdd0;
     AVDD1[slabidx]=raw_avdd1;
 
-    slot[slabidx]=mapping_z[slabidx];
-    slboard_id[slabidx]=slabadd;
+    slot[slabidx]=slabadd;
+    slboard_id[slabidx]=mapping_slboard[slabidx];
 
     
     for(int i=0; i<size; i++) {
@@ -403,7 +416,7 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
       int sca=-1;
       int nhits_tmp=-1;
       reading_file >> tmpst >> tmpst >> bcid_tmp >> tmpst >> sca >>  tmpst  >>  nhits_tmp ;
-
+      //cout<<bcid_tmp<<" "<<sca<<" "<<nhits_tmp<<" "<<endl;
       sca=size-(sca+1);
       bcid[slabidx][chip][sca]=bcid_tmp;
       nhits[slabidx][chip][sca]=nhits_tmp;
@@ -431,7 +444,7 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
 	int lg_bit=-1;
 	int hg_bit=-1;
 	reading_file >> tmpst >> chn >> tmpst >> lg >>  lg_bit >> tmpst >>  tmpst >> hg >> hg_bit >> tmpst;
-	//	cout << chn << " "<< hg <<" " <<hg_bit<<endl;
+	//cout << chn << " "<< hg <<" " <<hg_bit<<endl;
 	//	if(slabid==slboard_index) {
 	  charge_low[slabidx][chip][sca][chn]=lg;
 	  gain_hit_low[slabidx][chip][sca][chn]=lg_bit;
