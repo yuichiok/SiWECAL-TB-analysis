@@ -264,6 +264,20 @@ void mask_full_chip(int idaughter, int islab, int iasu, int ichip) {
   for(int i=0; i<detector.slab[idaughter][islab].asu[iasu].skiroc[ichip].n_channels; i++) detector.slab[idaughter][islab].asu[iasu].skiroc[ichip].mask[i]=1;
 }
 
+void disable_trig_otherrows(int idaughter, int islab, int iasu, int ichip, int jrow) {
+  //row 0 --> chns 0-7
+  //row 2--> chns 8-15 
+  //etc 
+
+  for(int irow=0; irow<8; irow++) {
+    if(jrow==irow) continue;
+    cout<<"Disable trigger for rows "<< irow<<endl;
+    for(int i=irow*8; i<(irow*8+8); i++) {
+      cout<<idaughter<<" "<<islab<<" "<<iasu<<" "<< ichip<<" "<<i <<endl;
+      detector.slab[idaughter][islab].asu[iasu].skiroc[ichip].mask[i]=1;
+    }
+  }
+}
 
 void enable_trig_row(int idaughter, int islab, int iasu, int ichip, int irow) {
   //row 0 --> chns 0-7
