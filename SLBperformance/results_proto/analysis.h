@@ -340,7 +340,7 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int la
 	   double empv=fitsnr_temp->GetParError(1);
 	   double wmpv=fitsnr_temp->GetParameter(0);
 	   double chi2ndf=0;
-	   fout_mip<<layer<<" "<<i<<" "<<j<<" "<<mpv<<" "<<empv<<" "<<wmpv<<" "<<chi2ndf<<" "<<temp->GetEntries();
+	   fout_mip<<layer<<" "<<i<<" "<<j<<" "<<mpv<<" "<<empv<<" "<<wmpv<<" "<<chi2ndf<<" "<<temp->GetEntries()<<"\n";
 
 	   if(ndf>0) chi2ndf=chisqr/ndf;
 
@@ -365,7 +365,7 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int la
  	   t.DrawLatex(10,ymax*1.5,TString::Format("N=%i",int(temp->GetEntries())));
 	   t.DrawLatex(10,ymax*1.15,TString::Format("MPV=%.1f",mpv));
 	 } else {
-           fout_mip<<layer<<" "<<i<<" "<<j<<" "<<0<<" "<<0<<" "<<0<<" "<<0<<" "<<0;
+           fout_mip<<layer<<" "<<i<<" "<<j<<" "<<0<<" "<<0<<" "<<0<<" "<<0<<" "<<0<<"\n";
 	 }
       }
       file->cd();
