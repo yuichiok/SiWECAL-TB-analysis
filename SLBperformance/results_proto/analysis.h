@@ -307,17 +307,9 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int la
   fout_mip<<"#mip results PROTO15"<<endl;
   fout_mip<<"#layer chip channel mpv empv widthmpv chi2ndf nentries"<<endl;
 
-  for(int i=0; i<15; i++) {
-    for(int j=0; j<16; j++) {
-      for(int k=0; k<64; k++) {
-        fout_mip<<i<<" "<<j<<" "<<k<<" "<<mip_value[i]<<" "<<0<<" "<<0<<" "<<0<<" "<<0<<endl;
-      }
-    }
-  }
-
   for(int i=0;i<nchips;i++){
     
-      TCanvas* canvas_mip= new TCanvas(TString::Format("MIPs_layer_%i_chip%i",layer,i),TString::Format("MIPs_layer_%i_chip%i",layer,i),1600,1600);   
+    TCanvas* canvas_mip= new TCanvas(TString::Format("MIPs_layer_%i_chip%i",layer,i),TString::Format("MIPs_layer_%i_chip%i",layer,i),1600,1600);   
       canvas_mip->Divide(8,8);
 
       for(int j=0; j<64; j++) {
@@ -373,7 +365,7 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int la
  	   t.DrawLatex(10,ymax*1.5,TString::Format("N=%i",int(temp->GetEntries())));
 	   t.DrawLatex(10,ymax*1.15,TString::Format("MPV=%.1f",mpv));
 	 } else {
-           fout_mip<<layer<<" "<<i<<" "<<j<<" "<<m0<<" "<<0<<" "<<0<<" "<<0<<" "<<0;
+           fout_mip<<layer<<" "<<i<<" "<<j<<" "<<0<<" "<<0<<" "<<0<<" "<<0<<" "<<0;
 	 }
       }
       file->cd();
