@@ -31,7 +31,7 @@ std::array<int,4096> DecodedSLBAnalysis::SimpleCoincidenceTagger(int jentry, int
       for(int isca=0; isca<15; isca++) {
 	if(bcid[islboard][ichip][isca]<0) break; //not include elements with no value (-999)
 
-	if( bcid[islboard][ichip][isca]>50 && badbcid[islboard][ichip][isca]==0 && nhits[islboard][ichip][isca]<(maxnhit+1)) {
+	if( bcid[islboard][ichip][isca]>50 && (bcid[islboard][ichip][isca]<270 || bcid[islboard][ichip][isca]>295)  && badbcid[islboard][ichip][isca]==0 && nhits[islboard][ichip][isca]<(maxnhit+1)) {
 	  bool gooddata=true;
 	  for(int i=0; i<64; i++) {
 	    if(charge_hiGain[islboard][ichip][isca][i]<150) {
@@ -91,20 +91,19 @@ void DecodedSLBAnalysis::SlowControlMonitoring(TString outputname="SlowControlMo
     if (ientry < 0) break;
     nb = fChain->GetEntry(jentry);   nbytes += nb;
     if ( jentry > 1000 && jentry % 1000 ==0 ) std::cout << "Progress: " << 100.*jentry/nentries <<" %"<<endl;
-
     if(jentry==0) n_SLB=n_slboards;
 
     if ( jentry % (ngraph) !=0 ) continue;
    
-    for(int islboard=0; islboard<n_slboards; islboard++) {
-      if(TSD[islboard]>0) {
-	x[slboard_id[islboard]][n[slboard_id[islboard]]]=acqNumber;
-	temp_y[slboard_id[islboard]][n[slboard_id[islboard]]]=TSD[islboard];
-	avdd_y[slboard_id[islboard]][n[slboard_id[islboard]]]=AVDD0[islboard];
-	avdd_diff_y[slboard_id[islboard]][n[slboard_id[islboard]]]=(AVDD1[islboard]-AVDD0[islboard]);
-	avdd_temp_y[slboard_id[islboard]][n[slboard_id[islboard]]]=AVDD0[islboard]/TSD[islboard];
+    for(int ilayer=0; ilayer<n_slboards; ilayer++) {
+      if(TSD[ilayer]>0) {
+	x[ilayer][n[ilayer]]=acqNumber;
+	temp_y[ilayer][n[ilayer]]=TSD[ilayer];
+	avdd_y[ilayer][n[ilayer]]=AVDD0[ilayer];
+	avdd_diff_y[ilayer][n[ilayer]]=(AVDD1[ilayer]-AVDD0[ilayer]);
+	avdd_temp_y[ilayer][n[ilayer]]=AVDD0[ilayer]/TSD[ilayer];
 
-	n[slboard_id[islboard]]++;
+	n[ilayer]++;
       }
     }
     
@@ -132,13 +131,13 @@ void DecodedSLBAnalysis::SlowControlMonitoring(TString outputname="SlowControlMo
   
   for(int i=0; i<11; i++) {
     if(n[i]!=0) {
-      temp[i]->SetName(TString::Format("temp_slboard_%i",i));
+      temp[i]->SetName(TString::Format("temp_layer_%i",i));
       temp[i]->Write();
-      avdd0[i]->SetName(TString::Format("AVDD0_slboard_%i",i));
+      avdd0[i]->SetName(TString::Format("AVDD0_layer_%i",i));
       avdd0[i]->Write();
-      avdd_diff[i]->SetName(TString::Format("AVDDdiff_slboard_%i",i));
+      avdd_diff[i]->SetName(TString::Format("AVDDdiff_layer_%i",i));
       avdd_diff[i]->Write();
-      avdd_temp[i]->SetName(TString::Format("AVDDtemp_slboard_%i",i));
+      avdd_temp[i]->SetName(TString::Format("AVDDtemp_layer_%i",i));
       avdd_temp[i]->Write();
     }
   }
@@ -297,7 +296,7 @@ void DecodedSLBAnalysis::HitMapsSimpleTracks(TString outputname="HitMapsSimpleTr
 	for(int isca=0; isca<15; isca++) {
 	  if(bcid[islboard][ichip][isca]<0) continue;
 	  
-	  if(bcid[islboard][ichip][isca]>50 && nhits[islboard][ichip][isca]<6 && badbcid[islboard][ichip][isca]==0 && bcid_seen.at(bcid[islboard][ichip][isca])>(nlayers_minimum-1)) {
+	  if(bcid[islboard][ichip][isca]>50 && (bcid[islboard][ichip][isca]<270 || bcid[islboard][ichip][isca]>295)  && nhits[islboard][ichip][isca]<6 && badbcid[islboard][ichip][isca]==0 && bcid_seen.at(bcid[islboard][ichip][isca])>(nlayers_minimum-1)) {
 	    for(int ichn=0;ichn<64; ichn++) {
 	      if(gain_hit_high[islboard][ichip][isca][ichn]==1) {
 		hitmap_trig_xy[islboard]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]));
@@ -373,7 +372,7 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay", int nla
 	for(int isca=0; isca<15; isca++) {
 	  if(bcid[islboard][ichip][isca]<0) continue;
 	  
-	  if(bcid[islboard][ichip][isca]>50 && nhits[islboard][ichip][isca]<6 && badbcid[islboard][ichip][isca]==0 && bcid_seen.at(bcid[islboard][ichip][isca])>(nlayers_minimum-1)) {
+	  if(bcid[islboard][ichip][isca]>50 && (bcid[islboard][ichip][isca]<270 || bcid[islboard][ichip][isca]>295)  && nhits[islboard][ichip][isca]<6 && badbcid[islboard][ichip][isca]==0 && bcid_seen.at(bcid[islboard][ichip][isca])>(nlayers_minimum-1)) {
 	    for(int ichn=0;ichn<64; ichn++) {
 	      double z=-15.*islboard;
 	      if(gain_hit_high[islboard][ichip][isca][ichn]==1)
@@ -481,7 +480,7 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", TString analysis_t
 	    bool gooddata=true;
 	    int ntaggedasbad = 0;
 	    for(int ichn=0; ichn<64; ichn++) {
-	      if(gain_hit_high[ilayer][ichip][isca][ichn]==1 && charge_hiGain[ilayer][ichip][isca][ichn]<15 && charge_hiGain[ilayer][ichip][isca][ichn]>-1 ) 
+	      if(gain_hit_high[ilayer][ichip][isca][ichn]==1 && ((charge_hiGain[ilayer][ichip][isca][ichn]<200 && charge_hiGain[ilayer][ichip][isca][ichn]>-1) || (charge_lowGain[ilayer][ichip][isca][ichn]<100 && charge_lowGain[ilayer][ichip][isca][ichn]>-1)) ) 
 		ntaggedasbad++;
 	    }//ichn 
 	    if ( ntaggedasbad > 0) gooddata=false;
@@ -491,7 +490,7 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", TString analysis_t
 	      //good events
 	      bool selection=false;
 	      
-	      if( charge_hiGain[ilayer][ichip][isca][ichn]>30 && badbcid[ilayer][ichip][isca]==0 && nhits[ilayer][ichip][isca]<maxnhit+1 && bcid[ilayer][ichip][isca]>50) selection=true;
+	      if( charge_hiGain[ilayer][ichip][isca][ichn]>30 && badbcid[ilayer][ichip][isca]==0 && nhits[ilayer][ichip][isca]<maxnhit+1 && bcid[ilayer][ichip][isca]>50 && (bcid[ilayer][ichip][isca]<270 || bcid[ilayer][ichip][isca]>295) ) selection=true;
 	      
 	      // if(masked[ilayer][ichip][ichn]==1) selection=false;
 	      if(gain_hit_high[ilayer][ichip][isca][ichn]==0 && selection==true && gooddata==true)
@@ -707,7 +706,7 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", TString analysis_t
 	  
 	  for(int isca=0; isca<15; isca++) {
 	    if(bcid[ilayer][ichip][isca]<0) continue;
-	    //	    if(bcid[ilayer][ichip][isca]<50 || (bcid[ilayer][ichip][isca]>890 && bcid[ilayer][ichip][isca]<930)) continue;
+	    if(bcid[ilayer][ichip][isca]<50 || (bcid[ilayer][ichip][isca]>275 && bcid[ilayer][ichip][isca]<295)) continue;
              if(bcid[ilayer][ichip][isca]<50) continue;                                                                   
 
 	    
@@ -751,7 +750,7 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", TString analysis_t
 	  for(int isca=0; isca<15; isca++) {
 	    if(bcid[ilayer][ichip][isca]<0) continue;
 	    if(bcid[ilayer][ichip][isca]<50) continue;
-	    //	    if(bcid[ilayer][ichip][isca]<50 || (bcid[ilayer][ichip][isca]>890 && bcid[ilayer][ichip][isca]<930)) continue;
+	    if(bcid[ilayer][ichip][isca]<50 || (bcid[ilayer][ichip][isca]<295 && bcid[ilayer][ichip][isca]>275)) continue;
 	    for(int ichn=0; ichn<64; ichn++) {
 	      
 	      if( ped_mean_slboard.at(ilayer).at(ichip).at(ichn).at(isca)>50 &&  ped_width_slboard.at(ilayer).at(ichip).at(ichn).at(isca)>0 ) {
@@ -2038,7 +2037,7 @@ void DecodedSLBAnalysis::PedestalAnalysis(int i_layer,TString outputname="", int
 
 	    //good events
 	    bool selection=false;
-	    if( charge_hiGain[islboard][ichip][isca][ichn]>30 && badbcid[islboard][ichip][isca]==0 && nhits[islboard][ichip][isca]<maxnhit+1 && bcid[islboard][ichip][isca]>50) selection=true;
+	    if( charge_hiGain[islboard][ichip][isca][ichn]>30 && badbcid[islboard][ichip][isca]==0 && nhits[islboard][ichip][isca]<maxnhit+1 && bcid[islboard][ichip][isca]>50 && (bcid[islboard][ichip][isca]<270 || bcid[islboard][ichip][isca]>295) ) selection=true;
 		  
 	    // if(masked[islboard][ichip][ichn]==1) selection=false;
 	    if(gain_hit_high[islboard][ichip][isca][ichn]==0 && gooddata==true && selection==true)
@@ -2544,7 +2543,7 @@ void DecodedSLBAnalysis::Retriggers(int i_layer, TString outputname="",int maxnh
 	  bool burst=false;
 	  if(bcid[islboard][ichip][isca]<0) continue;
 	
-	  if(badbcid[islboard][ichip][isca]>2 && bcid[islboard][ichip][isca]>50 ) {
+	  if(badbcid[islboard][ichip][isca]>2 && bcid[islboard][ichip][isca]>50 && (bcid[islboard][ichip][isca]<270 || bcid[islboard][ichip][isca]>295)  ) {
 	    retrig=true;
 	    if(first_retrig==false) {
 	      first_retrig=true;

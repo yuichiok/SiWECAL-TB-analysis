@@ -1,0 +1,3 @@
+#pedestal results (fit to a gaussian) remove channels/sca with two pedestals peaks from the analysis : PROTO15
+#layer chip channel ped0 eped0 widthped0 ped1 eped1 widthped1... ped14 eped14 widhtped14 (all SCA)
+0 0 0 

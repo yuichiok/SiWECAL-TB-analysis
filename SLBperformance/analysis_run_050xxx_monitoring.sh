@@ -1,14 +1,13 @@
 #!/bin/bash
 
-run="run_050001"
-run_file="run_050001_25062021_19h25min_Ascii.dat"
-data_folder="/lustre/ific.uv.es/prj/ific/flc/SiWECAL/TB2021/run_050XXX/run_050001_25062021_19h25min_Ascii"
-output="/mnt/HardDrive/cernbox_hd/SiWECAL/TB2021/SiWECAL-TB-analysis/converter_SLB/convertedfiles/"${run}"/"
-#mkdir $output
+run="run_050004"
+run_file="converted.dat"
+output=${PWD}"/../converter_SLB/convertedfiles/run_050004_09072021_21h05min_Ascii/"
+
 
 initial_folder=$PWD
 
-for i in {0..2339}
+for i in {1..1803}
 do
     j="000"$i
     if [ $i -gt 9 ]; then
@@ -25,12 +24,12 @@ do
     #conversion
     #analysis
     cd $initial_folder
-    root -l -q Proto.cc\(\"${output}/${run_file}_$j\",\"${run}_$j\",\"retriggers\"\) &
+    root -l -q Proto.cc\(\"${output}/${run_file}_$j\",\"${run}_$j\",\"retriggers\"\)  &
     root -l -q DummyDisplay.cc\(\"${output}/${run_file}_$j\",\"${run}_$j\"\)
 done
 
 cd results_monitoring
-source hadd.sh "Monitoring_summary" $run
+source hadd.sh "Monitoring_summary" $run &
 source hadd.sh "HitMapsSimpleTracks" $run
 cd -
 

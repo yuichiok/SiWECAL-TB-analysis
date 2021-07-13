@@ -64,7 +64,7 @@ void PedestalFile(TString rootfile="") {
 		htemp->Fit("f1","RQME");
 		fout_ped<<f1->GetParameter(1) << " " << f1->GetParError(1)<<" "<<f1->GetParameter(2)<< " ";
 	      } else {
-		fout_ped<<0<< " " << 0<<" "<<0<<" ";
+		fout_ped<<mean_peak_higher<< " " << 10 <<" "<<0<<" ";
 	      }
 	    } else {
 	      fout_ped<<0<< " " << 0<<" "<<0<<" ";
