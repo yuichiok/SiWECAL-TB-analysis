@@ -33,6 +33,6 @@ source hadd.sh "Monitoring_summary" $run &
 source hadd.sh "HitMapsSimpleTracks" $run
 cd -
 
-cd ../results_retriggers
+cd results_retriggers
 source hadd.sh $run
 
