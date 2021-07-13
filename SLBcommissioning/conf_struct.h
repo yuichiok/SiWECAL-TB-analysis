@@ -266,7 +266,7 @@ void mask_full_chip(int idaughter, int islab, int iasu, int ichip) {
 
 void disable_trig_otherrows(int idaughter, int islab, int iasu, int ichip, int jrow) {
   //row 0 --> chns 0-7
-  //row 2--> chns 8-15 
+  //row 1--> chns 8-15 
   //etc 
 
   for(int irow=0; irow<8; irow++) {

@@ -107,7 +107,7 @@ void apply_mask(bool global_threshold=false) {
 	if(detector.slab[0][i].asu[0].skiroc[j].mask[k]==1) channels_masked++;
       }
 
-      if(global_threshold==true && detector.slab[0][i].asu[0].skiroc[j].threshold_dac<260 && float(channels_to_mask+channels_masked)/float(channels_notmasked+channels_to_mask+channels_masked)>0.25) {
+      if(global_threshold==true && detector.slab[0][i].asu[0].skiroc[j].threshold_dac<270 && float(channels_to_mask+channels_masked)/float(channels_notmasked+channels_to_mask+channels_masked)>0.2) {
 	cout<<" WARNING!! TOO MANY CHANNELS TO BE MASKED ("<<channels_to_mask <<") + already masked: "<<channels_masked <<" in  Slboard:"<<detector.slab[0][i].add<<" skiroc:"<<j<<endl;
       	cout<<" instead we increase the global thershold, from"<<detector.slab[0][i].asu[0].skiroc[j].threshold_dac<<" to: "<<detector.slab[0][i].asu[0].skiroc[j].threshold_dac+5<<endl;
 	detector.slab[0][i].asu[0].skiroc[j].threshold_dac+=5;
