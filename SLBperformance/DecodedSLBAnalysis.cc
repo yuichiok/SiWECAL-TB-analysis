@@ -706,8 +706,8 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", TString analysis_t
 	  
 	  for(int isca=0; isca<15; isca++) {
 	    if(bcid[ilayer][ichip][isca]<0) continue;
-	    if(bcid[ilayer][ichip][isca]<50 || (bcid[ilayer][ichip][isca]>275 && bcid[ilayer][ichip][isca]<295)) continue;
-             if(bcid[ilayer][ichip][isca]<50) continue;                                                                   
+	    if(bcid[ilayer][ichip][isca]>275 && bcid[ilayer][ichip][isca]<295) continue;
+	    if(bcid[ilayer][ichip][isca]<50) continue;                                                                   
 
 	    
 	    if(isca==0) {
@@ -750,7 +750,7 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", TString analysis_t
 	  for(int isca=0; isca<15; isca++) {
 	    if(bcid[ilayer][ichip][isca]<0) continue;
 	    if(bcid[ilayer][ichip][isca]<50) continue;
-	    if(bcid[ilayer][ichip][isca]<50 || (bcid[ilayer][ichip][isca]<295 && bcid[ilayer][ichip][isca]>275)) continue;
+	    if(bcid[ilayer][ichip][isca]>275 && bcid[ilayer][ichip][isca]<295) continue;
 	    for(int ichn=0; ichn<64; ichn++) {
 	      
 	      if( ped_mean_slboard.at(ilayer).at(ichip).at(ichn).at(isca)>50 &&  ped_width_slboard.at(ilayer).at(ichip).at(ichn).at(isca)>0 ) {

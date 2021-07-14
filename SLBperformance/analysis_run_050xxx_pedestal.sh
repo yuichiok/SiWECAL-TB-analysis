@@ -45,4 +45,4 @@ cd results_pedestal
 root -l -q PedestalFile.C\(\"Pedestal_${run}\"\)
 cd ..
 
-cp results_pedestal/Pedestal_${run}.txt ../pedestals/.
+cp results_pedestal/Pedestal_${run}.txt ../pedestals/Pedestal_15_layers_${run}.txt
