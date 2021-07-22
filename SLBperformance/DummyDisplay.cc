@@ -4,7 +4,7 @@
 #include "TFile.h"
 #include "DecodedSLBAnalysis.cc"
 
-void DummyDisplay(TString filename_in, TString output=""){
+void DummyDisplay(TString filename_in, TString output="", int ncoinc=7){
 
 
   filename_in=filename_in+".root";
@@ -21,10 +21,16 @@ void DummyDisplay(TString filename_in, TString output=""){
   }
 
   //  ss.n_slboards=3;
-  ss.QuickDisplay(output,10);/// using coincidences from 7 layers
-  ss.SlowControlMonitoring(output);
-  ss.Monitoring(output,10,false);
-  ss.HitMapsSimpleTracks(output,10);//
+  ss.QuickDisplay(TString::Format("%s_%i",output.Data(),ncoinc),ncoinc);/// using coincidences from 7 layers
+    
+  
+  if(ncoinc==7) {
+    ss.QuickDisplay(TString::Format("%s_%i",output.Data(),ncoinc),ncoinc);/// using coincidences from 7 layers
+    ss.SlowControlMonitoring(output);
+    ss.Monitoring(output,10,false);
+    ss.HitMapsSimpleTracks(output,ncoinc);//
+    ss.SynchronizationStudies(TString::Format("%s_%i",output.Data(),ncoinc),ncoinc,false);
+  }
   gSystem->Exit(0);
 
 }

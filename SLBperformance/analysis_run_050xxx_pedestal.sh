@@ -1,15 +1,15 @@
 #!/bin/bash
 
 #run
-run="run_050004"
+run="run_050010"
 run_file="converted.dat"
 #ascii folder
 #rootfiles folder
-output=${PWD}"/../converter_SLB/convertedfiles/run_050004_09072021_21h05min_Ascii/"
+output=${PWD}"/../converter_SLB/convertedfiles/run_050010_07172021_13h52min_Ascii/"
 
 initial_folder=$PWD
 
-for i in {1..931}
+for i in {1031..1774}
 do
     j="000"$i
     if [ $i -gt 9 ]; then
@@ -46,3 +46,5 @@ root -l -q PedestalFile.C\(\"Pedestal_${run}\"\)
 cd ..
 
 cp results_pedestal/Pedestal_${run}.txt ../pedestals/Pedestal_15_layers_${run}.txt
+
+source analysis_run_050xxx_mips.sh

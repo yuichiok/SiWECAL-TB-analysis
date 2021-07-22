@@ -1,13 +1,13 @@
 #!/bin/bash
 
-run="run_050004"
+run="run_050010"
 run_file="converted.dat"
-output=${PWD}"/../converter_SLB/convertedfiles/run_050004_09072021_21h05min_Ascii/"
+output=${PWD}"/../converter_SLB/convertedfiles/run_050010_07172021_13h52min_Ascii/"
 
 
 initial_folder=$PWD
 
-for i in {1..1803}
+for i in {388..1774}
 do
     j="000"$i
     if [ $i -gt 9 ]; then
@@ -24,8 +24,9 @@ do
     #conversion
     #analysis
     cd $initial_folder
-    root -l -q Proto.cc\(\"${output}/${run_file}_$j\",\"${run}_$j\",\"retriggers\"\)  &
-    root -l -q DummyDisplay.cc\(\"${output}/${run_file}_$j\",\"${run}_$j\"\)
+    root -l -q DummyDisplay.cc\(\"${output}/${run_file}_$j\",\"${run}_$j\",7\) &
+    root -l -q DummyDisplay.cc\(\"${output}/${run_file}_$j\",\"${run}_$j\",10\) &
+    root -l -q Proto.cc\(\"${output}/${run_file}_$j\",\"${run}_$j\",\"retriggers\"\)
 done
 
 cd results_monitoring
@@ -34,5 +35,7 @@ source hadd.sh "HitMapsSimpleTracks" $run
 cd -
 
 cd results_retriggers
-source hadd.sh $run
+source hadd.sh $run &
+
+#source analyis_run_050xxx_mips.sh
 

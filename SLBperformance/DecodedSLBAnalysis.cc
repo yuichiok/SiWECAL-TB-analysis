@@ -20,7 +20,6 @@ using namespace std;
 std::array<int,4096> DecodedSLBAnalysis::SimpleCoincidenceTagger(int jentry, int maxnhit)
 {
 
-
   // so far we only look for coincicendes for exact same values of bcids... in principle, we could lookf for bcid+-1
   std::array<int,4096> bcid_seen={0};
 
@@ -129,7 +128,7 @@ void DecodedSLBAnalysis::SlowControlMonitoring(TString outputname="SlowControlMo
   TFile *monitoringfile_summary = new TFile("results_monitoring/SlowControl_"+outputname+".root" , "RECREATE");
   monitoringfile_summary->cd();
   
-  for(int i=0; i<11; i++) {
+  for(int i=0; i<15; i++) {
     if(n[i]!=0) {
       temp[i]->SetName(TString::Format("temp_layer_%i",i));
       temp[i]->Write();
@@ -324,6 +323,71 @@ void DecodedSLBAnalysis::HitMapsSimpleTracks(TString outputname="HitMapsSimpleTr
 
 }
 
+void DecodedSLBAnalysis::SynchronizationStudies(TString outputname="testMonitoring", int nlayers_minimum=7, bool shifter=false)
+{
+
+  TH1F* bcid_correlations[15];
+
+  for(int j=0; j<15; j++) {
+    bcid_correlations[j]=new TH1F(TString::Format("bcid_layer_%i_minus_trackbcid",j),TString::Format("bcid_layer_%i_minus_trackbcid",j),8191,-4095.5,4095.5);
+  }
+  
+  // --------------
+  if (fChain == 0) return;
+  Long64_t nentries = fChain->GetEntriesFast();
+  //-----------------
+  cout<<"Total number of entries: "<< nentries<<endl;
+
+
+  // -----------------------------------------------------------------------------------------------------
+  // Signal readout
+  Long64_t nbytes = 0, nb = 0;
+  int n_SLB=0;
+  int n=0;
+  for (Long64_t jentry=0; jentry<nentries;jentry++) {
+    Long64_t ientry = LoadTree(jentry);
+    if (ientry < 0) break;
+    nb = fChain->GetEntry(jentry);   nbytes += nb;
+    if ( jentry > 1000 && jentry % 1000 ==0 ) std::cout << "Progress: " << 100.*jentry/nentries <<" %"<<endl;
+
+    if(jentry==0) n_SLB=n_slboards;
+
+    if(n>999) break;
+    std::array<int,4096> bcid_seen = SimpleCoincidenceTagger(jentry,65);
+
+
+    for(int islboard=0; islboard<n_slboards; islboard++) {
+      for(int ichip=0; ichip<16; ichip++) {
+	for(int isca=0; isca<15; isca++) {
+	  if(bcid[islboard][ichip][isca]<0) continue;
+
+	  for(int i=0; i<4096; i++) {
+	    if(bcid_seen.at(i)>(nlayers_minimum-1) )  {
+	      bcid_correlations[islboard]->Fill(bcid[islboard][ichip][isca]-i);
+	      // cout<<islboard<<" "<<ichip<<" "<<isca<<" "<<bcid[islboard][ichip][isca]<<" "<<i<<endl;
+	    }
+	  }
+	}
+      }
+    }
+  
+  }
+
+  // -----------------------------------------------------------------------------------------------------   
+  // Signal analysis
+  TFile *monitoringfile_summary = new TFile("results_monitoring/CoincidBCIDdiff_"+outputname+".root" , "RECREATE");
+  monitoringfile_summary->cd();
+  
+  for(int i=0; i<15; i++) {
+    bcid_correlations[i]->Write();
+  }
+  
+  
+  monitoringfile_summary->Close();
+
+}
+
+
 void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay", int nlayers_minimum=8)
 {
 
@@ -354,7 +418,7 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay", int nla
     if(jentry==0) n_SLB=n_slboards;
 
     if(n>999) break;
-    std::array<int,4096> bcid_seen = SimpleCoincidenceTagger(jentry,5);
+    std::array<int,4096> bcid_seen = SimpleCoincidenceTagger(jentry,65);
 
     int nhistos[4096]={0};
     int counter_events=0;
@@ -362,21 +426,27 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay", int nla
       if(bcid_seen.at(i)>(nlayers_minimum-1) ){
 	counter_events++;
 	nhistos[i]=counter_events;
+	//	std::cout<<n<<endl;
       }
     }
-
-    if( n+counter_events > 199) break;
 
     for(int islboard=0; islboard<n_slboards; islboard++) {
       for(int ichip=0; ichip<16; ichip++) {
 	for(int isca=0; isca<15; isca++) {
 	  if(bcid[islboard][ichip][isca]<0) continue;
 	  
-	  if(bcid[islboard][ichip][isca]>50 && (bcid[islboard][ichip][isca]<270 || bcid[islboard][ichip][isca]>295)  && nhits[islboard][ichip][isca]<6 && badbcid[islboard][ichip][isca]==0 && bcid_seen.at(bcid[islboard][ichip][isca])>(nlayers_minimum-1)) {
+	  if(bcid[islboard][ichip][isca]>50 && (bcid[islboard][ichip][isca]<270 || bcid[islboard][ichip][isca]>295)  && nhits[islboard][ichip][isca]<6 && badbcid[islboard][ichip][isca]==0)
+	    if(bcid[islboard][ichip][isca]>0 && bcid[islboard][ichip][isca]<4095) 
+	      if( bcid_seen.at(bcid[islboard][ichip][isca])>(nlayers_minimum-1) || bcid_seen.at(bcid[islboard][ichip][isca]+1)>(nlayers_minimum-1) || bcid_seen.at(bcid[islboard][ichip][isca]-1)>(nlayers_minimum-1)) {
+	    //if(bcid[islboard][ichip][isca]>50 && (bcid[islboard][ichip][isca]<270 || bcid[islboard][ichip][isca]>295) && badbcid[islboard][ichip][isca]==0 && bcid_seen.at(bcid[islboard][ichip][isca])>(nlayers_minimum-1)) {
+
+		//	cout<<islboard<<" "<<ichip<<" "<<isca<<" "<<bcid[islboard][ichip][isca]<<endl;
+
 	    for(int ichn=0;ichn<64; ichn++) {
-	      double z=-15.*islboard;
-	      if(gain_hit_high[islboard][ichip][isca][ichn]==1)
-		event_display[n+nhistos[bcid[islboard][ichip][isca]]-1]->Fill(double(map_pointX[islboard][ichip][ichn]),double(map_pointY[islboard][ichip][ichn]),z,double(charge_hiGain[islboard][ichip][isca][ichn]));
+	      double z=-15.*slot[islboard];
+	      if(gain_hit_high[islboard][ichip][isca][ichn]==1) 
+		event_display[n+nhistos[bcid[islboard][ichip][isca]]-1]->Fill(map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn],z,charge_hiGain[islboard][ichip][isca][ichn]);
+	      
 	    }
 	  }
 	}
@@ -384,7 +454,8 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay", int nla
     }
   
     n+=counter_events;
-    
+    if( n+counter_events > 198) break;
+
   }
 
   // -----------------------------------------------------------------------------------------------------   
@@ -888,6 +959,7 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", TString analysis_t
   return 1;
 }
 
+/*
 void DecodedSLBAnalysis::SynchronizationStudies(TString outputname="testMonitoring", int freq=10, bool shifter=false)
 {
   TH2F* adc_bcid[15][16];
@@ -955,7 +1027,7 @@ void DecodedSLBAnalysis::SynchronizationStudies(TString outputname="testMonitori
   monitoringfile_summary->Close();
 
 }
-
+*/
 
 void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int freq=10, bool shifter=false)
 {
