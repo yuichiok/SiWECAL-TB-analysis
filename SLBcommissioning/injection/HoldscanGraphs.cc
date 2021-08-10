@@ -6,7 +6,7 @@
 #include "TGraphErrors.h"
 #include "TLegend.h"
 
-void HoldscanGraphs(TString filename_in="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis_TB2020/converter_SLB/convertedfiles/", TString run="20200226_dac1.15V_chn0to3_Ascii", int nslboards=6){
+void HoldscanGraphs(TString filename_in="../../converter_SLB/convertedfiles/", TString run="07282021_dac1.2V_small", int nslboards=15){
   
   cout<<" Holdscan file: "<<filename_in<<endl;
 
@@ -37,7 +37,7 @@ void HoldscanGraphs(TString filename_in="/home/calice/TB2020/commissioning/SiWEC
   }
   
   int count=0;
-  for(int i=0; i<230; i=i+20) {
+  for(int i=20; i<170; i=i+20) {
     cout<<" i: "<<i<<endl;
 
     TString filename=filename_in+TString::Format("%s/holdscan_hold%i.root",run.Data(),i);

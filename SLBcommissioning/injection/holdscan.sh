@@ -1,35 +1,30 @@
 #!/bin/bash
-#Expect files in this format:
-# /path/run_XXXXX_SLB_2.root (or SLB_3)
-# run example:
-#> source analysis.sh XXXXX convert
-# where:
-#          XXXXX is the run number
-#          convert=0 if no conversiom =1 if yes
-
-#source analysis.sh 21010 1
 
 #Run_ILC_test_cosmic_02192020_18h30min_Ascii"
-data_folder="/mnt/win2/Run_data/"
-run="20200226_dac1.15V_chn0to3"
+data_folder="/mnt/HardDrive/cernbox_hd/SiWECAL/TB2021/commissioning/injection_07282021/"
+run="07282021_dac1.2V_small"
 
-cd ../../converter_SLB
+for chn in "_chn0to7" "_chn8to15" "_chn16to23" "_chn24to31" "_chn32t39" "_chn40to47" "_chn56to63"
+do
+    cd ../../converter_SLB
+    for irun in {20..160..20}
+    do
+	#irun=80
+	folder=${data_folder}${run}${chn}"_hold"${irun}"_Ascii/"
+	output="/mnt/HardDrive/cernbox_hd/SiWECAL/TB2021/SiWECAL-TB-analysis-dev/converter_SLB/convertedfiles/"${run}${chn}"_Ascii/"
+	mkdir ${output}
+	root -l -q ConvertDirectorySL.cc\(\"${folder}\",false,\"${output}\"\)
+	hadd ${output}/holdscan_hold${irun}.root ${output}/conv*.root
+	rm ${output}/conv*.root
+    done
+    cd -
+done
 
+mkdir "/mnt/HardDrive/cernbox_hd/SiWECAL/TB2021/SiWECAL-TB-analysis-dev/converter_SLB/convertedfiles/"${run}
 
-#for irun in {120..160..20}
-#do
-irun=80
-    folder=${data_folder}${run}"_hold"${irun}"_Ascii/"
-    output="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis_TB2020/converter_SLB/convertedfiles/"${run}"_Ascii/"
-    mkdir ${output}
-    root -l -q ConvertDirectorySL.cc\(\"${folder}\",false,\"${output}\"\)
-    hadd ${output}/holdscan_hold${irun}.root ${output}/conv*.root
-    rm ${output}/conv*.root
-#done
+for irun in {20..160..20}
+do
+    hadd /mnt/HardDrive/cernbox_hd/SiWECAL/TB2021/SiWECAL-TB-analysis-dev/converter_SLB/convertedfiles/${run}/holdscan_hold${irun}.root /mnt/HardDrive/cernbox_hd/SiWECAL/TB2021/SiWECAL-TB-analysis-dev/converter_SLB/convertedfiles/${run}${chn}_Ascii/holdscan_hold${irun}.root
+done
 
-cd -
-#root -l Holdscan4Channels.cc+
-
-#hadd ${output}/${run}.root ${output}/*.root 
-
-#root -l SingleSlabAnalysis.cc\(\"${output}/${run}\",\"${run}\",1\) &
+root -l HoldscanGraphs.cc
