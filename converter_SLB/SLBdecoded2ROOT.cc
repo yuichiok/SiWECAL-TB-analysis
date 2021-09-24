@@ -342,6 +342,7 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
     mapping_slboard[7]=7;
     mapping_slboard[8]=14;
     mapping_slboard[9]=3;
+    mapping_slboard[10]=4;
     mapping_slboard[11]=6;
     mapping_slboard[12]=9;
     mapping_slboard[13]=2;
