@@ -6,7 +6,8 @@
 #include "TGraphErrors.h"
 #include "TLegend.h"
 
-void HoldscanGraphs(TString filename_in="../../converter_SLB/convertedfiles/", TString run="07282021_dac1.2V_small", int nslboards=15){
+//void HoldscanGraphs(TString filename_in="../../converter_SLB/convertedfiles/", TString run="07282021_dac1.2V_small", int nslboards=15){
+void HoldscanGraphs(TString filename_in="../../converter_SLB/convertedfiles/", TString run="08312021_dac1.2V_small", int nslboards=15, int sca_=0){
   
   cout<<" Holdscan file: "<<filename_in<<endl;
 
@@ -41,15 +42,17 @@ void HoldscanGraphs(TString filename_in="../../converter_SLB/convertedfiles/", T
     cout<<" i: "<<i<<endl;
 
     TString filename=filename_in+TString::Format("%s/holdscan_hold%i.root",run.Data(),i);
-    cout<<" Holdscan file: "<<filename_in<<endl;
+    cout<<" Holdscan file: "<<filename<<endl;
     DecodedSLBAnalysis ss(filename);
-    std::vector<std::array<float,6>> holdvalues =ss.HoldscanAnalysis(-1);
+    std::vector<std::array<float,6>> holdvalues =ss.HoldscanAnalysis(sca_,-1);
     
     x[count]=i;
-    
+
+    cout<<holdvalues.size()<<endl;
     for(int i=0; i<holdvalues.size(); i++) {
       if(board_id[int(holdvalues.at(i)[0])]==-1) board_id[int(holdvalues.at(i)[0])]=int(holdvalues.at(i)[1]);
 
+      cout<<holdvalues.at(i)[0]<<" "<<holdvalues.at(i)[1]<<" "<<holdvalues.at(i)[2]<<" "<<holdvalues.at(i)[3]<<" "<<holdvalues.at(i)[4]<<" "<<holdvalues.at(i)[5]<<" "<<endl;
       y[int(holdvalues.at(i)[0])][int(holdvalues.at(i)[2])][int(holdvalues.at(i)[3])][count]=holdvalues.at(i)[4];
       ey[int(holdvalues.at(i)[0])][int(holdvalues.at(i)[2])][int(holdvalues.at(i)[3])][count]=holdvalues.at(i)[5];
     }
@@ -59,7 +62,6 @@ void HoldscanGraphs(TString filename_in="../../converter_SLB/convertedfiles/", T
 
 
   TGraphErrors* holdscan[15][16][64];
-
   for(int i=0; i<nslboards; i++) {
     for(int j=0; j<16; j++) {
       for(int k=0; k<64; k++) {
@@ -68,7 +70,7 @@ void HoldscanGraphs(TString filename_in="../../converter_SLB/convertedfiles/", T
     }
   }
 
-  TFile *file_summary = new TFile("results/graphs_holdscan_"+run+".root" , "RECREATE");
+  TFile *file_summary = new TFile(TString::Format("results/graphs_holdscan_%s_sca%i.root",run.Data(),sca_) , "RECREATE");
   file_summary->cd();
 
   TH1F *h1 = new TH1F("layer_slboard_relation","layer_slboard_relation",nslboards,-0.5,nslboards-0.5);

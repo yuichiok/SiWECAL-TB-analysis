@@ -18,7 +18,7 @@
 
 using namespace std;
 
-std::vector<std::array<float,6>> DecodedSLBAnalysis::HoldscanAnalysis(int readentries=-1)
+std::vector<std::array<float,6>> DecodedSLBAnalysis::HoldscanAnalysis(int sca_=0, int readentries=-1)
 {
 
   float y[15][16][64];
@@ -36,7 +36,7 @@ std::vector<std::array<float,6>> DecodedSLBAnalysis::HoldscanAnalysis(int readen
       for(int k=0; k<64; k++) {
 	y[i][j][k]=0;
 	ey[i][j][k]=0;
-	adc[i][j][k]= new TH1F(TString::Format("adc_slab%i_chip%i_chn%i",i,j,k),TString::Format("adc_slab%i_chip%i_chn%i",i,j,k),4096,-0.5,4095.5);
+	adc[i][j][k]= new TH1F(TString::Format("adc_slab%i_chip%i_chn%i_sca%i",i,j,k,sca_),TString::Format("adc_slab%i_chip%i_chn%i_sca%i",i,j,k,sca_),4096,-0.5,4095.5);
       }
     }
   }
@@ -71,16 +71,17 @@ std::vector<std::array<float,6>> DecodedSLBAnalysis::HoldscanAnalysis(int readen
       //channels starting retriggers
       for(int ichip=0; ichip<16; ichip++) {
 	for(int isca=0; isca<15; isca++) {
-
-	 for(int ichn=0; ichn<64; ichn++) {
-	   if(gain_hit_high[islboard][ichip][isca][ichn]==1 &&
-	      ( fabs(bcid[islboard][ichip][isca]-22)<5
-		|| fabs(bcid[islboard][ichip][isca]-38)<5
-		|| fabs(bcid[islboard][ichip][isca]-54)<5) && charge_hiGain[islboard][ichip][isca][ichn]>200 &&  charge_hiGain[islboard][ichip][isca][ichn]<500)  {
-	     adc[islboard][ichip][ichn]->Fill(charge_hiGain[islboard][ichip][isca][ichn]);
-	   }
-	 }
-	}
+	  if(isca==sca_ || sca_==15) {
+	    for(int ichn=0; ichn<64; ichn++) {
+	      if(gain_hit_high[islboard][ichip][isca][ichn]==1 &&
+		 ( fabs(bcid[islboard][ichip][isca]-22)<5
+		   || fabs(bcid[islboard][ichip][isca]-38)<5
+		   || fabs(bcid[islboard][ichip][isca]-54)<5) && charge_hiGain[islboard][ichip][isca][ichn]>200 &&  charge_hiGain[islboard][ichip][isca][ichn]<500)  {
+		adc[islboard][ichip][ichn]->Fill(charge_hiGain[islboard][ichip][isca][ichn]);
+	      }
+	    }
+	  }
+	}//for isca
       }
     }
 

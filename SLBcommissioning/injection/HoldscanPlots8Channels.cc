@@ -6,14 +6,14 @@
 #include "TGraphErrors.h"
 #include "TLegend.h"
 
-void HoldscanPlots8Channels(TString run="07282021_dac1.2V_small", int nslboards=15, int channel1=0, int channel2=8, int channel3=16, int channel4=24, int channel5=32, int channel6=40, int channel7=48, int channel8=56){
+//void HoldscanPlots8Channels(TString run="07282021_dac1.2V_small", int nslboards=15, int channel1=0, int channel2=8, int channel3=16, int channel4=24, int channel5=32, int channel6=40, int channel7=48, int channel8=56){
+void HoldscanPlots8Channels(TString run="08312021_dac1.2V_small", int nslboards=15, int channel1=0, int channel2=8, int channel3=16, int channel4=24, int channel5=32, int channel6=40, int channel7=48, int channel8=56){
   
 
-  TFile *file_read = new TFile("results/graphs_holdscan_"+run+".root" , "READ");
+  TFile *file_read = new TFile("results/graphs_holdscan_"+run+"_sca15.root" , "READ");
   file_read->cd();
 
   TGraphErrors* holdscan[15][16][64];
-
 
   TH1F *h1 = (TH1F*)file_read->Get("layer_slboard_relation");
 
@@ -31,6 +31,7 @@ void HoldscanPlots8Channels(TString run="07282021_dac1.2V_small", int nslboards=
     
     TCanvas * canvas = new TCanvas(TString::Format("canvas_%i",i),TString::Format("canvas_%i",i),1200,600);
     canvas->Divide(2,4);
+
     for(int ichan=0; ichan<8; ichan++) {
       int chan=0;
       if(ichan==0) chan=channel1;
@@ -43,7 +44,7 @@ void HoldscanPlots8Channels(TString run="07282021_dac1.2V_small", int nslboards=
       if(ichan==7) chan=channel8;
 
       TLegend *leg = new TLegend(0.1,0.5,0.25,0.85);
-      
+     
       for(int j=0; j<16; j++) {
 	
 	canvas->cd(1+ichan);
