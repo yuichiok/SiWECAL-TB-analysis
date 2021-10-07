@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import os
 import numpy as np
 
@@ -51,13 +52,13 @@ class EcalHit:
         self.z = pos_z[slab]
         if slab == 5 or slab == 8:
             (self.x,self.y) = chan_map_cob[(chip,chan)]
-        else: (self.x,self.y) = chan_map[(chip,chan)] 
+        else: (self.x,self.y) = chan_map[(chip,chan)]
 
         #invert the mapping for the 5 first slabs, to agree with the last 4.
         if slab < 5:
            self.x=-self.x
            self.y=-self.y
-           
+
         # do pedestal subtraction
         # first calculate the average per sca and use it if there is no information about pedestal for this sca
         ped_average=0.
@@ -83,7 +84,7 @@ class EcalHit:
                 #print("Warning: SCA without pedestal info, use ped_aver instead --> ")
                 #print("slab=%i chip=%i chan=%i sca=%i ped_aver=%f n=%i"%(self.slab,self.chip,self.chan,self.sca,ped_average,ped_norm))
                 self.hg -= ped_average
-            
+
         # MIP calibration
         if mip_map[self.slab][self.chip][self.chan] > 0.5:
             self.energy = self.hg / mip_map[self.slab][self.chip][self.chan]
@@ -161,7 +162,7 @@ def read_pedestals(indir_prefix = "../pedestals/"):
         fname = indir_prefix + "Pedestal" + slab_map[slab] + ".txt"
         print("Reading pedestals for %s from %s" %(slab,fname))
         if not os.path.exists(fname):
-            print fname, " does not exist"
+            print (fname, " does not exist")
             continue
 
         with open(fname) as fmap:
@@ -177,7 +178,7 @@ def read_pedestals(indir_prefix = "../pedestals/"):
                 pedestal_map[slab][chip][chan] = peds
                 #print("slab=%i chip=%i chn=%i"%(slab,chip,chan))
                 #print(peds)
-                
+
     ped_map = pedestal_map
     return pedestal_map
 
@@ -188,26 +189,26 @@ def read_mip_values(indir_prefix = "../mip_calib/"):
 
     ## mip MPV map (n-dim numpy array)
     mip_map = np.zeros((NSLAB,NCHIP,NCHAN))
-    
+
     for slab in range(0,NSLAB):
         for chip in range(0,NCHIP):
             for chan in range(0,NCHAN):
                 mip_map[slab][chip][chan] = 1
 
-    
+
     for slab in slab_map:
         fname = indir_prefix + "MIP%s.txt" % slab_map[slab]
         print("Reading MIP values for %s from %s" %(slab,fname))
         if not os.path.exists(fname):
-            print fname, " does not exist"
+            print(fname, " does not exist")
             continue
 
         with open(fname) as fmap:
             for i,line in enumerate(fmap.readlines()):
                 if '#' in line: continue
-        
+
                 items = [float(item) for item in line.split()]
-        
+
                 chip,chan = int(items[0]),int(items[1])
                 mpv = items[2]
                 mpv_err = items[3]
@@ -227,7 +228,7 @@ def read_masked(indir_prefix = "../masked/"):
         fname = indir_prefix + "masked%s.txt" % slab_map[slab]
         print("Reading masked channels for %s from %s" %(slab,fname))
         if not os.path.exists(fname):
-            print fname, " does not exist"
+            print(fname, " does not exist")
             continue
 
         with open(fname) as fmap:
@@ -244,7 +245,7 @@ def read_masked(indir_prefix = "../masked/"):
 
 if __name__ == "__main__":
 
-    print read_pedestals()
-    print read_mip_values()
-    print read_masked()
-    print "FIN"
+    print(read_pedestals())
+    print(read_mip_values())
+    print(read_masked())
+    print("FIN")

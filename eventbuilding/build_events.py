@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import sys
 import numpy as np
 import ROOT as rt
@@ -27,7 +28,7 @@ def merge_bcids(bcid_cnts):
 
         for bcid_close in [bcid-1,bcid+1,bcid-2,bcid+2,bcid-3,bcid+3]:
             if bcid_close in new_bcid_cnts:
-                #print "Found nearby", bcid, bcid_close
+                #print("Found nearby", bcid, bcid_close)
                 #if bcids_cnts[bcid_close] < 1: continue
 
                 # found bcid nearby
@@ -64,7 +65,7 @@ def get_good_bcids(entry):
 
     ## make counter
     good_bcids = {}
-    for bcid,flags in all_bcids.iteritems():
+    for bcid,flags in all_bcids.items():
         if sum(flags) == 0:
             good_bcids[bcid] = len(flags)
 
@@ -72,7 +73,7 @@ def get_good_bcids(entry):
 
 def get_hits(entry,bcid_map):
     ## Collect hits in bcid containe
-    #print bcid_map
+    #print(bcid_map)
     event = {bcid:[] for bcid in bcid_map if bcid_map[bcid] > 0} # bcid : hits
     entry_bcids = entry.bcid
     gain_hit_low = entry.gain_hit_low
@@ -81,20 +82,20 @@ def get_hits(entry,bcid_map):
     charge_lowGain = entry.charge_lowGain
     tdc = entry.tdc
 
-    for slab in xrange(NSLAB):
-        for chip in xrange(NCHIP):
-            for sca in xrange(NSCA):
+    for slab in range(NSLAB):
+        for chip in range(NCHIP):
+            for sca in range(NSCA):
 
                 sca_indx = (slab * NCHIP + chip) * NSCA + sca
                 #print("%i eee"%sca_indx)
                 #print("%i %i %i %i %i"%(slab,NCHIP,chip,NSCA,sca))
 
                 if sca_indx >= len(entry_bcids): continue
-                #print entry_bcids[sca_indx]
+                #print(entry_bcids[sca_indx])
                 bcid = get_corr_bcid(entry_bcids[sca_indx])
-                #print bcid
-                #print bcid_map
-                
+                #print(bcid)
+                #print(bcid_map)
+
                 # filter bad bcids
                 if bcid not in bcid_map: continue
                 # get assigned bcid
@@ -103,13 +104,13 @@ def get_hits(entry,bcid_map):
                 if bcid not in event: continue
 
                 ## energies
-                for chan in xrange(NCHAN):
+                for chan in range(NCHAN):
                     chan_indx = sca_indx * NCHAN + chan
-                    
+
                     #if not entry.gain_hit_low[chan_indx]: continue
                     isHit = gain_hit_high[chan_indx]
                     #if not isHit: continue
-                    
+
                     hg_ene = charge_hiGain[chan_indx]
                     lg_ene = charge_lowGain[chan_indx]
                     tdc_cp = tdc[chan_indx]
@@ -139,7 +140,7 @@ def build_events(filename, maxEntries = -1, w_config = -1):
     treename = "ecal_raw"
     tree = tfile.Get(treename)
     if not tree:
-        print("No tree found in ")
+        print("No tree found in %s" %filename)
         print(tree)
         exit(0)
 
@@ -157,7 +158,7 @@ def build_events(filename, maxEntries = -1, w_config = -1):
     bcid_b = array('i', [0]); outtree.Branch( 'bcid', bcid_b, 'bcid/I' )
     prev_bcid_b = array('i', [0]); outtree.Branch( 'prev_bcid', prev_bcid_b, 'prev_bcid/I' )
     next_bcid_b = array('i', [0]); outtree.Branch( 'next_bcid', next_bcid_b, 'next_bcid/I' )
-        
+
     # occupancy/hit info
     nhit_slab = array('i', [0]); outtree.Branch( 'nhit_slab', nhit_slab, 'nhit_slab/I' )
     nhit_chip = array('i', [0]); outtree.Branch( 'nhit_chip', nhit_chip, 'nhit_chip/I' )
@@ -204,11 +205,11 @@ def build_events(filename, maxEntries = -1, w_config = -1):
 
         spill[0] = spill_cnt
         spill_cnt += 1
-        
+
         ## Collect hits in bcid container
         ev_hits = get_hits(entry,bcid_map)
 
-        #for bcid,hits in ev_hits.iteritems():
+        #for bcid,hits in ev_hits.items():
         for ibc,bcid in enumerate(sorted(ev_hits)):
 
             hits = ev_hits[bcid]
