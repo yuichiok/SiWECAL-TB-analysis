@@ -82,7 +82,6 @@ def get_hits(entry,bcid_map):
     gain_hit_high = entry.gain_hit_high
     charge_hiGain = entry.charge_hiGain
     charge_lowGain = entry.charge_lowGain
-    tdc = entry.tdc
 
     for slab in range(NSLAB):
         for chip in range(NCHIP):
@@ -115,9 +114,8 @@ def get_hits(entry,bcid_map):
 
                     hg_ene = charge_hiGain[chan_indx]
                     lg_ene = charge_lowGain[chan_indx]
-                    tdc_cp = tdc[chan_indx]
 
-                    hit = EcalHit(slab,chip,chan,sca,hg_ene,lg_ene,tdc_cp,isHit)
+                    hit = EcalHit(slab, chip, chan, sca, hg_ene, lg_ene, isHit)
                     event[bcid].append(hit)
 
     return event
@@ -139,13 +137,11 @@ def build_events(file_name, max_entries=-1, w_config=-1, out_file_name=None):
 
     # Get ttree
     tfile = rt.TFile(file_name,"read")
-    tfile = rt.TFile(filename,"read")
-    treename = "ecal_raw"
-    tree = tfile.Get(treename)
+    tree_name = "siwecaldecoded"
+    tree = tfile.Get(tree_name)
     if not tree:
-        print("No tree found in %s" %file_name)
-        print(tree)
-        exit(0)
+        print("Found tree names:", [k.GetName() for k in tfile.GetListOfKeys()])
+        raise EventBuildingException("Tree %s not found in %s" %(tree_name, file_name))
 
     ##### TREE #####
     if out_file_name is None:
@@ -154,7 +150,7 @@ def build_events(file_name, max_entries=-1, w_config=-1, out_file_name=None):
         elif file_name.endswith(".root"):
             out_file_name = file_name[:-len(".root")] + "_build.root"
         else:
-            raise Exception("Unexpected file extension:", file_name)
+            raise EventBuildingException("Unexpected file extension: %s" %file_name)
     outf = rt.TFile(out_file_name,"recreate")
     outtree = rt.TTree("ecal","Build ecal events")
 
@@ -189,7 +185,6 @@ def build_events(file_name, max_entries=-1, w_config=-1, out_file_name=None):
     # energy
     hit_hg = array('f', 10000*[0]); outtree.Branch( 'hit_hg', hit_hg, 'hit_hg[nhit_chan]/F' )
     hit_lg = array('f', 10000*[0]); outtree.Branch( 'hit_lg', hit_lg, 'hit_lg[nhit_chan]/F' )
-    hit_tdc = array('f', 10000*[0]); outtree.Branch( 'hit_tdc', hit_tdc, 'hit_tdc[nhit_chan]/F' )
     hit_energy = array('f', 10000*[0]); outtree.Branch( 'hit_energy', hit_energy, 'hit_energy[nhit_chan]/F' )
     # boolean
     hit_isHit = array('i', 10000*[0]); outtree.Branch( 'hit_isHit', hit_isHit, 'hit_isHit[nhit_chan]/I' )
@@ -262,7 +257,7 @@ def build_events(file_name, max_entries=-1, w_config=-1, out_file_name=None):
             for i,hit in enumerate(hits):
                 hit_slab[i] = hit.slab; hit_chip[i] = hit.chip; hit_chan[i] = hit.chan; hit_sca[i] = hit.sca
                 hit_x[i] = hit.x; hit_y[i] = hit.y; hit_z[i] = hit.z; hit_x0[i] = hit.x0
-                hit_hg[i] = hit.hg; hit_lg[i] = hit.lg; hit_tdc[i]=hit.tdc
+                hit_hg[i] = hit.hg; hit_lg[i] = hit.lg
                 hit_isHit[i] = hit.isHit; hit_isMasked[i] = hit.isMasked
 
                 hit_energy[i] = hit.energy

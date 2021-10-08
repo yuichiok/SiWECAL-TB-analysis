@@ -33,15 +33,19 @@ slab_map = {
     8: '_SLB_0_dummy',
 }
 
+
+class EventBuildingException(Exception):
+    pass
+
+
 class EcalHit:
-    def __init__(self,slab,chip,chan,sca,hg,lg,tdc,isHit):
+    def __init__(self, slab, chip, chan, sca, hg, lg, isHit):
         self.slab = slab
         self.chip = chip
         self.chan = chan
         self.sca = sca
         self.hg = hg
         self.lg = lg
-        self.tdc = tdc
         self.isHit = isHit
 
         ## check channel is masked
