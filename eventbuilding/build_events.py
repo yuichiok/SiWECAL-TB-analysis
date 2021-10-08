@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
+
+import argparse
 import sys
 import numpy as np
 import ROOT as rt
@@ -120,7 +122,7 @@ def get_hits(entry,bcid_map):
 
     return event
 
-def build_events(filename, maxEntries = -1, w_config = -1):
+def build_events(file_name, max_entries=-1, w_config=-1, out_file_name=None):
 
     ## Build tungsten config
     build_w_config(w_config)
@@ -136,20 +138,27 @@ def build_events(filename, maxEntries = -1, w_config = -1):
     read_mip_values()
 
     # Get ttree
+    tfile = rt.TFile(file_name,"read")
     tfile = rt.TFile(filename,"read")
     treename = "ecal_raw"
     tree = tfile.Get(treename)
     if not tree:
-        print("No tree found in %s" %filename)
+        print("No tree found in %s" %file_name)
         print(tree)
         exit(0)
 
     ##### TREE #####
-    outfname = filename.replace("merge","build")
-    outf = rt.TFile(outfname,"recreate")
+    if out_file_name is None:
+        if file_name.endswith("_converted.root"):
+            out_file_name = file_name[:-len("_converted.root")] + "_build.root"
+        elif file_name.endswith(".root"):
+            out_file_name = file_name[:-len(".root")] + "_build.root"
+        else:
+            raise Exception("Unexpected file extension:", file_name)
+    outf = rt.TFile(out_file_name,"recreate")
     outtree = rt.TTree("ecal","Build ecal events")
 
-    print("# Creating ecal tree in file %s" %outfname)
+    print("# Creating ecal tree in file %s" %out_file_name)
 
     #### BRANCHES
     # event info
@@ -186,15 +195,15 @@ def build_events(filename, maxEntries = -1, w_config = -1):
     hit_isHit = array('i', 10000*[0]); outtree.Branch( 'hit_isHit', hit_isHit, 'hit_isHit[nhit_chan]/I' )
     hit_isMasked = array('i', 10000*[0]); outtree.Branch( 'hit_isMasked', hit_isMasked, 'hit_isMasked[nhit_chan]/I' )
 
-    if maxEntries < 0: maxEntries = tree.GetEntries()
-    #else: maxEntries = 1000
+    if max_entries < 0: max_entries = tree.GetEntries()
+    #else: max_entries = 1000
 
     spill_cnt = 0
 
-    print("# Going to analyze %i entries..." %maxEntries )
+    print("# Going to analyze %i entries..." %max_entries )
     for ientry,entry in enumerate(tree):#.GetEntries():
 
-        if ientry > maxEntries: break
+        if ientry > max_entries: break
         #if ientry != 9: continue
 
         if ientry%100 == 0: print("Entry %i" %ientry)
@@ -269,28 +278,11 @@ def build_events(filename, maxEntries = -1, w_config = -1):
 
 
 if __name__ == "__main__":
-
-
-    filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_9__merge.root"
-    maxEntries = -1
-    w_config = 0
-
-    if len(sys.argv) < 3:
-        filename = sys.argv[1]
-    elif len(sys.argv) < 4:
-        filename = sys.argv[1]
-        maxEntries = int(sys.argv[2])
-    elif len(sys.argv) < 5:
-        filename = sys.argv[1]
-        maxEntries = int(sys.argv[2])
-        w_config = int(sys.argv[3])
-
-    print("# Input file is %s" % filename)
-    print("# maxEntries is %i" % maxEntries)
-    print("# W-config is %i" % w_config)
-
-
-    if os.path.exists(filename):
-        build_events(filename,maxEntries,w_config)
-    else:
-        print("The file does not exist!")
+    parser = argparse.ArgumentParser(
+        description="Build an event-level rootfile (smaller) from the raw rootfile.",
+    )
+    parser.add_argument("file_name", help="The raw rootfile from converter_SLB")
+    parser.add_argument("-n", "--max_entries", default=-1, type=int)
+    parser.add_argument("-w", "--w_config", default=-1, type=int)
+    parser.add_argument("-o", "--out_file_name", default=None)
+    build_events(**vars(parser.parse_args()))
