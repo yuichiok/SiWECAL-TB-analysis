@@ -3,29 +3,40 @@ from __future__ import print_function
 import os
 import numpy as np
 
-NCHIP = 16
-NSCA = 15
-NCHAN = 64
-
-BCID_VALEVT = 50
-
 ## global storages
 event_counter = 0
 
-COB_SLABS = {5, 8}
-SLAB_MAP = {
-    0: '_dif_1_1_1_dummy',
-    1: '_dif_1_1_2_dummy',
-    2: '_dif_1_1_3_dummy',
-    3: '_dif_1_1_4_dummy',
-    4: '_dif_1_1_5_dummy',
-    5: '_SLB_2_dummy',
-    6: '_SLB_1_dummy',
-    7: '_SLB_3_dummy',
-    8: '_SLB_0_dummy',
-}
-NSLAB = len (SLAB_MAP)
-assert all((cs in SLAB_MAP for cs in COB_SLABS))
+
+class EcalNumbers:
+    def __init__(self):
+        self.n_chips = 16
+        self.n_scas = 15
+        self.n_channels = 64
+
+        self.slab_map = {
+            0: "_dif_1_1_1_dummy",
+            1: "_dif_1_1_2_dummy",
+            2: "_dif_1_1_3_dummy",
+            3: "_dif_1_1_4_dummy",
+            4: "_dif_1_1_5_dummy",
+            5: "_SLB_2_dummy",
+            6: "_SLB_1_dummy",
+            7: "_SLB_3_dummy",
+            8: "_SLB_0_dummy",
+        }
+        self.cob_slabs = {5, 8}
+        self.validate_ecal_numbers(self)
+
+
+    @classmethod
+    def validate_ecal_numbers(cls, n):
+        assert type(n.n_chips) == int
+        assert type(n.n_scas) == int
+        assert type(n.n_channels) == int
+        assert all(type(k) == int for k in n.slab_map.keys())
+        assert all(sorted(n.slab_map.keys()) == np.arange(len(n.slab_map)))
+        assert all(type(v) == str for v in n.slab_map.values())
+        assert all((i_cob in n.slab_map for i_cob in n.cob_slabs))
 
 
 class EventBuildingException(Exception):
@@ -59,10 +70,10 @@ class EcalHit:
         # first calculate the average per sca and use it if there is no information about pedestal for this sca
         ped_average=0.
         ped_norm=0
-        for isca in range(0,NSCA):
-            if ecal_config.pedestal_map[self.slab][self.chip][self.chan][isca] > 200:
-                ped_average+=ecal_config.pedestal_map[self.slab][self.chip][self.chan][isca]
-                ped_norm+=1
+        pedestals_per_sca = ecal_config.pedestal_map[self.slab][self.chip][self.chan]
+        is_good_pedestal = pedestals_per_sca > 200
+        ped_average = sum(pedestals_per_sca[is_good_pedestal])
+        ped_norm = sum(is_good_pedestal)
         # calcultate the average if at least 5 scas have calculated pedestals
         if ped_norm > 5:
             ped_average=ped_average/ped_norm
@@ -100,6 +111,7 @@ class EcalConfig:
         mip_calibration_dir="mip_calib",
         masked_dir="masked",
         read_dir=None,
+        numbers=None,
         error_on_missing_config=True,
         verbose=False,
     ):
@@ -111,6 +123,11 @@ class EcalConfig:
             # Resolves to the root folder of this repo
             # Equivalent to ../ if called from within the eventbuilding folder.
             self._read_dir = os.path.dirname(os.path.dirname((__file__)))
+        if numbers:
+            EcalNumbers.validate_ecal_numbers(numbers)  # Catch problems early on.
+            self._N = numbers
+        else:
+            self._N = EcalNumbers()
 
         self.pos_z, self.pos_x0 = self._build_w_config(w_config)
         self._channel_map = self._read_mapping(mapping_file)
@@ -121,7 +138,7 @@ class EcalConfig:
 
 
     def get_channel_map(self, slab):
-        if slab in COB_SLABS:
+        if slab in self._N.cob_slabs:
             return self._channel_map
         else:
             return self._channel_map_cob
@@ -177,8 +194,13 @@ class EcalConfig:
 
 
     def _read_pedestals(self, dir_name):
-        ped_map = np.zeros((NSLAB, NCHIP, NCHAN, NSCA))
-        for i_slab, slab_name in SLAB_MAP.items():
+        ped_map = np.zeros((
+            len(self._N.slab_map),
+            self._N.n_chips,
+            self._N.n_channels,
+            self._N.n_scas,
+        ))
+        for i_slab, slab_name in self._N.slab_map.items():
             file_name = "Pedestal%s.txt" %(slab_name)
             file_path = os.path.join(self._get_path(dir_name), file_name)
             print("Reading pedestals for %s from %s." %(i_slab, file_path))
@@ -215,8 +237,12 @@ class EcalConfig:
 
 
     def _read_mip_values(self, dir_name):
-        mip_map = np.ones((NSLAB, NCHIP, NCHAN))
-        for i_slab, slab_name in SLAB_MAP.items():
+        mip_map = np.ones((
+            len(self._N.slab_map),
+            self._N.n_chips,
+            self._N.n_channels,
+        ))
+        for i_slab, slab_name in self._N.slab_map.items():
             file_name = "MIP%s.txt" %(slab_name)
             file_path = os.path.join(self._get_path(dir_name), file_name)
             print("Reading MIP values for %s from %s." %(i_slab, file_path))
@@ -247,8 +273,12 @@ class EcalConfig:
 
 
     def _read_masked(self, dir_name):
-        masked_map = np.zeros((NSLAB, NCHIP, NCHAN))
-        for i_slab, slab_name in SLAB_MAP.items():
+        masked_map = np.zeros((
+            len(self._N.slab_map),
+            self._N.n_chips,
+            self._N.n_channels,
+        ))
+        for i_slab, slab_name in self._N.slab_map.items():
             file_name = "masked%s.txt" %(slab_name)
             file_path = os.path.join(self._get_path(dir_name), file_name)
             print("Reading masked channels for %s from %s." %(i_slab, file_path))

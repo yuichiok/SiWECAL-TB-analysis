@@ -8,6 +8,8 @@ import ROOT as rt
 from array import array
 from help_tools import *
 
+BCID_VALEVT = 50  # TODO: Put this into EcalNumbers?
+
 def get_corr_bcid(bcid):
     #if bcid > 10: return bcid
     if bcid > BCID_VALEVT: return bcid
@@ -83,45 +85,45 @@ def get_hits(entry, bcid_map, ecal_config):
     charge_hiGain = entry.charge_hiGain
     charge_lowGain = entry.charge_lowGain
 
-    for slab in range(NSLAB):
-        for chip in range(NCHIP):
-            for sca in range(NSCA):
-
-                sca_indx = (slab * NCHIP + chip) * NSCA + sca
-                #print("%i eee"%sca_indx)
-                #print("%i %i %i %i %i"%(slab,NCHIP,chip,NSCA,sca))
-
-                if sca_indx >= len(entry_bcids): continue
-                #print(entry_bcids[sca_indx])
-                bcid = get_corr_bcid(entry_bcids[sca_indx])
-                #print(bcid)
-                #print(bcid_map)
-
+    n_slabs = len(ecal_config._N.slab_map)
+    n_chips = ecal_config._N.n_chips
+    n_channels = ecal_config._N.n_channels
+    n_scas = ecal_config._N.n_scas
+    for i_slab in range(n_slabs):
+        for i_chip in range(n_chips):
+            for i_sca in range(n_scas):
+                index_sca = (i_slab * n_chips + i_chip) * n_scas + i_sca
+                if index_sca >= len(entry_bcids):
+                    continue
+                bcid = get_corr_bcid(entry_bcids[index_sca])
                 # filter bad bcids
-                if bcid not in bcid_map: continue
+                if bcid not in bcid_map:
+                    continue
                 # get assigned bcid
                 bcid = bcid_map[bcid]
-
-                if bcid not in event: continue
-
+                if bcid not in event:
+                    continue
                 ## energies
-                for chan in range(NCHAN):
-                    chan_indx = sca_indx * NCHAN + chan
-
-                    #if not entry.gain_hit_low[chan_indx]: continue
-                    isHit = gain_hit_high[chan_indx]
+                for i_channel in range(n_channels):
+                    index_channel = index_sca * n_channels + i_channel
+                    #if not entry.gain_hit_low[index_channel]: continue
+                    isHit = gain_hit_high[index_channel]
                     #if not isHit: continue
-
-                    hg_ene = charge_hiGain[chan_indx]
-                    lg_ene = charge_lowGain[chan_indx]
-
-                    hit = EcalHit(slab, chip, chan, sca, hg_ene, lg_ene, isHit, ecal_config)
+                    hg_ene = charge_hiGain[index_channel]
+                    lg_ene = charge_lowGain[index_channel]
+                    hit = EcalHit(i_slab, i_chip, i_channel, i_sca, hg_ene, lg_ene, isHit, ecal_config)
                     event[bcid].append(hit)
-
     return event
 
-def build_events(file_name, max_entries=-1, w_config=-1, out_file_name=None):
-    ecal_config = EcalConfig(w_config=w_config)
+
+def build_events(
+    file_name,
+    w_config=-1,
+    max_entries=-1,
+    out_file_name=None,
+    ecal_numbers=None,  # Not provided in CLI. Mainly useful for debugging/changing.
+):
+    ecal_config = EcalConfig(w_config=w_config, numbers=ecal_numbers)
 
     # Get ttree
     tfile = rt.TFile(file_name,"read")
@@ -231,8 +233,8 @@ def build_events(file_name, max_entries=-1, w_config=-1, out_file_name=None):
 
             # count hits per slab/chan/chip
             nhit_slab[0] = len(set([hit.slab for hit in hits]))
-            nhit_chip[0] = len(set([(hit.slab*NCHIP + hit.chip) for hit in hits]))
-            #nhit_chan[0] = len(set([(hit.slab*NCHIP + hit.chip)*NCHAN + hit.chan for hit in hits]))
+            nhit_chip[0] = len(set([(hit.slab*ecal_config._N.n_chips + hit.chip) for hit in hits]))
+            #nhit_chan[0] = len(set([(hit.slab*ecal_config._N.n_chips + hit.chip)*ecal_config._N.n_channels + hit.chan for hit in hits]))
             nhit_chan[0] = len(hits)
             sum_hg[0] = sum([hit.hg for hit in hits])
             sum_energy[0] = sum([hit.energy for hit in hits])
