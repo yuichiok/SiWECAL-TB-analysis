@@ -25,6 +25,11 @@ class EcalNumbers:
             8: "_SLB_0_dummy",
         }
         self.cob_slabs = {5, 8}
+
+        self.pos_z = np.array([0, 2, 4, 6, 8, 9, 12, 14, 16]) * 15 # mm gap.
+        self.w_config = {  # abs thickness of Tungsten/W plates.
+            1: np.array([0, 2.1, 2.1, 4.2, 4.2, 0, 4.2, 2.1, 2.1]),
+        }
         self.validate_ecal_numbers(self)
 
 
@@ -34,9 +39,15 @@ class EcalNumbers:
         assert type(n.n_scas) == int
         assert type(n.n_channels) == int
         assert all(type(k) == int for k in n.slab_map.keys())
-        assert all(sorted(n.slab_map.keys()) == np.arange(len(n.slab_map)))
+        n_slabs = len(n.slab_map)
+        assert all(sorted(n.slab_map.keys()) == np.arange(n_slabs))
         assert all(type(v) == str for v in n.slab_map.values())
         assert all((i_cob in n.slab_map for i_cob in n.cob_slabs))
+
+        assert type(n.pos_z) == np.ndarray
+        assert len(n.pos_z) == n_slabs
+        assert all(type(w_conf) == np.ndarray for w_conf in n.w_config.values())
+        assert all(len(w_conf) == n_slabs for w_conf in n.w_config.values())
 
 
 class EventBuildingException(Exception):
@@ -58,7 +69,7 @@ class EcalHit:
 
         ## get x-y coordinates
         self.x0 = ecal_config.pos_x0[slab]
-        self.z = ecal_config.pos_z[slab]
+        self.z = ecal_config._N.pos_z[slab]
         (self.x,self.y) = ecal_config.get_channel_map(slab)[(chip,chan)]
 
         #invert the mapping for the 5 first slabs, to agree with the last 4.
@@ -129,7 +140,7 @@ class EcalConfig:
         else:
             self._N = EcalNumbers()
 
-        self.pos_z, self.pos_x0 = self._build_w_config(w_config)
+        self.pos_x0 = self._build_w_config(w_config)
         self._channel_map = self._read_mapping(mapping_file)
         self._channel_map_cob = self._read_mapping(mapping_file_cob)
         self.pedestal_map = self._read_pedestals(pedestals_dir)
@@ -145,26 +156,18 @@ class EcalConfig:
 
 
     def _build_w_config(self, config):
-        # SLAB positions
-        # 4 slabs pos_z = [0, 3, 5, 7] * 15 #mm gap
-        pos_z = [0, 2, 4, 6, 8, 9, 12, 14, 16] * 15 #mm gap  # TODO: Bug fix: I assume this should multiply each entry, not repeat the array.
-        ## Tungsten / W configuration
-        if config == 1:
-            # Config 1
-            abs_thick = [0, 2.1, 2.1, 4.2, 4.2, 0, 4.2, 2.1, 2.1]
+        if config in self._N.w_config.keys():
+            abs_thick = self._N.w_config[config]
         elif config == 0:
-            # No absorber runs, use 0
-            abs_thick = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+            abs_thick = np.zeros_like(self._N.pos_z)
+        else:
+            raise EventBuildingException("Not a valid W config:", config)
 
-        ## sum up thickness
-        w_xzero = 1 / 3.5 #0.56 #Xo per mm of W
-        pos_x0 = [sum(abs_thick[:i+1])*w_xzero for i in range(len(abs_thick))]
-        ## Print
-        print("W config %i used:" %config )
+        w_x0 = 1 / 3.5  # 0.56 #Xo per mm of W.
+        pos_x0 = np.cumsum(abs_thick) * w_x0
+        print("W config %i used:" %config)
         print("absolute thickness:", abs_thick, "\npos_x0:", pos_x0)
-        if self._verbose:
-            print("pos_z", pos_z)
-        return pos_z, pos_x0
+        return pos_x0
 
 
     def _get_path(self, file_name):
