@@ -3,7 +3,6 @@ from __future__ import print_function
 import os
 import numpy as np
 
-NSLAB = 9
 NCHIP = 16
 NSCA = 15
 NCHAN = 64
@@ -12,16 +11,9 @@ BCID_VALEVT = 50
 
 ## global storages
 event_counter = 0
-chan_map = {}
-chan_map_cob = {}
-ped_map = {}
-mip_map = {}
-mask_map = {}
 
-pos_z = []
-pos_xzero = []
-
-slab_map = {
+COB_SLABS = {5, 8}
+SLAB_MAP = {
     0: '_dif_1_1_1_dummy',
     1: '_dif_1_1_2_dummy',
     2: '_dif_1_1_3_dummy',
@@ -32,6 +24,8 @@ slab_map = {
     7: '_SLB_3_dummy',
     8: '_SLB_0_dummy',
 }
+NSLAB = len (SLAB_MAP)
+assert all((cs in SLAB_MAP for cs in COB_SLABS))
 
 
 class EventBuildingException(Exception):
@@ -39,7 +33,7 @@ class EventBuildingException(Exception):
 
 
 class EcalHit:
-    def __init__(self, slab, chip, chan, sca, hg, lg, isHit):
+    def __init__(self, slab, chip, chan, sca, hg, lg, isHit, ecal_config):
         self.slab = slab
         self.chip = chip
         self.chan = chan
@@ -49,14 +43,12 @@ class EcalHit:
         self.isHit = isHit
 
         ## check channel is masked
-        self.isMasked = int(mask_map[self.slab][self.chip][self.chan])
+        self.isMasked = int(ecal_config.masked_map[self.slab][self.chip][self.chan])
 
         ## get x-y coordinates
-        self.x0 = pos_xzero[slab]
-        self.z = pos_z[slab]
-        if slab == 5 or slab == 8:
-            (self.x,self.y) = chan_map_cob[(chip,chan)]
-        else: (self.x,self.y) = chan_map[(chip,chan)]
+        self.x0 = ecal_config.pos_x0[slab]
+        self.z = ecal_config.pos_z[slab]
+        (self.x,self.y) = ecal_config.get_channel_map(slab)[(chip,chan)]
 
         #invert the mapping for the 5 first slabs, to agree with the last 4.
         if slab < 5:
@@ -68,8 +60,8 @@ class EcalHit:
         ped_average=0.
         ped_norm=0
         for isca in range(0,NSCA):
-            if ped_map[self.slab][self.chip][self.chan][isca] > 200:
-                ped_average+=ped_map[self.slab][self.chip][self.chan][isca]
+            if ecal_config.pedestal_map[self.slab][self.chip][self.chan][isca] > 200:
+                ped_average+=ecal_config.pedestal_map[self.slab][self.chip][self.chan][isca]
                 ped_norm+=1
         # calcultate the average if at least 5 scas have calculated pedestals
         if ped_norm > 5:
@@ -81,8 +73,8 @@ class EcalHit:
             self.isMasked = 1
 
         # if pedestal info is there, use it for subtraction, if not, use the average of the other SCAs
-        if ped_map[self.slab][self.chip][self.chan][self.sca] > 10:
-            self.hg -= ped_map[self.slab][self.chip][self.chan][self.sca]
+        if ecal_config.pedestal_map[self.slab][self.chip][self.chan][self.sca] > 10:
+            self.hg -= ecal_config.pedestal_map[self.slab][self.chip][self.chan][self.sca]
         else:
             if self.isMasked==0:
                 #print("Warning: SCA without pedestal info, use ped_aver instead --> ")
@@ -90,166 +82,200 @@ class EcalHit:
                 self.hg -= ped_average
 
         # MIP calibration
-        if mip_map[self.slab][self.chip][self.chan] > 0.5:
-            self.energy = self.hg / mip_map[self.slab][self.chip][self.chan]
+        if ecal_config.mip_map[self.slab][self.chip][self.chan] > 0.5:
+            self.energy = self.hg / ecal_config.mip_map[self.slab][self.chip][self.chan]
         else:
             self.energy = 0
             self.isMasked = 1
 
-def build_w_config(config = 1):
 
-    global pos_z, pos_xzero
-    # SLAB positions
-    #4slabs pos_z = [0,3,5,7] * 15#mm gap
-    pos_z = [0,2,4,6,8,9,12,14,16] * 15#mm gap
-    ## Tungsten / W configuration
-    if config == 1:
-        # Config 1
-        abs_thick = [0,2.1,2.1,4.2,4.2,0,4.2,2.1,2.1]
-    elif config == 0:
-        # No absorber runs, use 0
-        abs_thick = [0,0,0,0,0,0,0,0,0]
+class EcalConfig:
 
-    ## sum up thickness
-    w_xzero = 1/3.5#0.56#Xo per mm of W
-    pos_xzero = [sum(abs_thick[:i+1])*w_xzero for i in range(len(abs_thick))]
-    ## Print
-    print("W config %i used:" %config )
-    print(abs_thick, pos_xzero)
+    def __init__(
+        self,
+        w_config=1,
+        mapping_file="mapping/fev10_chip_channel_x_y_mapping.txt",
+        mapping_file_cob="mapping/fev11_cob_chip_channel_x_y_mapping.txt",
+        pedestals_dir="pedestals",
+        mip_calibration_dir="mip_calib",
+        masked_dir="masked",
+        read_dir=None,
+        error_on_missing_config=True,
+        verbose=False,
+    ):
+        self._verbose = verbose
+        self._error_on_missing_config = error_on_missing_config
+        if read_dir:
+            self._read_dir = read_dir
+        else:
+            # Resolves to the root folder of this repo
+            # Equivalent to ../ if called from within the eventbuilding folder.
+            self._read_dir = os.path.dirname(os.path.dirname((__file__)))
 
-def read_mapping(fname = "../mapping/fev10_chip_channel_x_y_mapping.txt"):
-
-    global chan_map# = {}
-
-    with open(fname) as fmap:
-        for i,line in enumerate(fmap.readlines()):
-            if i == 0: continue
-
-            # items: chip x0 y0 channel x y
-            items = line.split()
-
-            chip = int(items[0]); chan = int(items[3])
-            x = float(items[4]); y = float(items[5])
-
-            chan_map[(chip,chan)] = (x,y)
-
-    return chan_map
-
-def read_mapping_cob(fname = "../mapping/fev11_cob_chip_channel_x_y_mapping.txt"):
-
-    global chan_map_cob# = {}
-
-    with open(fname) as fmap:
-        for i,line in enumerate(fmap.readlines()):
-            if i == 0: continue
-
-            # items: chip x0 y0 channel x y
-            items = line.split()
-
-            chip = int(items[0]); chan = int(items[3])
-            x = float(items[4]); y = float(items[5])
-
-            chan_map_cob[(chip,chan)] = (x,y)
-
-    return chan_map_cob
+        self.pos_z, self.pos_x0 = self._build_w_config(w_config)
+        self._channel_map = self._read_mapping(mapping_file)
+        self._channel_map_cob = self._read_mapping(mapping_file_cob)
+        self.pedestal_map = self._read_pedestals(pedestals_dir)
+        self.mip_map = self._read_mip_values(mip_calibration_dir)
+        self.masked_map = self._read_masked(masked_dir)
 
 
-def read_pedestals(indir_prefix = "../pedestals/"):
-
-    global slab_map
-    global ped_map
-
-    ## pedestal map (n-dim numpy array)
-    pedestal_map = np.zeros((NSLAB,NCHIP,NCHAN,NSCA))
-
-    for slab in slab_map:
-        fname = indir_prefix + "Pedestal" + slab_map[slab] + ".txt"
-        print("Reading pedestals for %s from %s" %(slab,fname))
-        if not os.path.exists(fname):
-            print (fname, " does not exist")
-            continue
-
-        with open(fname) as fmap:
-            for i,line in enumerate(fmap.readlines()):
-                if '#' in line: continue
-
-                items = [float(item) for item in line.split()]
-
-                chip,chan = int(items[0]),int(items[1])
-                peds = items[2::3]
-                peds_err = items[3::3]
-                peds_width = items[4::3]
-                pedestal_map[slab][chip][chan] = peds
-                #print("slab=%i chip=%i chn=%i"%(slab,chip,chan))
-                #print(peds)
-
-    ped_map = pedestal_map
-    return pedestal_map
-
-def read_mip_values(indir_prefix = "../mip_calib/"):
-
-    global slab_map
-    global mip_map
-
-    ## mip MPV map (n-dim numpy array)
-    mip_map = np.zeros((NSLAB,NCHIP,NCHAN))
-
-    for slab in range(0,NSLAB):
-        for chip in range(0,NCHIP):
-            for chan in range(0,NCHAN):
-                mip_map[slab][chip][chan] = 1
+    def get_channel_map(self, slab):
+        if slab in COB_SLABS:
+            return self._channel_map
+        else:
+            return self._channel_map_cob
 
 
-    for slab in slab_map:
-        fname = indir_prefix + "MIP%s.txt" % slab_map[slab]
-        print("Reading MIP values for %s from %s" %(slab,fname))
-        if not os.path.exists(fname):
-            print(fname, " does not exist")
-            continue
+    def _build_w_config(self, config):
+        # SLAB positions
+        # 4 slabs pos_z = [0, 3, 5, 7] * 15 #mm gap
+        pos_z = [0, 2, 4, 6, 8, 9, 12, 14, 16] * 15 #mm gap  # TODO: Bug fix: I assume this should multiply each entry, not repeat the array.
+        ## Tungsten / W configuration
+        if config == 1:
+            # Config 1
+            abs_thick = [0, 2.1, 2.1, 4.2, 4.2, 0, 4.2, 2.1, 2.1]
+        elif config == 0:
+            # No absorber runs, use 0
+            abs_thick = [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
-        with open(fname) as fmap:
-            for i,line in enumerate(fmap.readlines()):
-                if '#' in line: continue
+        ## sum up thickness
+        w_xzero = 1 / 3.5 #0.56 #Xo per mm of W
+        pos_x0 = [sum(abs_thick[:i+1])*w_xzero for i in range(len(abs_thick))]
+        ## Print
+        print("W config %i used:" %config )
+        print("absolute thickness:", abs_thick, "\npos_x0:", pos_x0)
+        if self._verbose:
+            print("pos_z", pos_z)
+        return pos_z, pos_x0
 
-                items = [float(item) for item in line.split()]
 
-                chip,chan = int(items[0]),int(items[1])
-                mpv = items[2]
-                mpv_err = items[3]
-                mip_map[slab][chip][chan] = mpv
-    #mip_map = mpv_map
-    return mip_map
+    def _get_path(self, file_name):
+        if not os.path.isabs(file_name):
+            file_name = os.path.join(self._read_dir, file_name)
+        if not os.path.exists(file_name):
+            raise EventBuildingException("File does not exist: %s" %file_name)
+        return file_name
 
-def read_masked(indir_prefix = "../masked/"):
 
-    global slab_map
-    global mask_map
+    def _read_mapping(self, file_name):
+        channel_map = dict()
+        with open(self._get_path(file_name)) as f:
+            lines = f.readlines()
 
-    ## masked channels map (n-dim numpy array)
-    mask_map = np.zeros((NSLAB,NCHIP,NCHAN))
+        fields = lines[0].split()
+        i_chip = fields.index("chip")
+        i_channel = fields.index("channel")
+        i_x = fields.index("x")
+        i_y = fields.index("y")
 
-    for slab in slab_map:
-        fname = indir_prefix + "masked%s.txt" % slab_map[slab]
-        print("Reading masked channels for %s from %s" %(slab,fname))
-        if not os.path.exists(fname):
-            print(fname, " does not exist")
-            continue
+        for line in lines[1:]:
+            v = line.split()
+            pos = (float(v[i_x]), float(v[i_y]))
+            channel_map[(int(v[i_chip]), int(v[i_channel]))] = pos
+        return channel_map
 
-        with open(fname) as fmap:
-            for i,line in enumerate(fmap.readlines()):
-                if '#' in line: continue
 
-                items = [int(item) for item in line.split()]
+    def _read_pedestals(self, dir_name):
+        ped_map = np.zeros((NSLAB, NCHIP, NCHAN, NSCA))
+        for i_slab, slab_name in SLAB_MAP.items():
+            file_name = "Pedestal%s.txt" %(slab_name)
+            file_path = os.path.join(self._get_path(dir_name), file_name)
+            print("Reading pedestals for %s from %s." %(i_slab, file_path))
+            try:
+                lines = open(file_path).readlines()
+            except FileNotFoundError:
+                txt = "%s does not exist" %file_name
+                if self._error_on_missing_config:
+                    raise EventBuildingException(txt)
+                else:
+                    print("%s does not exist" %file_name)
+                continue
 
-                chip,chan = int(items[0]),int(items[1])
-                masked = int(items[2])
-                mask_map[slab][chip][chan] = masked
+            assert lines[0].startswith("#pedestal results")
+            assert lines[1].startswith("#") and not lines[2].startswith("#")
+            fields = lines[1][1:].split()
+            i_chip = fields.index("chip")
+            i_channel = fields.index("channel")
+            i_ped0 = fields.index("ped0")
 
-    return mask_map
+            for line in lines[2:]:
+                v = line.split()
+                ped_val = float(v[i_ped0])  # TODO: Is it really ok to just us the pedestal mean from the first SCA?
+                # TODO: Proposal:
+                # for i_sca in range(ped_map.shape[-1]):
+                #     n_entries_per_sca = 3  # ped, eped, widthped
+                #     ped_val = float(v[2 + i_sca * n_entries_per_sca])
+                #     ped_map[i_slab][int(v[i_chip])][int(v[i_channel])][i_sca] = ped_val
+                ped_map[i_slab][int(v[i_chip])][int(v[i_channel])] = ped_val
+        if self._verbose:
+            print("pedestal_map", ped_map)
+        # TODO: Are we really ok with 0-entries in the pedestal map?
+        return ped_map
+
+
+    def _read_mip_values(self, dir_name):
+        mip_map = np.ones((NSLAB, NCHIP, NCHAN))
+        for i_slab, slab_name in SLAB_MAP.items():
+            file_name = "MIP%s.txt" %(slab_name)
+            file_path = os.path.join(self._get_path(dir_name), file_name)
+            print("Reading MIP values for %s from %s." %(i_slab, file_path))
+            try:
+                lines = open(file_path).readlines()
+            except FileNotFoundError:
+                txt = "%s does not exist" %file_name
+                if self._error_on_missing_config:
+                    raise EventBuildingException(txt)
+                else:
+                    print("%s does not exist" %file_name)
+                continue
+
+            assert lines[0].startswith("#mip results")
+            assert lines[1].startswith("#") and not lines[2].startswith("#")
+            fields = lines[1][1:].split()
+            i_chip = fields.index("chip")
+            i_channel = fields.index("channel")
+            i_mpv = fields.index("mpv")
+
+            for line in lines[2:]:
+                v = line.split()
+                mip_val = float(v[i_mpv])
+                mip_map[i_slab][int(v[i_chip])][int(v[i_channel])] = mip_val
+        if self._verbose:
+            print("mip_map", mip_map)
+        return mip_map
+
+
+    def _read_masked(self, dir_name):
+        masked_map = np.zeros((NSLAB, NCHIP, NCHAN))
+        for i_slab, slab_name in SLAB_MAP.items():
+            file_name = "masked%s.txt" %(slab_name)
+            file_path = os.path.join(self._get_path(dir_name), file_name)
+            print("Reading masked channels for %s from %s." %(i_slab, file_path))
+            try:
+                lines = open(file_path).readlines()
+            except FileNotFoundError:
+                txt = "%s does not exist" %file_name
+                if self._error_on_missing_config:
+                    raise EventBuildingException(txt)
+                else:
+                    print("%s does not exist" %file_name)
+                continue
+
+            assert lines[0].startswith("#list of masked channels")
+            assert lines[1].startswith("#") and not lines[2].startswith("#")
+            fields = lines[1][1:].split()
+            i_chip = fields.index("chip")
+            i_channel = fields.index("channel")
+            i_mask = fields.index("mask")
+
+            for line in lines[2:]:
+                v = line.split()
+                masked_map[i_slab][int(v[i_chip])][int(v[i_channel])] = int(v[i_mask])
+        if self._verbose:
+            print("masked_map", masked_map)
+        return masked_map
+
 
 if __name__ == "__main__":
-
-    print(read_pedestals())
-    print(read_mip_values())
-    print(read_masked())
-    print("FIN")
+    EcalConfig(verbose=True)

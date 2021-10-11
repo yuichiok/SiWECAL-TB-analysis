@@ -73,7 +73,7 @@ def get_good_bcids(entry):
 
     return good_bcids
 
-def get_hits(entry,bcid_map):
+def get_hits(entry, bcid_map, ecal_config):
     ## Collect hits in bcid containe
     #print(bcid_map)
     event = {bcid:[] for bcid in bcid_map if bcid_map[bcid] > 0} # bcid : hits
@@ -115,25 +115,13 @@ def get_hits(entry,bcid_map):
                     hg_ene = charge_hiGain[chan_indx]
                     lg_ene = charge_lowGain[chan_indx]
 
-                    hit = EcalHit(slab, chip, chan, sca, hg_ene, lg_ene, isHit)
+                    hit = EcalHit(slab, chip, chan, sca, hg_ene, lg_ene, isHit, ecal_config)
                     event[bcid].append(hit)
 
     return event
 
 def build_events(file_name, max_entries=-1, w_config=-1, out_file_name=None):
-
-    ## Build tungsten config
-    build_w_config(w_config)
-    ## Read channel mapping
-    read_mapping()
-    ## Read channel mapping, cob
-    read_mapping_cob()
-    ## Read masked channels
-    read_masked()
-    ## Read pedestals
-    read_pedestals()
-    ## Read mip MPV values
-    read_mip_values()
+    ecal_config = EcalConfig(w_config=w_config)
 
     # Get ttree
     tfile = rt.TFile(file_name,"read")
@@ -211,7 +199,7 @@ def build_events(file_name, max_entries=-1, w_config=-1, out_file_name=None):
         spill_cnt += 1
 
         ## Collect hits in bcid container
-        ev_hits = get_hits(entry,bcid_map)
+        ev_hits = get_hits(entry, bcid_map, ecal_config)
 
         #for bcid,hits in ev_hits.items():
         for ibc,bcid in enumerate(sorted(ev_hits)):
