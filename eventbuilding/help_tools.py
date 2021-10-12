@@ -3,9 +3,6 @@ from __future__ import print_function
 import os
 import numpy as np
 
-## global storages
-event_counter = 0
-
 
 class EcalNumbers:
     def __init__(self):
@@ -33,6 +30,7 @@ class EcalNumbers:
 
         self.bcid_val_event = 50
         self.bcid_merge_delta = 30
+        self.bcid_too_many_hits = 8000
         self.validate_ecal_numbers(self)
 
 
@@ -54,6 +52,7 @@ class EcalNumbers:
 
         assert type(n.bcid_val_event) == int
         assert n.bcid_merge_delta >= 0
+        assert type(n.bcid_too_many_hits) == int
 
 
 class EventBuildingException(Exception):
@@ -61,14 +60,14 @@ class EventBuildingException(Exception):
 
 
 class EcalHit:
-    def __init__(self, slab, chip, chan, sca, hg, lg, isHit, ecal_config):
+    def __init__(self, slab, chip, chan, sca, hg, lg, gain_hit_high, ecal_config):
         self.slab = slab
         self.chip = chip
         self.chan = chan
         self.sca = sca
         self.hg = hg
         self.lg = lg
-        self.isHit = isHit
+        self.isHit = gain_hit_high
 
         ## check channel is masked
         self.isMasked = int(ecal_config.masked_map[self.slab][self.chip][self.chan])

@@ -117,10 +117,8 @@ class BCIDHandler:
             return self.spill_bcids[i_bcid + 1]
 
 
-def get_hits(entry, bcid_handler, ecal_config):
+def get_hits_per_event(entry, bcid_handler, ecal_config):
     event = collections.defaultdict(list)
-    entry_bcids = entry.bcid
-    gain_hit_low = entry.gain_hit_low
     gain_hit_high = entry.gain_hit_high
     charge_hiGain = entry.charge_hiGain
     charge_lowGain = entry.charge_lowGain
@@ -133,20 +131,22 @@ def get_hits(entry, bcid_handler, ecal_config):
         for i_chip in range(n_chips):
             for i_sca in range(n_scas):
                 index_sca = (i_slab * n_chips + i_chip) * n_scas + i_sca
-                if index_sca >= len(entry_bcids):
-                    continue
                 bcid = bcid_handler.merged_bcid[index_sca]
                 if bcid == bcid_handler.bad_bcid_value:
                     continue
                 ## energies
                 for i_channel in range(n_channels):
                     index_channel = index_sca * n_channels + i_channel
-                    #if not entry.gain_hit_low[index_channel]: continue
-                    isHit = gain_hit_high[index_channel]
-                    #if not isHit: continue
-                    hg_ene = charge_hiGain[index_channel]
-                    lg_ene = charge_lowGain[index_channel]
-                    hit = EcalHit(i_slab, i_chip, i_channel, i_sca, hg_ene, lg_ene, isHit, ecal_config)
+                    hit = EcalHit(
+                        i_slab,
+                        i_chip,
+                        i_channel,
+                        i_sca,
+                        charge_hiGain[index_channel],
+                        charge_lowGain[index_channel],
+                        gain_hit_high[index_channel],
+                        ecal_config,
+                    )
                     event[bcid].append(hit)
     return event
 
@@ -210,6 +210,7 @@ class BuildEvents:
         self.file_name = file_name
         self.max_entries = max_entries
         self.out_file_name = out_file_name
+        self.event_counter = 0
 
 
     def _get_tree(self, file_name):
@@ -250,6 +251,7 @@ class BuildEvents:
 
         for branch_tag in [bt for bts in self._branch_tags.values() for bt in bts]:
             self._add_branch(branch_tag)
+        self._hit_branches = [br[4:] for br in self.out_arrays if br.startswith("hit_")]
         return self.out_tree
 
 
@@ -288,46 +290,35 @@ class BuildEvents:
             self.ecal_config._N.bcid_merge_delta,
         )
         bcid_handler.load_spill(entry)
+        hits_per_event = get_hits_per_event(entry, bcid_handler, self.ecal_config)
 
-        ## Collect hits in bcid container
-        ev_hits = get_hits(entry, bcid_handler, self.ecal_config)
-
-        #for bcid,hits in ev_hits.items():
-        for ibc,bcid in enumerate(sorted(ev_hits)):
-
-            hits = ev_hits[bcid]
-
-            if len(hits) == 0: continue
-
-            ## each bcid -- single event
-            global event_counter
-            event_counter = event_counter+1
-            b["event"][0] = event_counter#int(spill[0]*10000 + corr_bcid)
+        for bcid in sorted(hits_per_event):
+            hits = hits_per_event[bcid]
+            if len(hits) == 0:
+                raise EventBuildingException("Event with 0 hits. Why?")
+            self.event_counter += 1
+            b["event"][0] = self.event_counter
             b["bcid"][0] = bcid
             b["prev_bcid"][0] = bcid_handler.previous_bcid(bcid)
             b["next_bcid"][0] = bcid_handler.next_bcid(bcid)
 
             # count hits per slab/chan/chip
             b["nhit_slab"][0] = len(set([hit.slab for hit in hits]))
-            b["nhit_chip"][0] = len(set([(hit.slab*self.ecal_config._N.n_chips + hit.chip) for hit in hits]))
-            # b["nhit_chan"][0] = len(set([(hit.slab*self.ecal_config._N.n_chips + hit.chip)*self.ecal_config._N.n_channels + hit.chan for hit in hits]))
-            b["nhit_chan"][0] = len(hits)
+            b["nhit_chip"][0] = len(set([(hit.slab, hit.chip) for hit in hits]))
+            b["nhit_chan"][0] = len(set([(hit.slab, hit.chip, hit.chan) for hit in hits]))
             b["sum_hg"][0] = sum([hit.hg for hit in hits])
             b["sum_energy"][0] = sum([hit.energy for hit in hits])
 
-            if len(hits) > 8000:
-                print("Suspicious number of hits! %i for bcid %i and previous bcid %i" %(len(hits),b["bcid"][0],b["prev_bcid"][0]))
-                print("Skipping event %i" % b["event"][0] )
+            if len(hits) > self.ecal_config._N.bcid_too_many_hits:
+                txt = "Suspicious number of hits! %i " %len(hits)
+                txt += "for bcid %i and previous bcid %i" %(b["bcid"][0], b["prev_bcid"][0])
+                txt += "\nSkipping event %i." % b["event"][0]
+                print(txt)
                 continue
 
             for i,hit in enumerate(hits):
-                b["hit_slab"][i] = hit.slab; b["hit_chip"][i] = hit.chip; b["hit_chan"][i] = hit.chan; b["hit_sca"][i] = hit.sca
-                b["hit_x"][i] = hit.x; b["hit_y"][i] = hit.y; b["hit_z"][i] = hit.z; b["hit_x0"][i] = hit.x0
-                b["hit_hg"][i] = hit.hg; b["hit_lg"][i] = hit.lg
-                b["hit_isHit"][i] = hit.isHit; b["hit_isMasked"][i] = hit.isMasked
-
-                b["hit_energy"][i] = hit.energy
-
+                for hit_attr in self._hit_branches:
+                    b["hit_" + hit_attr] = getattr(hit, hit_attr)
             self.out_tree.Fill()
 
 
