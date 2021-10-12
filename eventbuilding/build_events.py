@@ -123,7 +123,7 @@ def get_hits_per_event(entry, bcid_handler, ecal_config):
     charge_hiGain = entry.charge_hiGain
     charge_lowGain = entry.charge_lowGain
 
-    n_slabs = len(ecal_config._N.slab_map)
+    n_slabs = ecal_config._N.n_slabs
     n_chips = ecal_config._N.n_chips
     n_channels = ecal_config._N.n_channels
     n_scas = ecal_config._N.n_scas
@@ -216,6 +216,7 @@ class BuildEvents:
     def __init__(
         self,
         file_name,
+        commissioning_tag,
         w_config=-1,
         max_entries=-1,
         out_file_name=None,
@@ -223,6 +224,7 @@ class BuildEvents:
         ecal_numbers=None,  # Not provided in CLI. Mainly useful for debugging/changing.
     ):
         self.ecal_config = EcalConfig(
+            commissioning_tag,
             w_config=w_config,
             commissioning_folder=commissioning_folder,
             numbers=ecal_numbers,
@@ -347,6 +349,7 @@ if __name__ == "__main__":
         description="Build an event-level rootfile (smaller) from the raw rootfile.",
     )
     parser.add_argument("file_name", help="The raw rootfile from converter_SLB")
+    parser.add_argument("commissioning_tag", help="E.g. _PROTO15_run050014", type=str)
     parser.add_argument("-n", "--max_entries", default=-1, type=int)
     parser.add_argument("-w", "--w_config", default=-1, type=int)
     parser.add_argument("-o", "--out_file_name", default=None)
