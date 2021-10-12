@@ -209,6 +209,7 @@ class BuildEvents:
         "hit booleans": [
             "hit_isHit[nhit_chan]/I",
             "hit_isMasked[nhit_chan]/I",
+            "hit_isCommissioned[nhit_chan]/I",
         ],
     }
 
@@ -335,9 +336,9 @@ class BuildEvents:
                 print(txt)
                 continue
 
-            for i,hit in enumerate(hits):
+            for i, hit in enumerate(hits):
                 for hit_attr in self._hit_branches:
-                    b["hit_" + hit_attr] = getattr(hit, hit_attr)
+                    b["hit_" + hit_attr][i] = getattr(hit, hit_attr)
             self.out_tree.Fill()
 
 

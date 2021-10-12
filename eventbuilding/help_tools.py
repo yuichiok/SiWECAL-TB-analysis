@@ -80,6 +80,7 @@ class EcalHit:
         self._ecal_config = ecal_config
 
         self.isMasked = int(self._ecal_config.masked_map[self.slab][self.chip][self.chan])
+        self.isCommissioned = 1
         self._gain_hit_high = gain_hit_high
 
         self._set_positions()
@@ -109,17 +110,16 @@ class EcalHit:
         pedestals_per_sca = self._ecal_config.pedestal_map[self.slab][self.chip][self.chan]
         is_good_pedestal = pedestals_per_sca > self._ecal_config._N.pedestal_min_average
         if sum(is_good_pedestal) < self._ecal_config._N.pedestal_min_scas:
-            # TODO: Instead, fill an isCommissioned-flag.
-            self.isMasked = 1
+            self.isCommissioned = 0
 
         sca_has_valid_pedestal = pedestals_per_sca[self.sca] > self._ecal_config._N.pedestal_min_value
         if sca_has_valid_pedestal:
             self.hg -= pedestals_per_sca[self.sca]
         else:
-            if self.isMasked == 0:
-                # TODO: Instead, fill an isCommissioned-flag.
+            if (not self.isMasked) and self.isCommissioned:
                 pedestal_average = np.mean(pedestals_per_sca[is_good_pedestal])
                 self.hg -= pedestal_average
+                self.isCommissioned = 0
 
 
     def _mip_calibration(self):
@@ -127,9 +127,8 @@ class EcalHit:
         if mip_value > self._ecal_config._N.mip_cutoff:
             self.energy = self.hg / mip_value
         else:
-            # TODO: Instead, fill an isCommissioned-flag.
             self.energy = 0
-            self.isMasked = 1
+            self.isCommissioned = 0
 
 
 class EcalConfig:
