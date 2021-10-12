@@ -31,6 +31,11 @@ class EcalNumbers:
         self.bcid_val_event = 50
         self.bcid_merge_delta = 30
         self.bcid_too_many_hits = 8000
+
+        self.pedestal_min_average = 200
+        self.pedestal_min_scas = 6
+        self.pedestal_min_value = 10
+        self.mip_cutoff = 0.5
         self.validate_ecal_numbers(self)
 
 
@@ -54,6 +59,11 @@ class EcalNumbers:
         assert n.bcid_merge_delta >= 0
         assert type(n.bcid_too_many_hits) == int
 
+        assert type(n.pedestal_min_average) == int
+        assert type(n.pedestal_min_scas) == int
+        assert type(n.pedestal_min_value) == int
+        assert type(n.mip_cutoff) == float and n.mip_cutoff <= 1
+
 
 class EventBuildingException(Exception):
     pass
@@ -67,51 +77,57 @@ class EcalHit:
         self.sca = sca
         self.hg = hg
         self.lg = lg
-        self.isHit = gain_hit_high
+        self._ecal_config = ecal_config
 
-        ## check channel is masked
-        self.isMasked = int(ecal_config.masked_map[self.slab][self.chip][self.chan])
+        self.isMasked = int(self._ecal_config.masked_map[self.slab][self.chip][self.chan])
+        self._gain_hit_high = gain_hit_high
 
-        ## get x-y coordinates
-        self.x0 = ecal_config.pos_x0[slab]
-        self.z = ecal_config._N.pos_z[slab]
-        (self.x,self.y) = ecal_config.get_channel_map(slab)[(chip,chan)]
+        self._set_positions()
+        self._pedestal_subtraction()
+        self._mip_calibration()
 
-        #invert the mapping for the 5 first slabs, to agree with the last 4.
-        if slab < 5:
-           self.x=-self.x
-           self.y=-self.y
 
-        # do pedestal subtraction
-        # first calculate the average per sca and use it if there is no information about pedestal for this sca
-        ped_average=0.
-        ped_norm=0
-        pedestals_per_sca = ecal_config.pedestal_map[self.slab][self.chip][self.chan]
-        is_good_pedestal = pedestals_per_sca > 200
-        ped_average = sum(pedestals_per_sca[is_good_pedestal])
-        ped_norm = sum(is_good_pedestal)
-        # calcultate the average if at least 5 scas have calculated pedestals
-        if ped_norm > 5:
-            ped_average=ped_average/ped_norm
-        else:
-            #if self.isMasked == 0:
-            #    print("ERROR: channel without pedestal info but not tagged as masked, ASSIGN MASKED TAG -->")
-            #    print("slab=%i chip=%i chan=%i"%(self.slab,self.chip,self.chan))
+    @property
+    def isHit(self):
+        return self._gain_hit_high
+
+
+    def _set_positions(self):
+        self.x0 = self._ecal_config.pos_x0[self.slab]
+        self.z = self._ecal_config._N.pos_z[self.slab]
+        slab_channel_map = self._ecal_config.get_channel_map(self.slab)
+        (self.x,self.y) = slab_channel_map[(self.chip, self.chan)]
+        # TODO: Is this really doing the right thing to the positioning? Check with new cosmic runs.
+        # Invert the mapping for the 5 first slabs, to agree with the last 4.
+        # if slab < 5: currently equivalent to:
+        if "_dif_" in self._ecal_config._N.slab_map[self.slab]:
+           self.x = -self.x
+           self.y = -self.y
+
+
+    def _pedestal_subtraction(self):
+        pedestals_per_sca = self._ecal_config.pedestal_map[self.slab][self.chip][self.chan]
+        is_good_pedestal = pedestals_per_sca > self._ecal_config._N.pedestal_min_average
+        if sum(is_good_pedestal) < self._ecal_config._N.pedestal_min_scas:
+            # TODO: Instead, fill an isCommissioned-flag.
             self.isMasked = 1
 
-        # if pedestal info is there, use it for subtraction, if not, use the average of the other SCAs
-        if ecal_config.pedestal_map[self.slab][self.chip][self.chan][self.sca] > 10:
-            self.hg -= ecal_config.pedestal_map[self.slab][self.chip][self.chan][self.sca]
+        sca_has_valid_pedestal = pedestals_per_sca[self.sca] > self._ecal_config._N.pedestal_min_value
+        if sca_has_valid_pedestal:
+            self.hg -= pedestals_per_sca[self.sca]
         else:
-            if self.isMasked==0:
-                #print("Warning: SCA without pedestal info, use ped_aver instead --> ")
-                #print("slab=%i chip=%i chan=%i sca=%i ped_aver=%f n=%i"%(self.slab,self.chip,self.chan,self.sca,ped_average,ped_norm))
-                self.hg -= ped_average
+            if self.isMasked == 0:
+                # TODO: Instead, fill an isCommissioned-flag.
+                pedestal_average = np.mean(pedestals_per_sca[is_good_pedestal])
+                self.hg -= pedestal_average
 
-        # MIP calibration
-        if ecal_config.mip_map[self.slab][self.chip][self.chan] > 0.5:
-            self.energy = self.hg / ecal_config.mip_map[self.slab][self.chip][self.chan]
+
+    def _mip_calibration(self):
+        mip_value = self._ecal_config.mip_map[self.slab][self.chip][self.chan]
+        if mip_value > self._ecal_config._N.mip_cutoff:
+            self.energy = self.hg / mip_value
         else:
+            # TODO: Instead, fill an isCommissioned-flag.
             self.energy = 0
             self.isMasked = 1
 

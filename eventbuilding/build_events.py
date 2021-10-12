@@ -13,21 +13,21 @@ from help_tools import *
 try:
     from tqdm.autonotebook import tqdm
 
-    def get_tree_events(tree, max_entries):
-        for i, event in enumerate(tqdm(tree, desc="# Build events: ", total=max_entries)):
+    def get_tree_spills(tree, max_entries):
+        for i, spill in enumerate(tqdm(tree, desc="# Build events", total=max_entries, unit=" spills")):
             if i > max_entries:
                 break
-            yield i, event
+            yield i, spill
 except ImportError:
-    def get_tree_events(tree, max_entries):
+    def get_tree_spills(tree, max_entries):
         print("# Going to analyze %i entries..." %max_entries)
         print("# For better progress information: `pip install tqdm`.")
-        for i, event in enumerate(tree):
+        for i, spill in enumerate(tree):
             if i > max_entries:
                 break
             if i%100 == 0:
-                print("Entry %i" %i)
-            yield i, event
+                print("Spill %i" %i)
+            yield i, spill
 
 
 class BCIDHandler:
@@ -151,6 +151,25 @@ def get_hits_per_event(entry, bcid_handler, ecal_config):
     return event
 
 
+def _get_hit_branches(out_arrays, ecal_config):
+    """Get the names of the branches that are filled per-hit (through EcalHit).
+
+    At the same time, this function checks that EcalHit and the branches
+    in BuildEvents actually agree on what these branches in should be.
+    This would not be necessary as a runtime check, but is fast and should be
+    a good hint in case of erroneous code changes.
+    """
+    hit_branches = {br[4:] for br in out_arrays if br.startswith("hit_")}
+    n_hit_args = EcalHit.__init__.__code__.co_argcount - 1
+    dummy_hit = EcalHit(*([0] * (n_hit_args - 1) + [ecal_config]))
+    hit_properties = {a for a in dir(dummy_hit) if not a.startswith("_")}
+    if hit_properties != hit_branches:
+        print("per-hit branches:  ", sorted(hit_branches))
+        print("EcalHit properties:", sorted(hit_properties))
+        raise EventBuildingException("EcalHit and BuildEvents not matching.")
+    return hit_branches
+
+
 class BuildEvents:
     _in_tree_name = "siwecaldecoded"
     _out_tree_name = "ecal"
@@ -251,7 +270,7 @@ class BuildEvents:
 
         for branch_tag in [bt for bts in self._branch_tags.values() for bt in bts]:
             self._add_branch(branch_tag)
-        self._hit_branches = [br[4:] for br in self.out_arrays if br.startswith("hit_")]
+        self._hit_branches = _get_hit_branches(self.out_arrays, self.ecal_config)
         return self.out_tree
 
 
@@ -277,7 +296,7 @@ class BuildEvents:
         if max_entries < 0:
             max_entries = self.in_tree.GetEntries()
 
-        for i_spill, entry in get_tree_events(self.in_tree, max_entries):
+        for i_spill, entry in get_tree_spills(self.in_tree, max_entries):
             self._fill_spill(i_spill, entry)
         self._write_and_close()
 
