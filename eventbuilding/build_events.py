@@ -185,9 +185,14 @@ class BuildEvents:
         w_config=-1,
         max_entries=-1,
         out_file_name=None,
+        commissioning_folder=None,
         ecal_numbers=None,  # Not provided in CLI. Mainly useful for debugging/changing.
     ):
-        self.ecal_config = EcalConfig(w_config=w_config, numbers=ecal_numbers)
+        self.ecal_config = EcalConfig(
+            w_config=w_config,
+            commissioning_folder=commissioning_folder,
+            numbers=ecal_numbers,
+        )
         self.file_name = file_name
         self.max_entries = max_entries
         self.out_file_name = out_file_name
@@ -333,4 +338,5 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--max_entries", default=-1, type=int)
     parser.add_argument("-w", "--w_config", default=-1, type=int)
     parser.add_argument("-o", "--out_file_name", default=None)
+    parser.add_argument("-c", "--commissioning_folder", default=None)
     BuildEvents(**vars(parser.parse_args())).build_events()

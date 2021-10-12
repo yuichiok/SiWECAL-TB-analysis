@@ -121,19 +121,19 @@ class EcalConfig:
         pedestals_dir="pedestals",
         mip_calibration_dir="mip_calib",
         masked_dir="masked",
-        read_dir=None,
+        commissioning_folder=None,
         numbers=None,
         error_on_missing_config=True,
         verbose=False,
     ):
         self._verbose = verbose
         self._error_on_missing_config = error_on_missing_config
-        if read_dir:
-            self._read_dir = read_dir
+        if commissioning_folder:
+            self._commissioning_folder = commissioning_folder
         else:
             # Resolves to the root folder of this repo
             # Equivalent to ../ if called from within the eventbuilding folder.
-            self._read_dir = os.path.dirname(os.path.dirname((__file__)))
+            self._commissioning_folder = os.path.dirname(os.path.dirname((__file__)))
         if numbers:
             EcalNumbers.validate_ecal_numbers(numbers)  # Catch problems early on.
             self._N = numbers
@@ -172,7 +172,7 @@ class EcalConfig:
 
     def _get_path(self, file_name):
         if not os.path.isabs(file_name):
-            file_name = os.path.join(self._read_dir, file_name)
+            file_name = os.path.join(self._commissioning_folder, file_name)
         if not os.path.exists(file_name):
             raise EventBuildingException("File does not exist: %s" %file_name)
         return file_name
