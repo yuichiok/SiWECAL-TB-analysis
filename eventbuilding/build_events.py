@@ -2,13 +2,12 @@
 from __future__ import print_function
 
 import argparse
+import collections
 import sys
 import numpy as np
 import ROOT as rt
 from array import array
 from help_tools import *
-
-BCID_VALEVT = 50  # TODO: Put this into EcalNumbers?
 
 
 try:
@@ -31,75 +30,95 @@ except ImportError:
             yield i, event
 
 
-def get_corr_bcid(bcid):
-    #if bcid > 10: return bcid
-    if bcid > BCID_VALEVT: return bcid
-    else: return -9999
-    #if bcid < 0: return 0
-    #else: return bcid + 4096
+class BCIDHandler:
+    def __init__(self, val_evt, delta_merge):
+        self.val_evt = val_evt
+        self.delta_merge = delta_merge
+        self.bad_bcid_value = -999
 
-def merge_bcids(bcid_cnts):
-    ## Set of BCIDs present in this entry
-    bcids_unique = set(bcid_cnts.keys())
 
-    #bcids_cnts = bcids
-    ## format: bcid: (counts,corresponding bcid)
-    ## initialize corresponding with itself
-    new_bcid_cnts = bcid_cnts#{bcid:(bcid_cnts[bcid],bcid) for bcid in bcid_cnts}
-    bcid_map = {bcid:bcid for bcid in bcid_cnts}
+    def _get_corrected_bcid(self, bcid):
+        if bcid < self.val_evt:
+            # TODO: I understand why bcid = -999 is the filler value from converter_SLB. But why is bcid < 50 not ok?
+            bcid = self.bad_bcid_value
+        elif bcid >= 4096:  # 4096 = 2^12
+            raise EventBuildingException("BCID Overflow:", bcid)
+        return bcid
 
-    ## Do BCID matching
-    for i,bcid in enumerate(bcids_unique):
 
-        for bcid_close in [bcid-1,bcid+1,bcid-2,bcid+2,bcid-3,bcid+3]:
-            if bcid_close in new_bcid_cnts:
-                #print("Found nearby", bcid, bcid_close)
-                #if bcids_cnts[bcid_close] < 1: continue
+    def _get_good_bcids(self, bcids, bad_bcids):
+        """Returns Counter for #events within the spill with same good BCID."""
+        good_bcid_counts = collections.Counter(bcids)
+        # Apparently np.arrray(array.array) does not work, as numpy thinks the
+        # array/buffer is longer, and includes the following memory-nonsense to.
+        bad_bcid_values = set(np.array(list(bcids))[np.array(list(bad_bcids)) != 0])
+        for bad_bcid in bad_bcid_values:
+            good_bcid_counts.pop(bad_bcid)
+        return good_bcid_counts
 
-                # found bcid nearby
-                # merge bcids based on "occupancy" counter
-                if new_bcid_cnts[bcid_close] >= new_bcid_cnts[bcid]:
-                    # nearby bcid has more counts
-                    # -> assign this bcid to nearby bcid
-                    new_bcid_cnts[bcid_close] += new_bcid_cnts[bcid]
-                    new_bcid_cnts[bcid] -= new_bcid_cnts[bcid]
 
-                    bcid_map[bcid] = bcid_close
-                break
+    def _choose_main_bcid_for_merger(self, bcid_group, good_bcid_counts):
+        if len(bcid_group) == 1:
+            main_bcid = bcid_group[0]
+        else:
+            group_counts = np.array([good_bcid_counts[x] for x in bcid_group])
+            is_main_bcid_candidate = group_counts == max(group_counts)
+            if sum(is_main_bcid_candidate) == 1:
+                main_bcid = bcid_group[np.argmax(is_main_bcid_candidate)]
+            else:
+                bcid_group = np.array(bcid_group)
+                weighted_mean = bcid_group * group_counts / len(bcid_group)
+                weighted_mean -= 0.01  # Choose the smaller BCID when in between.
+                main_bcid = bcid_group[np.argmin(np.abs(bcid_group - weighted_mean))]
+        return main_bcid
 
-    return bcid_map
 
-def get_good_bcids(entry):
+    def merge_bcids(self, bcids, bad_bcids):
+        bcids = [self._get_corrected_bcid(b) for b in bcids]
+        good_bcid_counts = self._get_good_bcids(bcids, bad_bcids)
+        good_bcids = np.array(sorted(good_bcid_counts))
+        delta_good_bcids = good_bcids[1:] - good_bcids[:-1]
+        merge_with_following = delta_good_bcids <= self.delta_merge
 
-    all_bcids = {}
-    entry_badbcid = entry.badbcid
-    entry_nhits = entry.nhits
+        good_bcid_groups = [[good_bcids[0]]]
+        for i, do_merge in enumerate(merge_with_following, start=1):
+            if do_merge:
+                good_bcid_groups[-1].append(good_bcids[i])
+            else:
+                good_bcid_groups.append([good_bcids[i]])
 
-    for i,bcid in enumerate(entry.bcid):
-        if bcid < 0: continue
+        map_to_main_bcid_in_group = collections.defaultdict(lambda:self.bad_bcid_value)
+        for group in good_bcid_groups:
+            main_bcid = self._choose_main_bcid_for_merger(group, good_bcid_counts)
+            for bcid_in_group in group:
+                map_to_main_bcid_in_group[bcid_in_group] = main_bcid
 
-        bcid_flag = 0 #0 is OK!
+        merged_bcids = np.array([map_to_main_bcid_in_group[b] for b in bcids])
+        return merged_bcids
 
-        if entry_badbcid[i] > 0 or entry_badbcid[i] < 0: bcid_flag = 1
-        #if entry_nhits[i] > 20: bcid_flag = 1
 
-        bcid = get_corr_bcid(bcid)
+    def load_spill(self, spill_entry):
+        # TODO: Should corrected_bcid be used instead of bcid?
+        self.merged_bcid = self.merge_bcids(spill_entry.bcid, spill_entry.badbcid)
+        self.spill_bcids = sorted(set(self.merged_bcid) - {self.bad_bcid_value})
 
-        if bcid in all_bcids: all_bcids[bcid].append(bcid_flag)
-        else: all_bcids[bcid] = [bcid_flag]
+    def previous_bcid(self, bcid):
+        i_bcid = self.spill_bcids.index(bcid)
+        if i_bcid == 0:
+            return -1
+        else:
+            return self.spill_bcids[i_bcid - 1]
 
-    ## make counter
-    good_bcids = {}
-    for bcid,flags in all_bcids.items():
-        if sum(flags) == 0:
-            good_bcids[bcid] = len(flags)
+    def next_bcid(self, bcid):
+        i_bcid = self.spill_bcids.index(bcid)
+        if i_bcid == len(self.spill_bcids) - 1:
+            return -1
+        else:
+            return self.spill_bcids[i_bcid + 1]
 
-    return good_bcids
 
-def get_hits(entry, bcid_map, ecal_config):
-    ## Collect hits in bcid containe
-    #print(bcid_map)
-    event = {bcid:[] for bcid in bcid_map if bcid_map[bcid] > 0} # bcid : hits
+def get_hits(entry, bcid_handler, ecal_config):
+    event = collections.defaultdict(list)
     entry_bcids = entry.bcid
     gain_hit_low = entry.gain_hit_low
     gain_hit_high = entry.gain_hit_high
@@ -116,13 +135,8 @@ def get_hits(entry, bcid_map, ecal_config):
                 index_sca = (i_slab * n_chips + i_chip) * n_scas + i_sca
                 if index_sca >= len(entry_bcids):
                     continue
-                bcid = get_corr_bcid(entry_bcids[index_sca])
-                # filter bad bcids
-                if bcid not in bcid_map:
-                    continue
-                # get assigned bcid
-                bcid = bcid_map[bcid]
-                if bcid not in event:
+                bcid = bcid_handler.merged_bcid[index_sca]
+                if bcid == bcid_handler.bad_bcid_value:
                     continue
                 ## energies
                 for i_channel in range(n_channels):
@@ -261,7 +275,6 @@ class BuildEvents:
         if max_entries < 0:
             max_entries = self.in_tree.GetEntries()
 
-        print(max_entries)
         for i_spill, entry in get_tree_events(self.in_tree, max_entries):
             self._fill_spill(i_spill, entry)
         self._write_and_close()
@@ -270,13 +283,14 @@ class BuildEvents:
     def _fill_spill(self, spill, entry):
         b = self.out_arrays
         b["spill"][0] = spill
-
-        ## BCID
-        bcids = get_good_bcids(entry)
-        bcid_map = merge_bcids(bcids)
+        bcid_handler = BCIDHandler(
+            self.ecal_config._N.bcid_val_event,
+            self.ecal_config._N.bcid_merge_delta,
+        )
+        bcid_handler.load_spill(entry)
 
         ## Collect hits in bcid container
-        ev_hits = get_hits(entry, bcid_map, self.ecal_config)
+        ev_hits = get_hits(entry, bcid_handler, self.ecal_config)
 
         #for bcid,hits in ev_hits.items():
         for ibc,bcid in enumerate(sorted(ev_hits)):
@@ -286,25 +300,12 @@ class BuildEvents:
             if len(hits) == 0: continue
 
             ## each bcid -- single event
-            corr_bcid = get_corr_bcid(bcid)
             global event_counter
             event_counter = event_counter+1
             b["event"][0] = event_counter#int(spill[0]*10000 + corr_bcid)
-            b["bcid"][0] = corr_bcid
-
-            ## store distance to previous bcid
-            if ibc > 0:
-                prev_bcid = sorted(ev_hits)[ibc -1]
-                b["prev_bcid"][0] = get_corr_bcid(prev_bcid)
-            else:
-                b["prev_bcid"][0] = -1
-
-            if ibc + 1 < len(ev_hits):
-                next_bcid = sorted(ev_hits)[ibc +1]
-                b["next_bcid"][0] = get_corr_bcid(next_bcid)
-                #print("ibc=%i length=%i bcid=%i spill=%i"%(ibc,len(ev_hits),b["next_bcid"][0],spill[0]))
-            else:
-                b["next_bcid"][0] = -1
+            b["bcid"][0] = bcid
+            b["prev_bcid"][0] = bcid_handler.previous_bcid(bcid)
+            b["next_bcid"][0] = bcid_handler.next_bcid(bcid)
 
             # count hits per slab/chan/chip
             b["nhit_slab"][0] = len(set([hit.slab for hit in hits]))
