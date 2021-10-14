@@ -2,7 +2,7 @@
 
 #include "conf_struct.h"
 
-void test_read_thresholds(TString filename="Run_Settings.txt", bool debug=true) {
+void test_read_thresholds(TString filename="16062021/Run_Settings_it10.txt", bool debug=true) {
 
   read_configuration_file(filename,false);
 

@@ -18,7 +18,7 @@
 
 using namespace std;
 
-std::vector<std::array<float,6>> DecodedSLBAnalysis::HoldscanAnalysis(int sca_=0, int readentries=-1)
+std::vector<std::array<float,6>> DecodedSLBAnalysis::HoldscanAnalysis(int sca_=0, int readentries=-1, int lowgain=0)
 {
 
   float y[15][16][64];
@@ -73,12 +73,23 @@ std::vector<std::array<float,6>> DecodedSLBAnalysis::HoldscanAnalysis(int sca_=0
 	for(int isca=0; isca<15; isca++) {
 	  if(isca==sca_ || sca_==15) {
 	    for(int ichn=0; ichn<64; ichn++) {
-	      if(gain_hit_high[islboard][ichip][isca][ichn]==1 &&
-		 ( fabs(bcid[islboard][ichip][isca]-22)<5
-		   || fabs(bcid[islboard][ichip][isca]-38)<5
-		   || fabs(bcid[islboard][ichip][isca]-54)<5) && charge_hiGain[islboard][ichip][isca][ichn]>200 &&  charge_hiGain[islboard][ichip][isca][ichn]<500)  {
-		adc[islboard][ichip][ichn]->Fill(charge_hiGain[islboard][ichip][isca][ichn]);
+	      if(lowgain==0) {
+		if(gain_hit_high[islboard][ichip][isca][ichn]==1 &&
+		   ( fabs(bcid[islboard][ichip][isca]-22)<5
+		     || fabs(bcid[islboard][ichip][isca]-38)<5
+		     || fabs(bcid[islboard][ichip][isca]-54)<5) && charge_hiGain[islboard][ichip][isca][ichn]>200 &&  charge_hiGain[islboard][ichip][isca][ichn]<500)  {
+		  adc[islboard][ichip][ichn]->Fill(charge_hiGain[islboard][ichip][isca][ichn]);
+		}
+	      } else {
+		if(gain_hit_low[islboard][ichip][isca][ichn]==1 &&
+                   ( fabs(bcid[islboard][ichip][isca]-22)<5
+                     || fabs(bcid[islboard][ichip][isca]-38)<5
+                     || fabs(bcid[islboard][ichip][isca]-54)<5) && charge_hiGain[islboard][ichip][isca][ichn]>200 &&  charge_hiGain[islboard][ichip][isca][ichn]<500)  {
+                  adc[islboard][ichip][ichn]->Fill(charge_lowGain[islboard][ichip][isca][ichn]);
+		}
 	      }
+	      
+	      
 	    }
 	  }
 	}//for isca

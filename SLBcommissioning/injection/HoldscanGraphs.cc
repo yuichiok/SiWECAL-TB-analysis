@@ -7,7 +7,7 @@
 #include "TLegend.h"
 
 //void HoldscanGraphs(TString filename_in="../../converter_SLB/convertedfiles/", TString run="07282021_dac1.2V_small", int nslboards=15){
-void HoldscanGraphs(TString filename_in="../../converter_SLB/convertedfiles/", TString run="08312021_dac1.2V_small", int nslboards=15, int sca_=0){
+void HoldscanGraphs(TString filename_in="../../converter_SLB/convertedfiles/", TString run="08312021_dac1.2V_small", int nslboards=15, int sca_=0, int lowgain=0){
   
   cout<<" Holdscan file: "<<filename_in<<endl;
 
@@ -44,7 +44,7 @@ void HoldscanGraphs(TString filename_in="../../converter_SLB/convertedfiles/", T
     TString filename=filename_in+TString::Format("%s/holdscan_hold%i.root",run.Data(),i);
     cout<<" Holdscan file: "<<filename<<endl;
     DecodedSLBAnalysis ss(filename);
-    std::vector<std::array<float,6>> holdvalues =ss.HoldscanAnalysis(sca_,-1);
+    std::vector<std::array<float,6>> holdvalues =ss.HoldscanAnalysis(sca_,-1,lowgain);
     
     x[count]=i;
 
@@ -70,7 +70,9 @@ void HoldscanGraphs(TString filename_in="../../converter_SLB/convertedfiles/", T
     }
   }
 
-  TFile *file_summary = new TFile(TString::Format("results/graphs_holdscan_%s_sca%i.root",run.Data(),sca_) , "RECREATE");
+  TString filename=TString::Format("results/graphs_holdscan_%s_sca%i.root",run.Data(),sca_);
+  if(lowgain != 0) filename=TString::Format("results/graphs_holdscan_LG_%s_sca%i.root",run.Data(),sca_);
+  TFile *file_summary = new TFile(filename , "RECREATE");
   file_summary->cd();
 
   TH1F *h1 = new TH1F("layer_slboard_relation","layer_slboard_relation",nslboards,-0.5,nslboards-0.5);
