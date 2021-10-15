@@ -332,7 +332,7 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
     //the original SLB-ID (slboard ID, sorted by production time) is:
     // now slboard_add = slabidx = slot
 
-    mapping_slboard[0]=17;
+    /*mapping_slboard[0]=17;
     mapping_slboard[1]=8;
     mapping_slboard[2]=10;
     mapping_slboard[3]=5;
@@ -347,15 +347,33 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
     mapping_slboard[12]=9;
     mapping_slboard[13]=2;
     mapping_slboard[14]=0;
+    */
 
+    //Setup of 15 slabs for TB2021-11
+    // Last update 14/10/2021
+    // The addresses of the slabs correspond to the core-kapton.
+    // The slab closest to the beam pipe is the 14.  --> this inversion is done using the slot[] variable (slot 0= first one wrt the beam)
+    // For the technical identification we use the slab number, not the slboard.
+    mapping_slboard[14]=16;
+    mapping_slboard[13]=13;
+    mapping_slboard[12]=14;
+    mapping_slboard[11]=15;
+    mapping_slboard[10]=19;
+    mapping_slboard[9]=20;
+    mapping_slboard[8]=21;
+    mapping_slboard[7]=30;
+    mapping_slboard[6]=31;
+    mapping_slboard[5]=24;
+    mapping_slboard[4]=25;
+    mapping_slboard[3]=22;
+    mapping_slboard[2]=17;
+    mapping_slboard[1]=23;
+    mapping_slboard[0]=18;
 
   } else {
     mapping_slboard[0]=0;
   }
   
-  // int mapping_slot[15];
-  //2020 06 04
-  // for(int i=0; i<15; i++) mapping_slot[i]=mapping_z[i];
 
   while (reading_file) {
     // output the line
@@ -383,6 +401,7 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
       slabidx=0;
       slabadd=0;
     }
+
     if(acqNumber==0) treeInit(zerosupression);
      if(acqNumber>0 && acqNumber!=cycleID) {
       GetBadBCID();
@@ -407,7 +426,7 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
     AVDD0[slabidx]=raw_avdd0;
     AVDD1[slabidx]=raw_avdd1;
 
-    slot[slabidx]=slabadd;
+    slot[slabidx]=14-slabadd;
     slboard_id[slabidx]=mapping_slboard[slabidx];
 
     
