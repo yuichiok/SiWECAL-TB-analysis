@@ -2,44 +2,28 @@
 
 #include "conf_struct.h"
 
-void test_read_masked_channels_summary(TString filename="16062021/Run_Settings_it8", bool debug=true) {
+//void test_read_masked_channels_summary(TString filename="15102021/Run_Settings_DataTaking_TB2021_15102021_WRITENbyDAQ", bool debug=true) {
+void test_read_masked_channels_summary(TString filename="15102021/Run_Settings_DataTaking_TB2021_15102021", bool debug=true) {
   //void test_read_masked_channels_summary(TString filename="run_150014/Run_Settings", bool debug=true) {  
 
   read_configuration_file(filename+".txt",true);
 
-  int mapping_slboard[15];
-  mapping_slboard[0]=17;
-  mapping_slboard[1]=8;
-  mapping_slboard[2]=10;
-  mapping_slboard[3]=5;
-  mapping_slboard[4]=1;
-  mapping_slboard[5]=13;
-  mapping_slboard[6]=11;
-  mapping_slboard[7]=7;
-  mapping_slboard[8]=14;
-  mapping_slboard[9]=3;
-  mapping_slboard[10]=4;
-  mapping_slboard[11]=6;
-  mapping_slboard[12]=9;
-  mapping_slboard[13]=2;
-  mapping_slboard[14]=0;
-
   int mapping_slab[15];
-  mapping_slab[0]=31;
-  mapping_slab[1]=30;
-  mapping_slab[2]=13;
-  mapping_slab[3]=14;//
-  mapping_slab[4]=15;
-  mapping_slab[5]=19;
-  mapping_slab[6]=20;
-  mapping_slab[7]=24;//
+  mapping_slab[0]=18;
+  mapping_slab[1]=23;
+  mapping_slab[2]=17;
+  mapping_slab[3]=22;//
+  mapping_slab[4]=25;
+  mapping_slab[5]=24;
+  mapping_slab[6]=31;
+  mapping_slab[7]=30;//
   mapping_slab[8]=21;
-  mapping_slab[9]=25;//
-  mapping_slab[10]=22;//
-  mapping_slab[11]=23;
-  mapping_slab[12]=16;//
-  mapping_slab[13]=17;
-  mapping_slab[14]=18;
+  mapping_slab[9]=20;//
+  mapping_slab[10]=19;//
+  mapping_slab[11]=15;
+  mapping_slab[12]=14;//
+  mapping_slab[13]=13;
+  mapping_slab[14]=16;
 
 
 

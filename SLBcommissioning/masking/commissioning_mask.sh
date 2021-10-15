@@ -32,7 +32,7 @@ if [ ! -d "${softw_path}/SLBcommissioning/masking/histos" ]; then
     mkdir ${softw_path}/SLBcommissioning/masking/histos
 fi
 
-data_path="/mnt/win2/"
+data_path="/mnt/win1/"
 # data_path="/mnt/win1/"
 
 

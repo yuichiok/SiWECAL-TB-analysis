@@ -120,10 +120,10 @@ void ReadScurves(TString filename)
 
 }
 
-void savehistos(TString filename = ""){//TString filename, int slabadd){
+void savehistos(TString filename = "", TString date=""){//TString filename, int slabadd){
   
-
-  TString filename_input = "../"+filename+"/RateVsThresholdScan_"+filename+"_SLBoard.txt";
+  if(date=="") date=filename;
+  TString filename_input = "../"+date+"/RateVsThresholdScan_"+filename+"_SLBoard.txt";
   TGraphErrors *scurve[15][16][64];
 
   cout<<filename_input<<endl;
@@ -139,13 +139,13 @@ void savehistos(TString filename = ""){//TString filename, int slabadd){
 
 
  TCanvas *canvas[15];
-  TCanvas *canvas_asic[15][16];
+ TCanvas *canvas_asic[15][16];
 
   TFile *file_summary = new TFile("histos/scurves_"+filename+".root" , "RECREATE");
   file_summary->cd();
 
   for(int i=0; i<nslabs[0]; i++) {
-    canvas[i]= new TCanvas(TString::Format("canvas_slboard%i",idslab[0][i]),TString::Format("canvas_slboard%i",idslab[0][i]),1600,1000);
+    canvas[i]= new TCanvas(TString::Format("canvas_slbAdd%i",idslab[0][i]),TString::Format("canvas_slbAdd%i",idslab[0][i]),1600,1000);
     canvas[i]->Divide(4,4);
     
     //  TLegend *leg = new TLegend(0.6,0.7,0.9,0.9);
@@ -161,7 +161,7 @@ void savehistos(TString filename = ""){//TString filename, int slabadd){
 	  //	  if(iasic==0) leg->AddEntry(scurve[i][iasic][ichn],"HV=100V","l");
 	  scurve[i][iasic][ichn]->Draw("al");
 	}
-	scurve[i][iasic][ichn]->SetName(TString::Format("scurve_slboard%i_chip%i_chn%i",idslab[0][i],iasic,ichn));
+	scurve[i][iasic][ichn]->SetName(TString::Format("scurve_slbAdd%i_chip%i_chn%i",idslab[0][i],iasic,ichn));
 	file_summary->cd();
 	scurve[i][iasic][ichn]->Write();
 	

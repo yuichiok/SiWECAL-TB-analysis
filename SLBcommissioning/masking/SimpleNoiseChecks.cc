@@ -51,6 +51,10 @@ int SimpleNoiseChecks(TString filename_in="05182020", TString round="first", int
     if(iteration==5) triple_check(filename_in,iteration,voting,acqwindow, 1.,9999.,1.,1.); // DAC=300
     if(iteration==6) triple_check(filename_in,iteration,voting,acqwindow, 1.,9999.,2.,5.); // DAC=275
     if(iteration==7) triple_check(filename_in,iteration,voting,acqwindow, 1.,9999.,1.,2.5); // DAC=275
+    if(iteration>7 && iteration<11) triple_check(filename_in,iteration,voting,acqwindow, 1.,9999.,1.,2.5); // DAC=optimzied
+    if(iteration>10) triple_check(filename_in,iteration,voting,acqwindow, 5.,9999.,5.,5); // DAC=optimzied                                                                                                 
+
+
 
   }//
   

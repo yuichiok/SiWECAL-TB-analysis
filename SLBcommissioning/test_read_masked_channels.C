@@ -2,16 +2,31 @@
 
 #include "conf_struct.h"
 
-void test_read_masked_channels(TString filename="Run_Settings.txt", bool debug=true) {
-
-  read_configuration_file(filename,true);
+void test_read_masked_channels(TString filename="15102021/Run_Settings_DataTaking_TB2021_15102021", bool debug=true) {
+  read_configuration_file(filename+".txt",true);
 
   TH2F* mask_chip_chn[15];
   TH2F* mask_x_y[15];
 
   float totalmasked[15];
   float totalmasked_chip[15][16];
-  
+  int mapping_slab[15];
+  mapping_slab[0]=18;
+  mapping_slab[1]=23;
+  mapping_slab[2]=17;
+  mapping_slab[3]=22;//
+  mapping_slab[4]=25;
+  mapping_slab[5]=24;
+  mapping_slab[6]=31;
+  mapping_slab[7]=30;//
+  mapping_slab[8]=21;
+  mapping_slab[9]=20;//
+  mapping_slab[10]=19;//
+  mapping_slab[11]=15;
+  mapping_slab[12]=14;//
+  mapping_slab[13]=13;
+  mapping_slab[14]=16;
+
   int nslabs=15;
   for(int islab=0; islab<nslabs; islab++) {
     TString map_name="../mapping/fev10_chip_channel_x_y_mapping.txt";
@@ -52,14 +67,16 @@ void test_read_masked_channels(TString filename="Run_Settings.txt", bool debug=t
     //TColor::InvertPalette();
     canvas->Divide(1,2);
     canvas->cd(1);
+    mask_chip_chn[islab]->SetTitle(TString::Format("SLABd%i",mapping_slab[islab]));
     mask_chip_chn[islab]->GetXaxis()->SetTitle("CHIP");
     mask_chip_chn[islab]->GetYaxis()->SetTitle("CHANNEL");
     mask_chip_chn[islab]->Draw("col");
     canvas->cd(2);
+    mask_x_y[islab]->SetTitle(TString::Format("SLABd%i",mapping_slab[islab]));
     mask_x_y[islab]->GetXaxis()->SetTitle("x");
     mask_x_y[islab]->GetYaxis()->SetTitle("y");
     mask_x_y[islab]->Draw("col");
-    canvas->Print(TString::Format("masked_channels_slboard%i.eps",islab));
+    canvas->Print(TString::Format("masked_channels_SLAB%i.png",mapping_slab[islab]));
 
   }
 
