@@ -76,7 +76,7 @@ public :
    virtual void     Init(TTree *tree);
    // write file with masked channels
    // analysis of pedestal and writting of the file with pedestals per chi/channel/sca
-   virtual std::vector<std::array<float,6>> HoldscanAnalysis(int, int);
+  virtual std::vector<std::array<float,6>> HoldscanAnalysis(int, int, int);
    virtual std::vector<std::array<float,9>> InjectionAnalysis(int);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);

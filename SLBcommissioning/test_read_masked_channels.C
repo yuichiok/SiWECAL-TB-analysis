@@ -2,6 +2,7 @@
 
 #include "conf_struct.h"
 
+
 void test_read_masked_channels(TString filename="15102021/Run_Settings_DataTaking_TB2021_15102021", bool debug=true) {
   read_configuration_file(filename+".txt",true);
 
@@ -10,6 +11,7 @@ void test_read_masked_channels(TString filename="15102021/Run_Settings_DataTakin
 
   float totalmasked[15];
   float totalmasked_chip[15][16];
+
   int mapping_slab[15];
   mapping_slab[0]=18;
   mapping_slab[1]=23;
@@ -26,6 +28,10 @@ void test_read_masked_channels(TString filename="15102021/Run_Settings_DataTakin
   mapping_slab[12]=14;//
   mapping_slab[13]=13;
   mapping_slab[14]=16;
+
+
+  ofstream fout(filename+"_masked.txt",ios::out);
+  fout<<"#masked_chns_list layer chip chns (0=not masked, 1=masked)"<<endl;
 
   int nslabs=15;
   for(int islab=0; islab<nslabs; islab++) {
@@ -46,6 +52,7 @@ void test_read_masked_channels(TString filename="15102021/Run_Settings_DataTakin
     totalmasked[islab]=0;
     for(int ichip=0; ichip<16; ichip++) {
       totalmasked_chip[islab][ichip]=0;
+      fout<<islab<<" "<<ichip;
       for(int ichn=0; ichn<64; ichn++) {
 	if(detector.slab[0][islab].asu[0].skiroc[ichip].mask[ichn]==1) {
 	  totalmasked[islab]++;
@@ -55,7 +62,9 @@ void test_read_masked_channels(TString filename="15102021/Run_Settings_DataTakin
 	float msk= detector.slab[0][islab].asu[0].skiroc[ichip].mask[ichn]+0.001;
 	mask_chip_chn[islab]->Fill(ichip,ichn,msk);
 	mask_x_y[islab]->Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn],msk);
+	fout<<" "<<detector.slab[0][islab].asu[0].skiroc[ichip].mask[ichn];
       }
+      fout<<endl;
       cout<< "Skiroc idx:"<<ichip<<"  Masked cells:"<<100.*totalmasked_chip[islab][ichip]/64.<<"%"<<endl;
     }
     cout<< "TOTAL Masked cells:"<<100.*totalmasked[islab]/1024.<<"%"<<endl;
