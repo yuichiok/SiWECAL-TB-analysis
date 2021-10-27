@@ -31,19 +31,17 @@ except ImportError:
 
 
 class BCIDHandler:
-    def __init__(self, val_evt, delta_merge):
-        self.val_evt = val_evt
+    def __init__(self, bcid_skip_noisy_acquisition_start, delta_merge):
+        self.bcid_skip_noisy_acquisition_start = bcid_skip_noisy_acquisition_start
         self.delta_merge = delta_merge
         self.bad_bcid_value = -999
 
 
-    def _get_corrected_bcid(self, bcid):
-        if bcid < self.val_evt:
-            # TODO: I understand why bcid = -999 is the filler value from converter_SLB. But why is bcid < 50 not ok?
-            bcid = self.bad_bcid_value
-        elif bcid >= 4096:  # 4096 = 2^12
-            raise EventBuildingException("BCID Overflow:", bcid)
-        return bcid
+    def _get_corrected_bcids(self, bcids):
+        """Using corrected_bcid, these corrections should already be in place."""
+        bcids = np.array(bcids)
+        bcids[bcids < self.bcid_skip_noisy_acquisition_start] = self.bad_bcid_value
+        return bcids
 
 
     def _get_good_bcids(self, bcids, bad_bcids):
@@ -74,7 +72,7 @@ class BCIDHandler:
 
 
     def merge_bcids(self, bcids, bad_bcids):
-        bcids = [self._get_corrected_bcid(b) for b in bcids]
+        bcids = self._get_corrected_bcids(bcids)
         good_bcid_counts = self._get_good_bcids(bcids, bad_bcids)
         good_bcids = np.array(sorted(good_bcid_counts))
         delta_good_bcids = good_bcids[1:] - good_bcids[:-1]
@@ -87,7 +85,7 @@ class BCIDHandler:
             else:
                 good_bcid_groups.append([good_bcids[i]])
 
-        map_to_main_bcid_in_group = collections.defaultdict(lambda:self.bad_bcid_value)
+        map_to_main_bcid_in_group = collections.defaultdict(lambda: self.bad_bcid_value)
         for group in good_bcid_groups:
             main_bcid = self._choose_main_bcid_for_merger(group, good_bcid_counts)
             for bcid_in_group in group:
@@ -98,8 +96,7 @@ class BCIDHandler:
 
 
     def load_spill(self, spill_entry):
-        # TODO: Should corrected_bcid be used instead of bcid?
-        self.merged_bcid = self.merge_bcids(spill_entry.bcid, spill_entry.badbcid)
+        self.merged_bcid = self.merge_bcids(spill_entry.corrected_bcid, spill_entry.badbcid)
         self.spill_bcids = sorted(set(self.merged_bcid) - {self.bad_bcid_value})
 
     def previous_bcid(self, bcid):
@@ -308,7 +305,7 @@ class BuildEvents:
         b = self.out_arrays
         b["spill"][0] = spill
         bcid_handler = BCIDHandler(
-            self.ecal_config._N.bcid_val_event,
+            self.ecal_config._N.bcid_skip_noisy_acquisition_start,
             self.ecal_config._N.bcid_merge_delta,
         )
         bcid_handler.load_spill(entry)

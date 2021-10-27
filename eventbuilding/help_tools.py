@@ -18,8 +18,8 @@ class EcalNumbers:
             1: np.array([0, 2.1, 2.1, 4.2, 4.2, 0, 4.2, 2.1, 2.1, 0, 0, 0, 0, 0, 0]),
         }
 
-        self.bcid_val_event = 50
-        self.bcid_merge_delta = 30
+        self.bcid_skip_noisy_acquisition_start = 50
+        self.bcid_merge_delta = 3
         self.bcid_too_many_hits = 8000
 
         self.pedestal_min_average = 200
@@ -42,7 +42,7 @@ class EcalNumbers:
         assert all(type(w_conf) == np.ndarray for w_conf in n.w_config.values())
         assert all(len(w_conf) == n.n_slabs for w_conf in n.w_config.values())
 
-        assert type(n.bcid_val_event) == int
+        assert type(n.bcid_skip_noisy_acquisition_start) == int
         assert n.bcid_merge_delta >= 0
         assert type(n.bcid_too_many_hits) == int
 
