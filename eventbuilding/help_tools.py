@@ -55,6 +55,14 @@ class EcalNumbers:
 class EventBuildingException(Exception):
     pass
 
+dummy_config = dict(
+    mapping_file="mapping/fev10_chip_channel_x_y_mapping.txt",
+    mapping_file_cob="mapping/fev11_cob_chip_channel_x_y_mapping.txt",
+    pedestals_file="pedestals/pedestal_PROTO15_dummy.txt",
+    mip_calibration_file="mip_calib/MIP_PROTO15_dummy.txt",
+    masked_file="masked/masked_PROTO15_dummy.txt",
+)
+
 
 class EcalHit:
     def __init__(self, slab, chip, chan, sca, hg, lg, gain_hit_high, ecal_config):
@@ -122,19 +130,17 @@ class EcalConfig:
 
     def __init__(
         self,
-        commissioning_tag,
         w_config=1,
-        mapping_file="mapping/fev10_chip_channel_x_y_mapping.txt",
-        mapping_file_cob="mapping/fev11_cob_chip_channel_x_y_mapping.txt",
-        pedestals_file="pedestals/pedestal{tag}.txt",
-        mip_calibration_file="mip_calib/MIP{tag}.txt",
-        masked_file="masked/masked{tag}.txt",
+        mapping_file=dummy_config["mapping_file"],
+        mapping_file_cob=dummy_config["mapping_file_cob"],
+        pedestals_file=dummy_config["pedestals_file"],
+        mip_calibration_file=dummy_config["mip_calibration_file"],
+        masked_file=dummy_config["masked_file"],
         commissioning_folder=None,
         numbers=None,
         error_on_missing_config=True,
         verbose=False,
     ):
-        self._commissioning_tag = commissioning_tag
         self._verbose = verbose
         self._error_on_missing_config = error_on_missing_config
         if commissioning_folder:
@@ -180,8 +186,6 @@ class EcalConfig:
 
 
     def _get_lines(self, file_name):
-        if "{tag}" in file_name:
-            file_name = file_name.format(tag=self._commissioning_tag)
         if not os.path.isabs(file_name):
             file_name = os.path.join(self._commissioning_folder, file_name)
         if not os.path.exists(file_name):

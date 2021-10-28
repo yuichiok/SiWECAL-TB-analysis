@@ -39,7 +39,7 @@ class BCIDHandler:
 
     def _get_corrected_bcids(self, bcids):
         """Using corrected_bcid, these corrections should already be in place."""
-        bcids = np.array(bcids)
+        bcids = np.array(list(bcids))
         bcids[bcids < self.bcid_skip_noisy_acquisition_start] = self.bad_bcid_value
         return bcids
 
@@ -213,18 +213,18 @@ class BuildEvents:
     def __init__(
         self,
         file_name,
-        commissioning_tag,
         w_config=-1,
         max_entries=-1,
         out_file_name=None,
         commissioning_folder=None,
         ecal_numbers=None,  # Not provided in CLI. Mainly useful for debugging/changing.
+        **config_file_kws,
     ):
         self.ecal_config = EcalConfig(
-            commissioning_tag,
             w_config=w_config,
             commissioning_folder=commissioning_folder,
             numbers=ecal_numbers,
+            **config_file_kws,
         )
         self.file_name = file_name
         self.max_entries = max_entries
@@ -346,9 +346,11 @@ if __name__ == "__main__":
         description="Build an event-level rootfile (smaller) from the raw rootfile.",
     )
     parser.add_argument("file_name", help="The raw rootfile from converter_SLB")
-    parser.add_argument("commissioning_tag", help="E.g. _PROTO15_run050014", type=str)
     parser.add_argument("-n", "--max_entries", default=-1, type=int)
     parser.add_argument("-w", "--w_config", default=-1, type=int)
     parser.add_argument("-o", "--out_file_name", default=None)
     parser.add_argument("-c", "--commissioning_folder", default=None)
+    # Run ./build_events.py --help to see all options.
+    for config_option, config_value in dummy_config.items():
+        parser.add_argument("--" + config_option, default=config_value)
     BuildEvents(**vars(parser.parse_args())).build_events()
