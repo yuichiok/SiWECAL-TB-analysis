@@ -31,18 +31,21 @@ clean:
 #
 # Conversion raw .dat -> .root
 #
-DAT_PARTS:=$(patsubst ${RAW_DATA_DIR}/${RUN}.%.tar.gz,%,$(wildcard ${RAW_DATA_DIR}/${RUN}*.tar.gz))
+DAT_PARTS:=$(sort $(patsubst ${RAW_DATA_DIR}/${RUN}.%.tar.gz,%,$(wildcard ${RAW_DATA_DIR}/${RUN}*.tar.gz)))
 TMP_CONVERTED_PARTS=${TMP}/converted_parts
+TMP_RAW=${TMP}/raw
 CONVERTED_PARTS=$(addprefix ${TMP_CONVERTED_PARTS}/converted.,$(addsuffix .root,${DAT_PARTS}))
-${TMP_CONVERTED_PARTS}/converted.%.root : ${RAW_DATA_DIR}/${RUN}.%
+${TMP_CONVERTED_PARTS}/converted.%.root : ${TMP_RAW}/${RUN}.%
 	@mkdir -p ${TMP_CONVERTED_PARTS}
 	cd converter_SLB; root -l -q ConvertDataSL.cc\(\"$(word 1,$^)\",false,\"$@\"\)
 
-${RAW_DATA_DIR}/${RUN}.% : ${RAW_DATA_DIR}/${RUN}.%.tar.gz
-	tar xf $(word 1,$^) -C ${RAW_DATA_DIR}
+${TMP_RAW}/${RUN}.% : ${RAW_DATA_DIR}/${RUN}.%.tar.gz
+	@mkdir -p ${TMP_RAW}	
+	tar xf $(word 1,$^) -C ${TMP_RAW}
 
 ${DATA_CONVERTED} : ${CONVERTED_PARTS}
 	@echo "[Make] Combine the $(words $^) parts that were converted to .root"
+	@mkdir -p $(dir ${DATA_CONVERTED})
 	@if [ -f $@ ]; then rm $@; fi
 	hadd $@ $(sort $^)
 
@@ -64,11 +67,12 @@ ${CONVERTED_DIR}/${RUN}_build.root : ${DATA_CONVERTED} \
 #
 # Read mask from settings
 #
-${MASKED} : ${RAW_DATA_DIR}/Run_Settings.txt
+${MASKED} : ${TMP_RAW}/Run_Settings.txt
 	cd SLBcommissioning; root -l -q -b test_read_masked_channels_summary.C\(\"$(basename $^)\"\)
 	mv $(basename $^)_masked.txt $@
 
-%/Run_Settings.txt : %/Run_Settings.txt.tar.gz
+${TMP_RAW}/Run_Settings.txt : ${RAW_DATA_DIR}/Run_Settings.txt.tar.gz
+	@mkdir -p $(dir $@)
 	@tar xf $(word 1,$^) -C $(dir $@)
 
 # -----------------------------------------------------------------------------
