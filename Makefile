@@ -5,6 +5,7 @@ WOLFRAM_CONFIG=0
 SLABS=0 1 2 3 4 5 6 7 8 9 10 11 12 13 14
 # COBS=1 11 5 8
 COBS=
+MAX_ENTRIES_BUILD=-1
 
 # Depending on your setup, you might have to change these as well.
 RAW_DATA_DIR=/eos/project/s/siw-ecal/TB2021-11/commissioning/data/run_050XXX/${RUN}
@@ -58,12 +59,11 @@ ${DATA_CONVERTED} : ${CONVERTED_PARTS}
 ${CONVERTED_DIR}/${RUN}_build.root : ${DATA_CONVERTED} \
         $(PEDESTALS) $(MIP_CALIB) $(MASKED)
 	cd eventbuilding; ./build_events.py $(word 1,$^)\
-		--w_config ${WOLFRAM_CONFIG} --cob_positions__string "${COBS}"\
+		--w_config ${WOLFRAM_CONFIG} --cob_positions_string "${COBS}"\
 		--out_file_name $@\
 		--pedestals_file $(word 2,$^)\
 		--mip_calibration_file $(word 3,$^)\
-		--masked_file $(word 4,$^)  --max_entries 25
-
+		--masked_file $(word 4,$^)  --max_entries ${MAX_ENTRIES_BUILD}
 
 # -----------------------------------------------------------------------------
 #

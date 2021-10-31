@@ -204,7 +204,6 @@ class BuildEvents:
             "hit_x[nhit_chan]/F",
             "hit_y[nhit_chan]/F",
             "hit_z[nhit_chan]/F",
-            "hit_x0[nhit_chan]/F",
         ],
         "hit readout": [
             "hit_hg[nhit_chan]/F",
@@ -225,26 +224,30 @@ class BuildEvents:
         max_entries=-1,
         out_file_name=None,
         commissioning_folder=None,
-        cob_positions__string="",
+        cob_positions_string="",
         ecal_numbers=None,  # Not provided in CLI. Mainly useful for debugging/changing.
         **config_file_kws,
     ):
-        if cob_positions__string != "":
-            if ecal_numbers is None:
-                ecal_numbers = EcalNumbers()
-            cob_slabs = set(map(int, cob_positions__string.split(" ")))
-            ecal_numbers.cob_slabs = cob_slabs
+        self.file_name = file_name
+        self.w_config = w_config
+        self.max_entries = max_entries
+        self.out_file_name = out_file_name
+        self.event_counter = 0
+
+        self.in_tree = self._get_tree(file_name)
+        slabs = self._get_slabs(self.in_tree)
+        cob_slabs = set(map(int, filter(None, cob_positions_string.split(" "))))
+        if ecal_numbers is None:
+            ecal_numbers = EcalNumbers(slabs=slabs, cob_slabs=cob_slabs)
+        else:
+            assert ecal_numbers.slabs == slabs
+            assert ecal_numbers.cob_slabs == cob_slabs
 
         self.ecal_config = EcalConfig(
-            w_config=w_config,
             commissioning_folder=commissioning_folder,
             numbers=ecal_numbers,
             **config_file_kws,
         )
-        self.file_name = file_name
-        self.max_entries = max_entries
-        self.out_file_name = out_file_name
-        self.event_counter = 0
 
 
     def _get_tree(self, file_name):
@@ -256,6 +259,19 @@ class BuildEvents:
             ex_txt = "Tree %s not found in %s" %(self._in_tree_name, file_name)
             raise EventBuildingException(ex_txt)
         return self.tree
+
+    
+    def _get_slabs(self, tree):
+        tree.Draw("slot >> slot_hist", "", "goff")
+        hist = rt.gDirectory.Get("slot_hist") 
+        slabs = []
+        for i in range(1, hist.GetNbinsX() + 1):  # 0 is undeflow bin.
+            if hist.GetBinContent(i) > 0:
+                slabs.append(int(np.ceil(hist.GetBinLowEdge(i))))
+        if -1 in slabs: 
+            slabs.remove(-1)  # Used to indicate dummy entries.
+        assert len(set(slabs)) == len(slabs)
+        return slabs
 
 
     def _add_branch(self, tag):
@@ -291,7 +307,6 @@ class BuildEvents:
 
     def _write_and_close(self):
         self.out_tree.Write()
-        # self.out_tree.Print()
         print("# Created tree with %i events." % self.out_tree.GetEntries())
         self.out_file.Close()
         self.in_file.Close()
@@ -305,6 +320,7 @@ class BuildEvents:
         self.in_tree = self._get_tree(file_name)
         self.out_arrays = {}
         self.out_tree = self._create_out_tree(out_file_name, file_name)
+        self._fill_w_config_hist()
 
         if max_entries is None:
             max_entries = self.max_entries
@@ -314,6 +330,29 @@ class BuildEvents:
         for i_spill, entry in get_tree_spills(self.in_tree, max_entries):
             self._fill_spill(i_spill, entry)
         self._write_and_close()
+
+
+    def _fill_w_config_hist(self):
+        slabs = self.ecal_config._N.slabs
+        bin_centers = np.array(slabs, dtype="float64")
+        bin_edge_candidates = np.concatenate([bin_centers - 0.5, bin_centers + 0.5])
+        bin_edges = np.sort(np.unique(bin_edge_candidates))
+
+        w_hist = rt.TH1F("w_in_front","w_in_front",len(bin_edges) - 1, bin_edges)
+        if self.w_config in self.ecal_config._N.w_config_options.keys():
+            abs_thick = self.ecal_config._N.w_config_options[self.w_config]
+        elif self.w_config == 0:
+            abs_thick = np.zeros_like(slabs)
+        else:
+            raise EventBuildingException("Not a valid W config:", self.w_config)
+        assert len(slabs) == len(abs_thick)
+        for i in range(len(slabs)):
+            w_hist.Fill(slabs[i], abs_thick[i])
+        # w_x0 = 1 / 3.5  # 0.56 #Xo per mm of W.
+        # pos_x0 = np.cumsum(abs_thick) * w_x0
+        w_hist.Write()
+        print("W config %i used." %self.w_config, end=" ")
+        print("Absolute thickness:", abs_thick)
 
 
     def _fill_spill(self, spill, entry):
@@ -365,7 +404,7 @@ if __name__ == "__main__":
     parser.add_argument("-w", "--w_config", default=-1, type=int)
     parser.add_argument("-o", "--out_file_name", default=None)
     parser.add_argument("-c", "--commissioning_folder", default=None)
-    parser.add_argument("--cob_positions__string", default="")
+    parser.add_argument("--cob_positions_string", default="")
     # Run ./build_events.py --help to see all options.
     for config_option, config_value in dummy_config.items():
         parser.add_argument("--" + config_option, default=config_value)
