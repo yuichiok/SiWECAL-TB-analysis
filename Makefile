@@ -79,7 +79,7 @@ ${TMP_BUILD_PARTS}/build.%.root : ${TMP_CONVERTED_PARTS}/converted.%.root \
 		--masked_file $(word 4,$^)  --max_entries ${MAX_ENTRIES_BUILD}
 		
 build_from_parts : ${BUILD_PARTS}
-	@if [ -f $@ ]; then hadd ${CONVERTED_DIR}/${RUN}_build.root $(sort $^); fi
+	@if [ ! -f ${CONVERTED_DIR}/${RUN}_build.root ]; then hadd ${CONVERTED_DIR}/${RUN}_build.root $(sort $^); fi
 
 # -----------------------------------------------------------------------------
 #

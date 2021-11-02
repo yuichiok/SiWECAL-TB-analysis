@@ -27,8 +27,8 @@ Usage example:
 ```bash
 source /cvmfs/sft.cern.ch/lcg/views/LCG_99/x86_64-centos7-gcc10-opt/setup.sh
 make build -j8 \
-  WOLFRAM_CONFIG=0 RAW_DATA_DIR=/data_ilc/flc/ECAL/cosmics/TB2021-11 \
-  run_050016_10192021_21h49min_Ascii
+  WOLFRAM_CONFIG=0 \
+  RAW_DATA_DIR=/data_ilc/flc/ECAL/cosmics/TB2021-11/run_050016_10192021_21h49min_Ascii
 ```
 
 It is recommended to split the make run into parts:
