@@ -1,41 +1,69 @@
 #!/bin/bash
 
-run="run_050010"
-run_file="converted.dat"
-output=${PWD}"/../converter_SLB/convertedfiles/run_050010_07172021_13h52min_Ascii/"
-
+run=$1
+conversion=$2
+shifter=$3
+run_file="converted_run"
+output=${PWD}"/../converter_SLB/convertedfiles/run_"${run}"/"
 
 initial_folder=$PWD
 
-for i in {388..1774}
+if [ "$conversion" = true ]; then
+    source conversion_run_050xxx.sh $run
+fi
+
+cd $initial_folder
+
+j=0
+for i in {0..999}
 do
-    j="000"$i
-    if [ $i -gt 9 ]; then
-        j="00"$i
-    fi
     
-    if [ $i -gt 99 ]; then
-        j="0"$i
+    if [ $i -gt 999 ]
+    then
+        i0=$i
+    elif [ $i -gt 99 ]
+    then
+        i0=0$i
+    elif [ $i -gt 9 ]
+    then
+        i0=00$i
+    else
+        i0=000$i
     fi
 
-    if [ $i -gt 999 ]; then
-        j=$i
+    if [ $j -gt 999 ]
+    then
+        i1=$j
+    elif [ $j -gt 99 ]
+    then
+        i1=0$j
+    elif [ $j -gt 9 ]
+    then
+        i1=00$j
+    else
+        i1=000$j
     fi
-    #conversion
-    #analysis
-    cd $initial_folder
-    root -l -q DummyDisplay.cc\(\"${output}/${run_file}_$j\",\"${run}_$j\",7\) &
-    root -l -q DummyDisplay.cc\(\"${output}/${run_file}_$j\",\"${run}_$j\",10\) &
-    root -l -q Proto.cc\(\"${output}/${run_file}_$j\",\"${run}_$j\",\"retriggers\"\)
+    FILE0=${output}"converted_run_"${run}".dat_"$i0".root"
+    FILE1=${output}"converted_run_"${run}".dat_"$i1".root"
+    echo $FILE0 $FILE1
+    if [ -f "$FILE0" ]; then
+        if [ -f "$FILE1" ]; then
+	    cd $initial_folder
+	    if [ "$shifter" = true ]; then
+		root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",7,true\)
+	    else
+		root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",7,false\)
+	    fi
+	    cd -
+	    j=$((i+1))
+        else
+            break
+        fi
+    fi
 done
 
 cd results_monitoring
-source hadd.sh "Monitoring_summary" $run &
-source hadd.sh "HitMapsSimpleTracks" $run
+source hadd.sh "Monitoring_summary" $run 
+#source hadd.sh "HitMapsSimpleTracks" $run
 cd -
-
-cd results_retriggers
-source hadd.sh $run &
-
-#source analyis_run_050xxx_mips.sh
 

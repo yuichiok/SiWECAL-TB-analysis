@@ -1266,7 +1266,7 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
   trig->Write();
   retrig_start->Write();
   retrig->Write();
-  /*
+  
   TCanvas *c1 = new TCanvas("hitmaps_xy","hitmaps_xy",1800,900);
   c1->Divide(4,4);
   for(int i=0; i<n_SLB; i++) {
@@ -1393,7 +1393,7 @@ void DecodedSLBAnalysis::Monitoring(TString outputname="testMonitoring", int fre
   c5->Modified();
   c5->Update();
   if(shifter==true) c5->WaitPrimitive();
-  */
+  
   monitoringfile_summary->Close();
 
 }
