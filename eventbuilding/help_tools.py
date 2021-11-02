@@ -30,7 +30,7 @@ class EcalNumbers:
         self.bcid_too_many_hits = 8000
 
         self.pedestal_min_average = 200
-        self.pedestal_min_scas = 6
+        self.pedestal_min_scas = 3
         self.pedestal_min_value = 10
         self.mip_cutoff = 0.5
         self.validate_ecal_numbers(self)
@@ -113,20 +113,19 @@ class EcalHit:
 
     def _pedestal_subtraction(self):
         pedestals_per_sca = self._ecal_config.pedestal_map[self._idx_slab][self.chip][self.chan]
-        is_good_pedestal = pedestals_per_sca > self._ecal_config._N.pedestal_min_average
-        if sum(is_good_pedestal) < self._ecal_config._N.pedestal_min_scas:
-            self.isCommissioned = 0
 
         sca_has_valid_pedestal = pedestals_per_sca[self.sca] > self._ecal_config._N.pedestal_min_value
         if sca_has_valid_pedestal:
             self.hg -= pedestals_per_sca[self.sca]
         else:
+            is_good_pedestal = pedestals_per_sca > self._ecal_config._N.pedestal_min_average
             if sum(is_good_pedestal) > 0:
                 pedestal_average = np.mean(pedestals_per_sca[is_good_pedestal])
             else:
                 pedestal_average = 0
+            if sum(is_good_pedestal) < self._ecal_config._N.pedestal_min_scas:
+                self.isCommissioned = 0
             self.hg -= pedestal_average
-            self.isCommissioned = 0
 
 
     def _mip_calibration(self):
