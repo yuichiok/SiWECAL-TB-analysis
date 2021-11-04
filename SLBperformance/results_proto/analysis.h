@@ -320,13 +320,12 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int la
 	if(temp==NULL){
     delete canvastemp; continue;
   }
-	temp->Rebin(4);
+	// temp->Rebin(4);
 
 	MIPN->Fill(map_pointX[i][j],map_pointY[i][j],temp->GetEntries());
-
 	 Double_t fr[2];
 	 Double_t sv[4], pllo[4], plhi[4], fp[4], fpe[4];   
-	 pllo[0]=1.0; pllo[1]=15; pllo[2]=1.0; pllo[3]=1;
+	 pllo[0]=0.5; pllo[1]=15; pllo[2]=1.0; pllo[3]=0;
 	 plhi[0]=100.0; plhi[1]=100.0; plhi[2]=100000000.0; plhi[3]=20.0;
 	 Double_t chisqr;
 	 Int_t    ndf;
