@@ -3,19 +3,20 @@
 run=$1
 conversion=$2
 shifter=$3
+debug=0
 run_file="converted_run"
 output=${PWD}"/../converter_SLB/convertedfiles/run_"${run}"/"
 
 initial_folder=$PWD
 
-if [ "$conversion" = true ]; then
+if [ "$conversion" -gt 0 ]; then
     source conversion_run_050xxx.sh $run
 fi
 
 cd $initial_folder
 
 j=0
-for i in {0..999}
+for i in {0..999..10}
 do
     
     if [ $i -gt 999 ]
@@ -50,9 +51,19 @@ do
         if [ -f "$FILE1" ]; then
 	    cd $initial_folder
 	    if [ "$shifter" = true ]; then
-		root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",7,true\)
+		if [ $((j%2)) -eq 0 ]
+		then
+		    root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",7,true,$debug\) &
+		else
+		    root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",7,true,$debug\)
+		fi
 	    else
-		root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",7,false\)
+		if [ $((j%2)) -eq 0 ]
+                then
+		    root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",7,false,$debug\) &
+		else
+		    root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",7,false,$debug\)
+                fi
 	    fi
 	    cd -
 	    j=$((i+1))
@@ -62,8 +73,14 @@ do
     fi
 done
 
+sleep 20
+
 cd results_monitoring
-source hadd.sh "Monitoring_summary" $run 
-#source hadd.sh "HitMapsSimpleTracks" $run
-cd -
+if [ "$debug" = true ]; then
+    source haddTB.sh "Monitoring_summary" $run
+else
+    source haddTB.sh "HitMapsSimpleTracks" $run
+fi
+
+cd ${initial_folder}
 

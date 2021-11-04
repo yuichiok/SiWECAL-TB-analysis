@@ -37,12 +37,12 @@ vector<TString>* list_files(const char *dirname, const char *ext=".dat")
 	return filenames;
 }
 
-void ConvertDirectorySL_TB(string dirname, bool zerosupression=false, TString run="0", TString outputname="default")
+void ConvertDirectorySL_TB(string dirname, bool zerosupression=false, TString run="0", TString outputname="default", int jinitial=0)
 {
 
   std::cout << "dirname " << dirname << std::endl; 
 
-  for(int j=0; j<5000; j++) {
+  for(int j=jinitial; j<5000; j+=3) {
     //for(int j=0; j<1; j++) {
     
     TString filen=".dat";

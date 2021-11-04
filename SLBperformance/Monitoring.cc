@@ -4,7 +4,7 @@
 #include "TFile.h"
 #include "DecodedSLBAnalysis.cc"
 
-void Monitoring(TString filename_in, TString output="", int freq=1, bool shifter=false){
+void Monitoring(TString filename_in, TString output="", int freq=1, bool shifter=false, bool debug=false){
 
 
   filename_in=filename_in+".root";
@@ -19,7 +19,8 @@ void Monitoring(TString filename_in, TString output="", int freq=1, bool shifter
   }
 
   //  ss.n_layers=3;
-  ss.Monitoring(output,freq,shifter);
+  if(debug==true) ss.Monitoring(output,freq,shifter);
+  else ss.HitMapsSimpleTracks(output,10);
   //ss.SynchronizationStudies(output,freq,shifter); 
   if(shifter==false) gSystem->Exit(0);
 

@@ -21,7 +21,11 @@ else
 fi
 
 cd ../converter_SLB
-root -l -q ConvertDirectorySL_TB.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/run_${run}\"\)
+
+root -l -q ConvertDirectorySL_TB.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/run_${run}\",2\) &
+root -l -q ConvertDirectorySL_TB.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/run_${run}\",1\) &
+root -l -q ConvertDirectorySL_TB.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/run_${run}\",0\)
+
 cd -
 
 
