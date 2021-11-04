@@ -3,7 +3,6 @@ from __future__ import print_function
 
 import argparse
 import collections
-import sys
 import numpy as np
 import ROOT as rt
 from array import array
@@ -22,11 +21,20 @@ except ImportError:
     def get_tree_spills(tree, max_entries):
         print("# Going to analyze %i entries..." %max_entries)
         print("# For better progress information: `pip install tqdm`.")
+        progress_bar = ""
         for i, spill in enumerate(tree):
             if i > max_entries:
                 break
-            if i%100 == 0:
-                print("Spill %i" %i)
+            if i%10 == 0:
+                if (bar_width * i / max_entries > len(progress_bar)):
+                    progress_bar += "#"
+                print("# Build events [{}] Spill {}/{}".format(
+                        progress_bar.ljust(30),
+                        str(i).rjust(len(str(max_entries))), 
+                        max_entries,
+                    ),
+                    end="\r",
+                )
             yield i, spill
 
 
