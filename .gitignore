@@ -44,3 +44,5 @@
 *_Ascii*
 *.log
 *.eps
+
+build/*

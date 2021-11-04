@@ -117,6 +117,7 @@ ${PEDESTALS} : ${PEDESTAL_ROOT}
 #
 MIP_PREFIX=MIPs_15_layers_
 MIP_ROOT=${PWD}/SLBperformance/results_mipcalibration/${MIP_PREFIX}${COMMISSIONING_TAG}.root
+MIP_ROOT_IN_PROTO_FOLDER=${PWD}/SLBperformance/results_proto/${MIP_PREFIX}${COMMISSIONING_TAG}.root
 ${MIP_ROOT} : ${DATA_CONVERTED} ${PEDESTALS}
 	@echo "[Make] Calibrate MIPs"
 	cd SLBperformance; root -l -q Proto.cc\(\"$(basename $(word 1,$^))\",\"${COMMISSIONING_TAG}\",\"mip\",\"$(word 2,$^)\"\)
@@ -129,11 +130,10 @@ ${MIP_CALIB} : $(addprefix SLBperformance/results_proto/MIPs_layer_,$(addsuffix 
 		tail -n+3 $${layer_calib} >> $@;\
 	done
 
-# SLBperformance/results_proto/plots/layer_%_${COMMISSIONING_TAG}.root : ${MIP_ROOT}
-SLBperformance/results_proto/MIPs_layer_%_${COMMISSIONING_TAG} : ${MIP_ROOT}
-	@if ! [ -e SLBperformance/results_proto/${MIP_PREFIX}${COMMISSIONING_TAG}.root ];then\
-		cp ${MIP_ROOT} SLBperformance/results_proto/${MIP_PREFIX}${COMMISSIONING_TAG}.root;\
-	fi
+${MIP_ROOT_IN_PROTO_FOLDER} : ${MIP_ROOT}
+	cp ${MIP_ROOT} SLBperformance/results_proto/${MIP_PREFIX}${COMMISSIONING_TAG}.root
+	
+SLBperformance/results_proto/MIPs_layer_%_${COMMISSIONING_TAG} : ${MIP_ROOT_IN_PROTO_FOLDER}
 	@echo "[Make] MIP for slab #$*"
 	cd SLBperformance/results_proto; root -l -q -b analysis.cc\(\"${COMMISSIONING_TAG}\",$*\)
 
