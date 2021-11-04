@@ -328,15 +328,26 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int la
 	 Double_t sv[4], pllo[4], plhi[4], fp[4], fpe[4];   
 	 pllo[0]=1.0; pllo[1]=15; pllo[2]=1.0; pllo[3]=1;
 	 plhi[0]=100.0; plhi[1]=100.0; plhi[2]=100000000.0; plhi[3]=20.0;
-	 sv[0]=15.0;
 	 Double_t chisqr;
 	 Int_t    ndf;
-
-	 
-	 if(temp->GetEntries()>10){
-	   fr[0]=15;
-	   fr[1]=150;//fr[0]+0.5*temp->GetRMS();
+   
+	fr[0]=15;
+	fr[1]=150;//fr[0]+0.5*temp->GetRMS();
+	 temp->GetXaxis()->SetRangeUser(fr[0], fr[1]);
+	 if(temp->Integral() > 10){ // At least 10 entries in the fit range.
+     // Temporarily reset the hist range for more robust starting values.
+     temp->GetXaxis()->SetRangeUser(fr[0], fr[1]);
+	   sv[0] = temp->GetRMS() * 0.25;
+	   sv[1] = temp->GetMean() * 0.67;
+	   sv[2] = temp->Integral("width") * 1.2;
+	   sv[3] = temp->GetRMS()* 0.1;
 	   TF1 *fitsnr_temp=langaufit(temp,fr,sv,pllo,plhi,fp,fpe,&chisqr,&ndf);
+     //std::cout << layer << "  " << i << " " << j << std::endl << std::flush;
+     for (int k = 0; k < 4; k++) {
+       if ((sv[k] >= pllo[k]) && (sv[k] <= plhi[k])) continue;
+       std::cout << "Langaus fit parameter " << k << " has starting value " << sv[k] 
+            <<  " outside the range [" << pllo[k] << ", " << plhi[k] << "]!" << std::endl;
+     }
 	
 	   double mpv=fitsnr_temp->GetParameter(1);
 	   double empv=fitsnr_temp->GetParError(1);
