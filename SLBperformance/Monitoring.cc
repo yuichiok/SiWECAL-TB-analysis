@@ -4,24 +4,23 @@
 #include "TFile.h"
 #include "DecodedSLBAnalysis.cc"
 
-void Monitoring(TString filename_in, TString output="", int freq=1, bool shifter=false){
+void Monitoring(TString filename_in, TString output="", int freq=1, bool shifter=false, bool debug=false){
 
 
   filename_in=filename_in+".root";
   cout<<" Monitoring of file: "<<filename_in<<endl;
   DecodedSLBAnalysis ss(filename_in);
 
-  TString map="/home/calice/TB2020/commissioning/SiWECAL-TB-analysis/mapping/fev10_chip_channel_x_y_mapping.txt";
+  TString map;
 
   for(int i_layer=0; i_layer<15; i_layer++) {
-    if(i_layer==8 || i_layer==12) map="../mapping/fev11_cob_chip_channel_x_y_mapping.txt";
-    else map="../mapping/fev10_chip_channel_x_y_mapping.txt"; 
-    
+    map="../mapping/fev10_chip_channel_x_y_mapping.txt"; 
     ss.ReadMap(map,i_layer);
   }
 
   //  ss.n_layers=3;
-  ss.Monitoring(output,freq,shifter);
+  if(debug==true) ss.Monitoring(output,freq,shifter);
+  else ss.HitMapsSimpleTracks(output,10);
   //ss.SynchronizationStudies(output,freq,shifter); 
   if(shifter==false) gSystem->Exit(0);
 
