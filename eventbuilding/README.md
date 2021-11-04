@@ -23,8 +23,12 @@ For an exhaustive list of steering options, see the program's help:
 python buildevents.py --help
 ```
 
-The top-level [`Makefile`](../Makefile) demonstrates the whole data preparation chain,
+The top-level [`cosmics.mk`](../cosmics.mk) Makefile demonstrates the whole data preparation chain,
 starting with the raw `.dat` files from the DAQ.
+
+Note that this Makefile is not intended to be used automatically from raw to build.
+Instead, use the intermediate steps that are provided and confirm their results
+before continuing to the next step.
 
 ## Features
 
