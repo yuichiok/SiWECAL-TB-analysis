@@ -86,6 +86,8 @@ class BCIDHandler:
         delta_good_bcids = good_bcids[1:] - good_bcids[:-1]
         merge_with_following = delta_good_bcids <= self.delta_merge
 
+        if len(good_bcids) == 0: 
+            return np.full_like(bcids, self.bad_bcid_value)
         good_bcid_groups = [[good_bcids[0]]]
         for i, do_merge in enumerate(merge_with_following, start=1):
             if do_merge:

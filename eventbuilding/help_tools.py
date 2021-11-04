@@ -87,7 +87,7 @@ class EcalHit:
         self._idx_slab = self._ecal_config._N.slabs.index(self.slab)
 
         self.isMasked = int(self._ecal_config.masked_map[self._idx_slab][self.chip][self.chan])
-        self.isCommissioned = 1 if self.isMasked is 0 else 0
+        self.isCommissioned = 1 if self.isMasked == 0 else 0
         self._gain_hit_high = gain_hit_high
 
         self._set_positions()

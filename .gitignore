@@ -46,3 +46,4 @@
 *.eps
 
 build/*
+SLBperformance/results_proto/MIPs_layer*

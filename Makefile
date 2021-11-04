@@ -65,6 +65,22 @@ ${CONVERTED_DIR}/${RUN}_build.root : ${DATA_CONVERTED} \
 		--mip_calibration_file $(word 3,$^)\
 		--masked_file $(word 4,$^)  --max_entries ${MAX_ENTRIES_BUILD}
 
+# Replicate the building procedure, but on each partical converted file -> batch/multiprocessing.
+TMP_BUILD_PARTS=${TMP}/build_parts
+BUILD_PARTS=$(addprefix ${TMP_BUILD_PARTS}/build.,$(addsuffix .root,${DAT_PARTS}))
+${TMP_BUILD_PARTS}/build.%.root : ${TMP_CONVERTED_PARTS}/converted.%.root \
+        $(PEDESTALS) $(MIP_CALIB) $(MASKED)
+	@mkdir -p ${TMP_BUILD_PARTS}
+	cd eventbuilding; ./build_events.py $(word 1,$^)\
+		--w_config ${WOLFRAM_CONFIG} --cob_positions_string "${COBS}"\
+		--out_file_name $@\
+		--pedestals_file $(word 2,$^)\
+		--mip_calibration_file $(word 3,$^)\
+		--masked_file $(word 4,$^)  --max_entries ${MAX_ENTRIES_BUILD}
+		
+build_from_parts : ${BUILD_PARTS}
+	@if [ -f $@ ]; then hadd ${CONVERTED_DIR}/${RUN}_build.root $(sort $^); fi
+
 # -----------------------------------------------------------------------------
 #
 # Read mask from settings
