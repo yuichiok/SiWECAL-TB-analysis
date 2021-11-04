@@ -10,7 +10,7 @@ class EcalNumbers:
         self.n_scas = 15
         self.n_channels = 64
         self.n_slabs = 15  # Can be overwritten in CLI.
-        self.cob_slabs = {5, 8}  # TODO: Check the COB positions.
+        self.cob_slabs = {}
 
         # TODO What are the real pos_z and Tungsten values for 15 slabs?
         self.pos_z = np.array([0, 2, 4, 6, 8, 9, 12, 14, 16, 18, 20, 22, 24, 26, 28]) * 15 # mm gap.

@@ -26,7 +26,7 @@ except ImportError:
             if i > max_entries:
                 break
             if i%10 == 0:
-                if (bar_width * i / max_entries > len(progress_bar)):
+                if (30 * i / max_entries > len(progress_bar)):
                     progress_bar += "#"
                 print("# Build events [{}] Spill {}/{}".format(
                         progress_bar.ljust(30),
@@ -225,9 +225,16 @@ class BuildEvents:
         max_entries=-1,
         out_file_name=None,
         commissioning_folder=None,
+        cob_positions__string="",
         ecal_numbers=None,  # Not provided in CLI. Mainly useful for debugging/changing.
         **config_file_kws,
     ):
+        if cob_positions__string != "":
+            if ecal_numbers is None:
+                ecal_numbers = EcalNumbers()
+            cob_slabs = set(map(int, cob_positions__string.split(" ")))
+            ecal_numbers.cob_slabs = cob_slabs
+
         self.ecal_config = EcalConfig(
             w_config=w_config,
             commissioning_folder=commissioning_folder,
@@ -358,6 +365,7 @@ if __name__ == "__main__":
     parser.add_argument("-w", "--w_config", default=-1, type=int)
     parser.add_argument("-o", "--out_file_name", default=None)
     parser.add_argument("-c", "--commissioning_folder", default=None)
+    parser.add_argument("--cob_positions__string", default="")
     # Run ./build_events.py --help to see all options.
     for config_option, config_value in dummy_config.items():
         parser.add_argument("--" + config_option, default=config_value)
