@@ -340,9 +340,8 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int la
 	   double empv=fitsnr_temp->GetParError(1);
 	   double wmpv=fitsnr_temp->GetParameter(0);
 	   double chi2ndf=0;
+	   if(ndf > 0) chi2ndf = chisqr / ndf;
 	   fout_mip<<layer<<" "<<i<<" "<<j<<" "<<mpv<<" "<<empv<<" "<<wmpv<<" "<<chi2ndf<<" "<<temp->GetEntries()<<"\n";
-
-	   if(ndf>0) chi2ndf=chisqr/ndf;
 
 	   MIPM->Fill(i,j,mpv);
 	   MIPM_xy->Fill(map_pointX[i][j],map_pointY[i][j],mpv);
@@ -436,6 +435,5 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int la
   delete  canvas;
   delete  canvas2;
   file->Close();
-  
+  std::cout << "Finished the MIP analysis for layer " << layer << std::setw(50) << " " << std::endl;
 }
-
