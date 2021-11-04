@@ -317,7 +317,9 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int la
 	canvastemp->cd();
 	//GetGoodEntries
 	TH1F *temp=(TH1F*)_file0->Get(TString::Format("layer_%i/charge_layer%i_chip%i_chn%i",layer,layer,i,j));
-	if(temp==NULL) continue;
+	if(temp==NULL){
+    delete canvastemp; continue;
+  }
 	temp->Rebin(4);
 
 	MIPN->Fill(map_pointX[i][j],map_pointY[i][j],temp->GetEntries());
@@ -366,6 +368,7 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int la
 	 } else {
            fout_mip<<layer<<" "<<i<<" "<<j<<" "<<0<<" "<<0<<" "<<0<<" "<<0<<" "<<0<<"\n";
 	 }
+  delete canvastemp;
       }
       file->cd();
       //canvas_mip->Print(TString::Format("plots/MIPs_%s_layer_%i_chip%i.eps",run.Data(),layer,i));
