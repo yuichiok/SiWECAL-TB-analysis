@@ -100,7 +100,7 @@ public :
    virtual void     ReadMap(TString filename, int slboard);
    virtual void     ReadMasked(TString filename);
    virtual void     ReadPedestals(TString filename);
-   virtual void     ReadPedestalsProto(TString filename);
+   virtual void     ReadPedestalsProto(TString filename, bool invertedordering);
    //Monitoring
    virtual void    SlowControlMonitoring(TString outputname);
    virtual void     Monitoring(TString outputname, int freq, bool shifter);

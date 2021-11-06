@@ -751,7 +751,7 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", TString analysis_t
       
 
     if(analysis_type=="mip") {
-      ReadPedestalsProto(pedestal_file);
+      ReadPedestalsProto(pedestal_file,true);
     }
     // -----------------------------------------------------------------------------------------------------
     // Signal readout
@@ -1812,7 +1812,7 @@ void DecodedSLBAnalysis::SignalAnalysis(int i_layer, TString outputname="", int 
 
 }
 
-void DecodedSLBAnalysis::ReadPedestalsProto(TString filename) 
+void DecodedSLBAnalysis::ReadPedestalsProto(TString filename, bool invertedordering=true) 
 {
   std::ifstream reading_file(filename);
   if(!reading_file){
@@ -1871,10 +1871,16 @@ void DecodedSLBAnalysis::ReadPedestalsProto(TString filename)
     reading_file >> tmp_layer >> tmp_chip >> tmp_channel >> tmp_ped[0] >> tmp_error[0] >> tmp_width[0] >> tmp_ped[1] >> tmp_error[1] >> tmp_width[1] >> tmp_ped[2] >> tmp_error[2] >> tmp_width[2] >> tmp_ped[3] >> tmp_error[3] >> tmp_width[3] >> tmp_ped[4] >> tmp_error[4] >> tmp_width[4] >> tmp_ped[5] >> tmp_error[5] >> tmp_width[5] >> tmp_ped[6] >> tmp_error[6] >> tmp_width[6] >> tmp_ped[7] >> tmp_error[7] >> tmp_width[7] >> tmp_ped[8] >> tmp_error[8] >> tmp_width[8] >> tmp_ped[9] >> tmp_error[9] >> tmp_width[9] >> tmp_ped[10] >> tmp_error[10] >> tmp_width[10] >> tmp_ped[11] >> tmp_error[11] >> tmp_width[11] >> tmp_ped[12] >> tmp_error[12] >> tmp_width[12] >> tmp_ped[13] >> tmp_error[13] >> tmp_width[13] >> tmp_ped[14] >> tmp_error[14] >> tmp_width[14];
     //    cout<<tmp_layer<<" "<<tmp_chip <<" "<< tmp_channel << " "<< tmp_ped[0]<<endl;                                                                                                                                                                                               
     for(int isca=0; isca<15; isca++) {
-      if(tmp_ped[isca]>0. ){//&& (tmp_error[isca]<ped_error.at(tmp_chip).at(tmp_channel).at(isca) || ped_error.at(tmp_chip).at(tmp_channel).at(isca)==0) ){                                                                                                          
-        ped_mean_slboard.at(tmp_layer).at(tmp_chip).at(tmp_channel).at(isca)=tmp_ped[isca];
-        ped_error_slboard.at(tmp_layer).at(tmp_chip).at(tmp_channel).at(isca)=tmp_error[isca];
-        ped_width_slboard.at(tmp_layer).at(tmp_chip).at(tmp_channel).at(isca)=tmp_width[isca];
+      if(tmp_ped[isca]>0. ){//&& (tmp_error[isca]<ped_error.at(tmp_chip).at(tmp_channel).at(isca) || ped_error.at(tmp_chip).at(tmp_channel).at(isca)==0) ){
+	if(invertedordering==false) {
+	  ped_mean_slboard.at(tmp_layer).at(tmp_chip).at(tmp_channel).at(isca)=tmp_ped[isca];
+	  ped_error_slboard.at(tmp_layer).at(tmp_chip).at(tmp_channel).at(isca)=tmp_error[isca];
+	  ped_width_slboard.at(tmp_layer).at(tmp_chip).at(tmp_channel).at(isca)=tmp_width[isca];
+	} else {
+	  ped_mean_slboard.at(14-tmp_layer).at(tmp_chip).at(tmp_channel).at(isca)=tmp_ped[isca];
+	  ped_error_slboard.at(14-tmp_layer).at(tmp_chip).at(tmp_channel).at(isca)=tmp_error[isca];
+	  ped_width_slboard.at(14-tmp_layer).at(tmp_chip).at(tmp_channel).at(isca)=tmp_width[isca];
+	}
       }
     }
 
