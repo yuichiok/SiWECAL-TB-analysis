@@ -30,24 +30,17 @@ std::array<int,4096> DecodedSLBAnalysis::SimpleCoincidenceTagger(int jentry, int
       for(int isca=0; isca<15; isca++) {
 	if(bcid[islboard][ichip][isca]<0) break; //not include elements with no value (-999)
 
-	if( bcid[islboard][ichip][isca]>5 && badbcid[islboard][ichip][isca]==0 && nhits[islboard][ichip][isca]<(maxnhit+1)) {
-	  bool gooddata=true;
-	  for(int i=0; i<64; i++) {
-	    if(charge_hiGain[islboard][ichip][isca][i]<150) {
-	      gooddata=false;
-	      break;
-	    }
-	  }
-	  if(gooddata==true)  bcid_seen_slb[bcid[islboard][ichip][isca]]++; //save the recorded bcids, we add a count for each time that the bcid has been recorded
-	}
+	if( bcid[islboard][ichip][isca]>5 && badbcid[islboard][ichip][isca]==0 && nhits[islboard][ichip][isca]<(maxnhit+1))
+	  bcid_seen_slb[bcid[islboard][ichip][isca]]++; //save the recorded bcids, we add a count for each time that the bcid has been recorded
       }//end isca
     }
     
     for(int i=0; i<4096; i++) {
-      if(bcid_seen_slb[i]==1 ) {//only count bcids with signal in one chip, not in several
+      if(bcid_seen_slb[i]>0 ) {//
 	bcid_seen.at(i)++;
       }
     }
+    
     //requiring ==1 we filter events in which the same bcid has triggered in several chips at the same time in the same board
     // unfortunately we also remvoe events with that eventually happen for the same bcid after overcyclying...
     // and borad shower like events...
@@ -56,6 +49,8 @@ std::array<int,4096> DecodedSLBAnalysis::SimpleCoincidenceTagger(int jentry, int
   return bcid_seen;
   
 }
+
+
 
 void DecodedSLBAnalysis::SlowControlMonitoring(TString outputname="SlowControlMonitoring")
 {
@@ -819,10 +814,14 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", TString analysis_t
 	      }
 	    }
 	  }
+
+	  std::array<int,4096> bcid_seen = SimpleCoincidenceTagger(jentry,5);
 	  
 	  for(int isca=0; isca<15; isca++) {
 	    if(bcid[ilayer][ichip][isca]<0) continue;
 	    if(bcid[ilayer][ichip][isca]<50) continue;
+	    if(bcid_seen.at(bcid[ilayer][ichip][isca])<5) continue;
+	    
 	    for(int ichn=0; ichn<64; ichn++) {
 	      
 	      if( ped_mean_slboard.at(ilayer).at(ichip).at(ichn).at(isca)>50 &&  ped_width_slboard.at(ilayer).at(ichip).at(ichn).at(isca)>0 ) {

@@ -46,11 +46,11 @@ void ConvertDirectorySL_TB(string dirname, bool zerosupression=false, TString ru
     //for(int j=0; j<1; j++) {
     
     TString filen=".dat";
-    if(j==0) filen=TString::Format("run_%s.dat_000%i",run.Data(),j);
-    if(j>0 && j<10) filen=TString::Format("run_%s.dat_000%i",run.Data(),j);
-    if(j>9 && j<100) filen=TString::Format("run_%s.dat_00%i",run.Data(),j);
-    if(j>99 && j<1000) filen=TString::Format("run_%s.dat_0%i",run.Data(),j);
-    if(j>999 && j<10000) filen=TString::Format("run_%s.dat_%i",run.Data(),j);
+    if(j==0) filen=TString::Format("%s.dat_000%i",run.Data(),j);
+    if(j>0 && j<10) filen=TString::Format("%s.dat_000%i",run.Data(),j);
+    if(j>9 && j<100) filen=TString::Format("%s.dat_00%i",run.Data(),j);
+    if(j>99 && j<1000) filen=TString::Format("%s.dat_0%i",run.Data(),j);
+    if(j>999 && j<10000) filen=TString::Format("%s.dat_%i",run.Data(),j);
    
     TString output="default";
     if(outputname!="default") output=TString::Format("%s/converted_%s.root",outputname.Data(),filen.Data());

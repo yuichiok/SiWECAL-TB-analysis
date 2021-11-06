@@ -1,11 +1,11 @@
 #!/bin/bash
 
 run=$1
-data_folder="/mnt/win1/Run_Data/run_"${run}"/"
-output="../converter_SLB/convertedfiles/run_"${run}"/"
+data_folder="/mnt/win1/Run_Data/"${run}"/"
+output="../converter_SLB/convertedfiles/"${run}"/"
 
 cd ${data_folder}
-FILE_start="run_"${run}".dat"
+FILE_start=${run}".dat"
 if test -f "${FILE_start}"; then
     FILE_new=${FILE_start}"_0000"
     mv ${FILE_start} ${FILE_new}
@@ -22,9 +22,9 @@ fi
 
 cd ../converter_SLB
 
-root -l -q ConvertDirectorySL_TB.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/run_${run}\",2\) &
-root -l -q ConvertDirectorySL_TB.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/run_${run}\",1\) &
-root -l -q ConvertDirectorySL_TB.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/run_${run}\",0\)
+root -l -q ConvertDirectorySL_TB.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/${run}\",2\) &
+root -l -q ConvertDirectorySL_TB.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/${run}\",1\) &
+root -l -q ConvertDirectorySL_TB.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/${run}\",0\)
 
 cd -
 

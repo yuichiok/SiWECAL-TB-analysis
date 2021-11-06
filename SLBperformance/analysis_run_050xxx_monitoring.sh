@@ -2,10 +2,11 @@
 
 run=$1
 conversion=$2
-shifter=$3
-debug=0
-run_file="converted_run"
-output=${PWD}"/../converter_SLB/convertedfiles/run_"${run}"/"
+shifter=0
+debug1=0
+debug2=0  
+run_file="converted"
+output=${PWD}"/../converter_SLB/convertedfiles/"${run}"/"
 
 initial_folder=$PWD
 
@@ -44,25 +45,25 @@ do
     else
         i1=000$j
     fi
-    FILE0=${output}"converted_run_"${run}".dat_"$i0".root"
-    FILE1=${output}"converted_run_"${run}".dat_"$i1".root"
+    FILE0=${output}"converted_"${run}".dat_"$i0".root"
+    FILE1=${output}"converted_"${run}".dat_"$i1".root"
     echo $FILE0 $FILE1
     if [ -f "$FILE0" ]; then
         if [ -f "$FILE1" ]; then
 	    cd $initial_folder
-	    if [ "$shifter" = true ]; then
+	    if [ "$shifter" -gt 0 ]; then
 		if [ $((j%2)) -eq 0 ]
 		then
-		    root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",7,true,$debug\) &
+		    root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",100,true,$debug1,$debug2\) &
 		else
-		    root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",7,true,$debug\)
+		    root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",100,true,$debug1,$debug2\)
 		fi
 	    else
 		if [ $((j%2)) -eq 0 ]
                 then
-		    root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",7,false,$debug\) &
+		    root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",100,false,$debug1,$debug2\) &
 		else
-		    root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",7,false,$debug\)
+		    root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",100,false,$debug1,$debug2\)
                 fi
 	    fi
 	    cd -
@@ -76,11 +77,13 @@ done
 sleep 20
 
 cd results_monitoring
-if [ "$debug" = true ]; then
+if [ "$debug2" -gt 0 ]; then
     source haddTB.sh "Monitoring_summary" $run
-else
+fi
+if [ "$debug1" -gt 0 ]; then
     source haddTB.sh "HitMapsSimpleTracks" $run
 fi
+
 
 cd ${initial_folder}
 

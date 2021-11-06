@@ -1,41 +1,71 @@
 #!/bin/bash
 
-#run
-run="run_050010"
-run_file="converted.dat"
-output=${PWD}"/../converter_SLB/convertedfiles/run_050010_07172021_13h52min_Ascii/"
+run=$1
+run_file="converted"
+output=${PWD}"/../converter_SLB/convertedfiles/"${run}"/"
+
 
 initial_folder=$PWD
 
+cd $initial_folder
 
-for i in {324..1774}
+analysis="mip"     
+
+j=0
+for i in {0..999}
 do
-    j="000"$i
-    if [ $i -gt 9 ]; then
-        j="00"$i
+    
+    if [ $i -gt 999 ]
+    then
+        i0=$i
+    elif [ $i -gt 99 ]
+    then
+        i0=0$i
+    elif [ $i -gt 9 ]
+    then
+        i0=00$i
+    else
+        i0=000$i
     fi
     
-    if [ $i -gt 99 ]; then
-        j="0"$i
+    if [ $j -gt 999 ]
+    then
+        i1=$j
+    elif [ $j -gt 99 ]
+    then
+        i1=0$j
+    elif [ $j -gt 9 ]
+    then
+        i1=00$j
+    else
+        i1=000$j
     fi
-
-    if [ $i -gt 999 ]; then
-        j=$i
+    FILE0=${output}"converted_"${run}".dat_"$i0".root"
+    FILE1=${output}"converted_"${run}".dat_"$i1".root"
+    echo $FILE0 $FILE1
+    if [ -f "$FILE0" ]; then
+        if [ -f "$FILE1" ]; then
+	    cd $initial_folder
+	    if [ $((j%2)) -eq 0 ]
+	    then
+		root -l -q Proto.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",\"${analysis}\",\"results_calib/Pedestal_${run}.txt\"\) &
+	    else
+		root -l -q Proto.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",\"${analysis}\",\"results_calib/Pedestal_${run}.txt\"\) 
+	    fi
+	    cd -
+	    j=$((i+1))
+        else
+	    break
+        fi
     fi
-    #analysis
-    cd $initial_folder
-    root -l -q Proto.cc\(\"${output}/${run_file}_$j\",\"${run}_$j\",\"mip\",\"../pedestals/Pedestal_${run}.txt\"\)
-
 done
 
+sleep 30
+
 cd results_proto
-hadd MIPs_15_layers_${run}_0.root MIPs_15_layers_${run}_0*.root
-hadd MIPs_15_layers_${run}_1.root MIPs_15_layers_${run}_1*.root
-#hadd MIPs_15_layers_${run}_2.root MIPs_15_layers_${run}_2*.root
-
-hadd MIPs_15_layers_${run}.root MIPs_15_layers_${run}_0.root MIPs_15_layers_${run}_1.root
-#MIPs_15_layers_${run}_2.root 
-source analysis.sh ${run}
-
+hadd -f MIPs_${run}.root MIPs*${run}_*.root
+mv MIPs_${run}.root ../results_calib/.
+rm MIPs*${run}_*.root
 cd -
-source analysis_run_050xxx_monitoring.sh
+
+cd $initial_folder

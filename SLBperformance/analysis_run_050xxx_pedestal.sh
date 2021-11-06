@@ -1,50 +1,70 @@
 #!/bin/bash
 
-#run
-run="run_050010"
-run_file="converted.dat"
-#ascii folder
-#rootfiles folder
-output=${PWD}"/../converter_SLB/convertedfiles/run_050010_07172021_13h52min_Ascii/"
+run=$1
+run_file="converted"
+output=${PWD}"/../converter_SLB/convertedfiles/"${run}"/"
 
-initial_folder=$PWD
+cd $initial_folder
 
-for i in {1031..1774}
+j=0
+
+analysis="pedestal"     
+for i in {0..999..10}
 do
-    j="000"$i
-    if [ $i -gt 9 ]; then
-        j="00"$i
+    
+    if [ $i -gt 999 ]
+    then
+        i0=$i
+    elif [ $i -gt 99 ]
+    then
+        i0=0$i
+    elif [ $i -gt 9 ]
+    then
+        i0=00$i
+    else
+        i0=000$i
     fi
     
-    if [ $i -gt 99 ]; then
-        j="0"$i
+    if [ $j -gt 999 ]
+    then
+        i1=$j
+    elif [ $j -gt 99 ]
+    then
+        i1=0$j
+    elif [ $j -gt 9 ]
+    then
+        i1=00$j
+    else
+        i1=000$j
     fi
-
-    if [ $i -gt 999 ]; then
-        j=$i
+    FILE0=${output}"converted_"${run}".dat_"$i0".root"
+    FILE1=${output}"converted_"${run}".dat_"$i1".root"
+    echo $FILE0 $FILE1
+    if [ -f "$FILE0" ]; then
+        if [ -f "$FILE1" ]; then
+	    cd $initial_folder
+	    if [ $((j%2)) -eq 0 ]
+	    then
+		root -l -q Proto.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",\"${analysis}\",\"results_calib/Pedestal_${run}.txt\"\) &
+	    else
+		root -l -q Proto.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",\"${analysis}\",\"results_calib/Pedestal_${run}.txt\"\) 
+	    fi
+	    cd -
+	    j=$((i+1))
+        else
+	    break
+        fi
     fi
-    #analysis
-    cd $initial_folder
-    root -l -q Proto.cc\(\"${output}/${run_file}_$j\",\"${run}_$j\",\"pedestal\"\) 
-    cd ${initial_folder}/results_proto/
-    if [ $i -gt 1 ]; then
-	hadd Pedestal_new.root Pedestal_15_layers_${run}_${j}.root Pedestal_15_layers_${run}.root
-	mv Pedestal_new.root Pedestal_15_layers_${run}.root
-    else 
-	mv Pedestal_15_layers_${run}_${j}.root Pedestal_15_layers_${run}.root
-    fi
-    tar czvf Pedestal_15_layers_${run}_${j}.root.tar.gz Pedestal_15_layers_${run}_${j}.root
-    rm Pedestal_15_layers_${run}_${j}.root
-    cd -
-
 done
 
-mv results_proto/Pedestal_15_layers_${run}.root results_pedestal/Pedestal_15_layers_${run}.root
+sleep 30
 
-cd results_pedestal
-root -l -q PedestalFile.C\(\"Pedestal_${run}\"\)
-cd ..
+cd results_proto
+hadd -f Pedestal_${run}.root Pedestal${run}_*.root
+rm Pedestal*${run}_*.root
+mv Pedestal_${run}.root ../results_calib/.
+cd -
 
-cp results_pedestal/Pedestal_${run}.txt ../pedestals/Pedestal_15_layers_${run}.txt
-
-source analysis_run_050xxx_mips.sh
+cd results_calib
+root -l -q PedestalFile.C\(\"Pedestal_${run}\"\) 
+cd -
