@@ -1,295 +1,413 @@
 #!/usr/bin/env python
-import sys
+from __future__ import print_function
+
+import argparse
+import collections
 import numpy as np
 import ROOT as rt
 from array import array
 from help_tools import *
 
-def get_corr_bcid(bcid):
-    #if bcid > 10: return bcid
-    if bcid > BCID_VALEVT: return bcid
-    else: return -9999
-    #if bcid < 0: return 0
-    #else: return bcid + 4096
 
-def merge_bcids(bcid_cnts):
-    ## Set of BCIDs present in this entry
-    bcids_unique = set(bcid_cnts.keys())
+try:
+    from tqdm.autonotebook import tqdm
 
-    #bcids_cnts = bcids
-    ## format: bcid: (counts,corresponding bcid)
-    ## initialize corresponding with itself
-    new_bcid_cnts = bcid_cnts#{bcid:(bcid_cnts[bcid],bcid) for bcid in bcid_cnts}
-    bcid_map = {bcid:bcid for bcid in bcid_cnts}
-
-    ## Do BCID matching
-    for i,bcid in enumerate(bcids_unique):
-
-        for bcid_close in [bcid-1,bcid+1,bcid-2,bcid+2,bcid-3,bcid+3]:
-            if bcid_close in new_bcid_cnts:
-                #print "Found nearby", bcid, bcid_close
-                #if bcids_cnts[bcid_close] < 1: continue
-
-                # found bcid nearby
-                # merge bcids based on "occupancy" counter
-                if new_bcid_cnts[bcid_close] >= new_bcid_cnts[bcid]:
-                    # nearby bcid has more counts
-                    # -> assign this bcid to nearby bcid
-                    new_bcid_cnts[bcid_close] += new_bcid_cnts[bcid]
-                    new_bcid_cnts[bcid] -= new_bcid_cnts[bcid]
-
-                    bcid_map[bcid] = bcid_close
+    def get_tree_spills(tree, max_entries):
+        for i, spill in enumerate(tqdm(tree, desc="# Build events", total=max_entries, unit=" spills")):
+            if i > max_entries:
                 break
+            yield i, spill
+except ImportError:
+    def get_tree_spills(tree, max_entries):
+        print("# Going to analyze %i entries..." %max_entries)
+        print("# For better progress information: `pip install tqdm`.")
+        progress_bar = ""
+        for i, spill in enumerate(tree):
+            if i > max_entries:
+                break
+            if i%10 == 0:
+                if (30 * i / max_entries > len(progress_bar)):
+                    progress_bar += "#"
+                print("# Build events [{}] Spill {}/{}".format(
+                        progress_bar.ljust(30),
+                        str(i).rjust(len(str(max_entries))), 
+                        max_entries,
+                    ),
+                    end="\r",
+                )
+            yield i, spill
 
-    return bcid_map
 
-def get_good_bcids(entry):
+class BCIDHandler:
+    def __init__(self, bcid_skip_noisy_acquisition_start, delta_merge):
+        self.bcid_skip_noisy_acquisition_start = bcid_skip_noisy_acquisition_start
+        self.delta_merge = delta_merge
+        self.bad_bcid_value = -999
 
-    all_bcids = {}
-    entry_badbcid = entry.badbcid
-    entry_nhits = entry.nhits
 
-    for i,bcid in enumerate(entry.bcid):
-        if bcid < 0: continue
+    def _get_corrected_bcids(self, bcids):
+        """Using corrected_bcid, these corrections should already be in place."""
+        bcids = np.array(list(bcids))
+        bcids[bcids < self.bcid_skip_noisy_acquisition_start] = self.bad_bcid_value
+        return bcids
 
-        bcid_flag = 0 #0 is OK!
 
-        if entry_badbcid[i] > 0 or entry_badbcid[i] < 0: bcid_flag = 1
-        #if entry_nhits[i] > 20: bcid_flag = 1
+    def _get_good_bcids(self, bcids, bad_bcids):
+        """Returns Counter for #events within the spill with same good BCID."""
+        good_bcid_counts = collections.Counter(bcids)
+        # Apparently np.arrray(array.array) does not work, as numpy thinks the
+        # array/buffer is longer, and includes the following memory-nonsense to.
+        bad_bcid_values = set(np.array(list(bcids))[np.array(list(bad_bcids)) != 0])
+        for bad_bcid in bad_bcid_values:
+            good_bcid_counts.pop(bad_bcid)
+        return good_bcid_counts
 
-        bcid = get_corr_bcid(bcid)
 
-        if bcid in all_bcids: all_bcids[bcid].append(bcid_flag)
-        else: all_bcids[bcid] = [bcid_flag]
+    def _choose_main_bcid_for_merger(self, bcid_group, good_bcid_counts):
+        if len(bcid_group) == 1:
+            main_bcid = bcid_group[0]
+        else:
+            group_counts = np.array([good_bcid_counts[x] for x in bcid_group])
+            is_main_bcid_candidate = group_counts == max(group_counts)
+            if sum(is_main_bcid_candidate) == 1:
+                main_bcid = bcid_group[np.argmax(is_main_bcid_candidate)]
+            else:
+                bcid_group = np.array(bcid_group)
+                weighted_mean = bcid_group * group_counts / len(bcid_group)
+                weighted_mean -= 0.01  # Choose the smaller BCID when in between.
+                main_bcid = bcid_group[np.argmin(np.abs(bcid_group - weighted_mean))]
+        return main_bcid
 
-    ## make counter
-    good_bcids = {}
-    for bcid,flags in all_bcids.iteritems():
-        if sum(flags) == 0:
-            good_bcids[bcid] = len(flags)
 
-    return good_bcids
+    def merge_bcids(self, bcids, bad_bcids):
+        bcids = self._get_corrected_bcids(bcids)
+        good_bcid_counts = self._get_good_bcids(bcids, bad_bcids)
+        good_bcids = np.array(sorted(good_bcid_counts))
+        delta_good_bcids = good_bcids[1:] - good_bcids[:-1]
+        merge_with_following = delta_good_bcids <= self.delta_merge
 
-def get_hits(entry,bcid_map):
-    ## Collect hits in bcid containe
-    #print bcid_map
-    event = {bcid:[] for bcid in bcid_map if bcid_map[bcid] > 0} # bcid : hits
-    entry_bcids = entry.bcid
-    gain_hit_low = entry.gain_hit_low
+        if len(good_bcids) == 0: 
+            return np.full_like(bcids, self.bad_bcid_value)
+        good_bcid_groups = [[good_bcids[0]]]
+        for i, do_merge in enumerate(merge_with_following, start=1):
+            if do_merge:
+                good_bcid_groups[-1].append(good_bcids[i])
+            else:
+                good_bcid_groups.append([good_bcids[i]])
+
+        map_to_main_bcid_in_group = collections.defaultdict(lambda: self.bad_bcid_value)
+        for group in good_bcid_groups:
+            main_bcid = self._choose_main_bcid_for_merger(group, good_bcid_counts)
+            for bcid_in_group in group:
+                map_to_main_bcid_in_group[bcid_in_group] = main_bcid
+
+        merged_bcids = np.array([map_to_main_bcid_in_group[b] for b in bcids])
+        return merged_bcids
+
+
+    def load_spill(self, spill_entry):
+        self.merged_bcid = self.merge_bcids(spill_entry.corrected_bcid, spill_entry.badbcid)
+        self.spill_bcids = sorted(set(self.merged_bcid) - {self.bad_bcid_value})
+
+    def previous_bcid(self, bcid):
+        i_bcid = self.spill_bcids.index(bcid)
+        if i_bcid == 0:
+            return -1
+        else:
+            return self.spill_bcids[i_bcid - 1]
+
+    def next_bcid(self, bcid):
+        i_bcid = self.spill_bcids.index(bcid)
+        if i_bcid == len(self.spill_bcids) - 1:
+            return -1
+        else:
+            return self.spill_bcids[i_bcid + 1]
+
+
+def get_hits_per_event(entry, bcid_handler, ecal_config):
+    event = collections.defaultdict(list)
     gain_hit_high = entry.gain_hit_high
     charge_hiGain = entry.charge_hiGain
     charge_lowGain = entry.charge_lowGain
-    tdc = entry.tdc
 
-    for slab in xrange(NSLAB):
-        for chip in xrange(NCHIP):
-            for sca in xrange(NSCA):
-
-                sca_indx = (slab * NCHIP + chip) * NSCA + sca
-                #print("%i eee"%sca_indx)
-                #print("%i %i %i %i %i"%(slab,NCHIP,chip,NSCA,sca))
-
-                if sca_indx >= len(entry_bcids): continue
-                #print entry_bcids[sca_indx]
-                bcid = get_corr_bcid(entry_bcids[sca_indx])
-                #print bcid
-                #print bcid_map
-                
-                # filter bad bcids
-                if bcid not in bcid_map: continue
-                # get assigned bcid
-                bcid = bcid_map[bcid]
-
-                if bcid not in event: continue
-
+    n_slabs = ecal_config._N.n_slabs
+    n_chips = ecal_config._N.n_chips
+    n_channels = ecal_config._N.n_channels
+    n_scas = ecal_config._N.n_scas
+    for i_slab in range(n_slabs):
+        for i_chip in range(n_chips):
+            for i_sca in range(n_scas):
+                index_sca = (i_slab * n_chips + i_chip) * n_scas + i_sca
+                bcid = bcid_handler.merged_bcid[index_sca]
+                if bcid == bcid_handler.bad_bcid_value:
+                    continue
                 ## energies
-                for chan in xrange(NCHAN):
-                    chan_indx = sca_indx * NCHAN + chan
-                    
-                    #if not entry.gain_hit_low[chan_indx]: continue
-                    isHit = gain_hit_high[chan_indx]
-                    #if not isHit: continue
-                    
-                    hg_ene = charge_hiGain[chan_indx]
-                    lg_ene = charge_lowGain[chan_indx]
-                    tdc_cp = tdc[chan_indx]
-
-                    hit = EcalHit(slab,chip,chan,sca,hg_ene,lg_ene,tdc_cp,isHit)
+                for i_channel in range(n_channels):
+                    index_channel = index_sca * n_channels + i_channel
+                    hit = EcalHit(
+                        i_slab,
+                        i_chip,
+                        i_channel,
+                        i_sca,
+                        charge_hiGain[index_channel],
+                        charge_lowGain[index_channel],
+                        gain_hit_high[index_channel],
+                        ecal_config,
+                    )
                     event[bcid].append(hit)
-
     return event
 
-def build_events(filename, maxEntries = -1, w_config = -1):
 
-    ## Build tungsten config
-    build_w_config(w_config)
-    ## Read channel mapping
-    read_mapping()
-    ## Read channel mapping, cob
-    read_mapping_cob()
-    ## Read masked channels
-    read_masked()
-    ## Read pedestals
-    read_pedestals()
-    ## Read mip MPV values
-    read_mip_values()
+def _get_hit_branches(out_arrays, ecal_config):
+    """Get the names of the branches that are filled per-hit (through EcalHit).
 
-    # Get ttree
-    tfile = rt.TFile(filename,"read")
-    treename = "ecal_raw"
-    tree = tfile.Get(treename)
-    if not tree:
-        print("No tree found in ")
-        print(tree)
-        exit(0)
+    At the same time, this function checks that EcalHit and the branches
+    in BuildEvents actually agree on what these branches in should be.
+    This would not be necessary as a runtime check, but is fast and should be
+    a good hint in case of erroneous code changes.
+    """
+    hit_branches = {br[4:] for br in out_arrays if br.startswith("hit_")}
+    n_hit_args = EcalHit.__init__.__code__.co_argcount - 1
+    dummy_hit = EcalHit(*([0] * (n_hit_args - 1) + [ecal_config]))
+    hit_properties = {a for a in dir(dummy_hit) if not a.startswith("_")}
+    if hit_properties != hit_branches:
+        print("per-hit branches:  ", sorted(hit_branches))
+        print("EcalHit properties:", sorted(hit_properties))
+        raise EventBuildingException("EcalHit and BuildEvents not matching.")
+    return hit_branches
 
-    ##### TREE #####
-    outfname = filename.replace("merge","build")
-    outf = rt.TFile(outfname,"recreate")
-    outtree = rt.TTree("ecal","Build ecal events")
 
-    print("# Creating ecal tree in file %s" %outfname)
+class BuildEvents:
+    _in_tree_name = "siwecaldecoded"
+    _out_tree_name = "ecal"
 
-    #### BRANCHES
-    # event info
-    event = array('i', [0]); outtree.Branch( 'event', event, 'event/I' )
-    spill = array('i', [0]); outtree.Branch( 'spill', spill, 'spill/I' )
-    bcid_b = array('i', [0]); outtree.Branch( 'bcid', bcid_b, 'bcid/I' )
-    prev_bcid_b = array('i', [0]); outtree.Branch( 'prev_bcid', prev_bcid_b, 'prev_bcid/I' )
-    next_bcid_b = array('i', [0]); outtree.Branch( 'next_bcid', next_bcid_b, 'next_bcid/I' )
-        
-    # occupancy/hit info
-    nhit_slab = array('i', [0]); outtree.Branch( 'nhit_slab', nhit_slab, 'nhit_slab/I' )
-    nhit_chip = array('i', [0]); outtree.Branch( 'nhit_chip', nhit_chip, 'nhit_chip/I' )
-    nhit_chan = array('i', [0]); outtree.Branch( 'nhit_chan', nhit_chan, 'nhit_chan/I' )
-    sum_hg = array('f', [0]); outtree.Branch( 'sum_hg', sum_hg, 'sum_hg/F' )
-    sum_energy = array('f', [0]); outtree.Branch( 'sum_energy', sum_energy, 'sum_energy/F' )
+    _branch_tags = {
+        "event info": [
+            "event/I",
+            "spill/I",
+            "bcid/I",
+            "prev_bcid/I",
+            "next_bcid/I",
+        ],
+        "hit summary": [
+            "nhit_slab/I",
+            "nhit_chip/I",
+            "nhit_chan/I",
+            "sum_hg/F",
+            "sum_energy/F",
+        ],
+        "hit id": [
+            "hit_slab[nhit_chan]/I",
+            "hit_chip[nhit_chan]/I",
+            "hit_chan[nhit_chan]/I",
+            "hit_sca[nhit_chan]/I",
+        ],
+        "hit coord": [
+            "hit_x[nhit_chan]/F",
+            "hit_y[nhit_chan]/F",
+            "hit_z[nhit_chan]/F",
+        ],
+        "hit readout": [
+            "hit_hg[nhit_chan]/F",
+            "hit_lg[nhit_chan]/F",
+            "hit_energy[nhit_chan]/F",
+        ],
+        "hit booleans": [
+            "hit_isHit[nhit_chan]/I",
+            "hit_isMasked[nhit_chan]/I",
+            "hit_isCommissioned[nhit_chan]/I",
+        ],
+    }
 
-    ## hit information
-    # detid
-    hit_slab = array('i', 10000*[0]); outtree.Branch( 'hit_slab', hit_slab, 'hit_slab[nhit_chan]/I' )
-    hit_chip = array('i', 10000*[0]); outtree.Branch( 'hit_chip', hit_chip, 'hit_chip[nhit_chan]/I' )
-    hit_chan = array('i', 10000*[0]); outtree.Branch( 'hit_chan', hit_chan, 'hit_chan[nhit_chan]/I' )
-    hit_sca = array('i', 10000*[0]); outtree.Branch( 'hit_sca', hit_sca, 'hit_sca[nhit_chan]/I' )
-    # coord
-    hit_x = array('f', 10000*[0]); outtree.Branch( 'hit_x', hit_x, 'hit_x[nhit_chan]/F' )
-    hit_y = array('f', 10000*[0]); outtree.Branch( 'hit_y', hit_y, 'hit_y[nhit_chan]/F' )
-    hit_z = array('f', 10000*[0]); outtree.Branch( 'hit_z', hit_z, 'hit_z[nhit_chan]/F' )
-    hit_x0 = array('f', 10000*[0]); outtree.Branch( 'hit_x0', hit_x0, 'hit_x0[nhit_chan]/F' )
-    # energy
-    hit_hg = array('f', 10000*[0]); outtree.Branch( 'hit_hg', hit_hg, 'hit_hg[nhit_chan]/F' )
-    hit_lg = array('f', 10000*[0]); outtree.Branch( 'hit_lg', hit_lg, 'hit_lg[nhit_chan]/F' )
-    hit_tdc = array('f', 10000*[0]); outtree.Branch( 'hit_tdc', hit_tdc, 'hit_tdc[nhit_chan]/F' )
-    hit_energy = array('f', 10000*[0]); outtree.Branch( 'hit_energy', hit_energy, 'hit_energy[nhit_chan]/F' )
-    # boolean
-    hit_isHit = array('i', 10000*[0]); outtree.Branch( 'hit_isHit', hit_isHit, 'hit_isHit[nhit_chan]/I' )
-    hit_isMasked = array('i', 10000*[0]); outtree.Branch( 'hit_isMasked', hit_isMasked, 'hit_isMasked[nhit_chan]/I' )
+    def __init__(
+        self,
+        file_name,
+        w_config=-1,
+        max_entries=-1,
+        out_file_name=None,
+        commissioning_folder=None,
+        cob_positions_string="",
+        ecal_numbers=None,  # Not provided in CLI. Mainly useful for debugging/changing.
+        **config_file_kws,
+    ):
+        self.file_name = file_name
+        self.w_config = w_config
+        self.max_entries = max_entries
+        self.out_file_name = out_file_name
+        self.event_counter = 0
 
-    if maxEntries < 0: maxEntries = tree.GetEntries()
-    #else: maxEntries = 1000
+        self.in_tree = self._get_tree(file_name)
+        slabs = self._get_slabs(self.in_tree)
+        cob_slabs = set(map(int, filter(None, cob_positions_string.split(" "))))
+        if ecal_numbers is None:
+            ecal_numbers = EcalNumbers(slabs=slabs, cob_slabs=cob_slabs)
+        else:
+            assert ecal_numbers.slabs == slabs
+            assert ecal_numbers.cob_slabs == cob_slabs
 
-    spill_cnt = 0
+        self.ecal_config = EcalConfig(
+            commissioning_folder=commissioning_folder,
+            numbers=ecal_numbers,
+            **config_file_kws,
+        )
 
-    print("# Going to analyze %i entries..." %maxEntries )
-    for ientry,entry in enumerate(tree):#.GetEntries():
 
-        if ientry > maxEntries: break
-        #if ientry != 9: continue
+    def _get_tree(self, file_name):
+        self.in_file = rt.TFile(file_name,"read")
+        self.tree = self.in_file.Get(self._in_tree_name)
+        if not self.tree:
+            trees_available = [k.GetName() for k in self.in_file.GetListOfKeys()]
+            print("Found tree names:", trees_available)
+            ex_txt = "Tree %s not found in %s" %(self._in_tree_name, file_name)
+            raise EventBuildingException(ex_txt)
+        return self.tree
 
-        if ientry%100 == 0: print("Entry %i" %ientry)
+    
+    def _get_slabs(self, tree):
+        tree.Draw("slot >> slot_hist", "", "goff")
+        hist = rt.gDirectory.Get("slot_hist") 
+        slabs = []
+        for i in range(1, hist.GetNbinsX() + 1):  # 0 is undeflow bin.
+            if hist.GetBinContent(i) > 0:
+                slabs.append(int(np.ceil(hist.GetBinLowEdge(i))))
+        if -1 in slabs: 
+            slabs.remove(-1)  # Used to indicate dummy entries.
+        assert len(set(slabs)) == len(slabs)
+        return slabs
 
-        ## BCID
-        bcids = get_good_bcids(entry)
-        bcid_map = merge_bcids(bcids)
 
-        spill[0] = spill_cnt
-        spill_cnt += 1
-        
-        ## Collect hits in bcid container
-        ev_hits = get_hits(entry,bcid_map)
+    def _add_branch(self, tag):
+        name, branch_type = tag.split("/")
+        branch_type = {"I": "i", "F": "f"}[branch_type]
+        array_indicator = "[nhit_chan]"
+        if array_indicator in name:
+            name = name.replace(array_indicator, "")
+            starting_value = 10000 * [0]
+        else:
+            starting_value = [0]
+        self.out_arrays[name] = array(branch_type, starting_value)
+        self.out_tree.Branch(name, self.out_arrays[name], tag)
 
-        #for bcid,hits in ev_hits.iteritems():
-        for ibc,bcid in enumerate(sorted(ev_hits)):
 
-            hits = ev_hits[bcid]
-
-            if len(hits) == 0: continue
-
-            ## each bcid -- single event
-            corr_bcid = get_corr_bcid(bcid)
-            global event_counter
-            event_counter = event_counter+1
-            event[0] = event_counter#int(spill[0]*10000 + corr_bcid)
-            bcid_b[0] = corr_bcid
-
-            ## store distance to previous bcid
-            if ibc > 0:
-                prev_bcid = sorted(ev_hits)[ibc -1]
-                prev_bcid_b[0] = get_corr_bcid(prev_bcid)
+    def _create_out_tree(self, out_file_name, file_name):
+        if out_file_name is None:
+            if file_name.endswith("_converted.root"):
+                out_file_name = file_name[:-len("_converted.root")] + "_build.root"
+            elif file_name.endswith(".root"):
+                out_file_name = file_name[:-len(".root")] + "_build.root"
             else:
-                prev_bcid_b[0] = -1
+                raise EventBuildingException("Unexpected file extension: %s" %file_name)
+        print("# Creating ecal tree in file %s" %out_file_name)
+        self.out_file = rt.TFile(out_file_name,"recreate")
+        self.out_tree = rt.TTree(self._out_tree_name, "Build ecal events")
 
-            if ibc + 1 < len(ev_hits):
-                next_bcid = sorted(ev_hits)[ibc +1]
-                next_bcid_b[0] = get_corr_bcid(next_bcid)
-                #print("ibc=%i length=%i bcid=%i spill=%i"%(ibc,len(ev_hits),next_bcid_b[0],spill[0]))
-            else:
-                next_bcid_b[0] = -1
+        for branch_tag in [bt for bts in self._branch_tags.values() for bt in bts]:
+            self._add_branch(branch_tag)
+        self._hit_branches = _get_hit_branches(self.out_arrays, self.ecal_config)
+        return self.out_tree
+
+
+    def _write_and_close(self):
+        self.out_tree.Write()
+        print("# Created tree with %i events." % self.out_tree.GetEntries())
+        self.out_file.Close()
+        self.in_file.Close()
+
+
+    def build_events(self, file_name=None, max_entries=None, out_file_name=None):
+        if file_name is None:
+            file_name = self.file_name
+        if out_file_name is None:
+            out_file_name = self.out_file_name
+        self.in_tree = self._get_tree(file_name)
+        self.out_arrays = {}
+        self.out_tree = self._create_out_tree(out_file_name, file_name)
+        self._fill_w_config_hist()
+
+        if max_entries is None:
+            max_entries = self.max_entries
+        if max_entries < 0:
+            max_entries = self.in_tree.GetEntries()
+
+        for i_spill, entry in get_tree_spills(self.in_tree, max_entries):
+            self._fill_spill(i_spill, entry)
+        self._write_and_close()
+
+
+    def _fill_w_config_hist(self):
+        slabs = self.ecal_config._N.slabs
+        bin_centers = np.array(slabs, dtype="float64")
+        bin_edge_candidates = np.concatenate([bin_centers - 0.5, bin_centers + 0.5])
+        bin_edges = np.sort(np.unique(bin_edge_candidates))
+
+        w_hist = rt.TH1F("w_in_front","w_in_front",len(bin_edges) - 1, bin_edges)
+        if self.w_config in self.ecal_config._N.w_config_options.keys():
+            abs_thick = self.ecal_config._N.w_config_options[self.w_config]
+        elif self.w_config == 0:
+            abs_thick = np.zeros_like(slabs)
+        else:
+            raise EventBuildingException("Not a valid W config:", self.w_config)
+        assert len(slabs) == len(abs_thick)
+        for i in range(len(slabs)):
+            w_hist.Fill(slabs[i], abs_thick[i])
+        # w_x0 = 1 / 3.5  # 0.56 #Xo per mm of W.
+        # pos_x0 = np.cumsum(abs_thick) * w_x0
+        w_hist.Write()
+        print("W config %i used." %self.w_config, end=" ")
+        print("Absolute thickness:", abs_thick)
+
+
+    def _fill_spill(self, spill, entry):
+        b = self.out_arrays
+        b["spill"][0] = spill
+        bcid_handler = BCIDHandler(
+            self.ecal_config._N.bcid_skip_noisy_acquisition_start,
+            self.ecal_config._N.bcid_merge_delta,
+        )
+        bcid_handler.load_spill(entry)
+        hits_per_event = get_hits_per_event(entry, bcid_handler, self.ecal_config)
+
+        for bcid in sorted(hits_per_event):
+            hits = hits_per_event[bcid]
+            if len(hits) == 0:
+                raise EventBuildingException("Event with 0 hits. Why?")
+            self.event_counter += 1
+            b["event"][0] = self.event_counter
+            b["bcid"][0] = bcid
+            b["prev_bcid"][0] = bcid_handler.previous_bcid(bcid)
+            b["next_bcid"][0] = bcid_handler.next_bcid(bcid)
 
             # count hits per slab/chan/chip
-            nhit_slab[0] = len(set([hit.slab for hit in hits]))
-            nhit_chip[0] = len(set([(hit.slab*NCHIP + hit.chip) for hit in hits]))
-            #nhit_chan[0] = len(set([(hit.slab*NCHIP + hit.chip)*NCHAN + hit.chan for hit in hits]))
-            nhit_chan[0] = len(hits)
-            sum_hg[0] = sum([hit.hg for hit in hits])
-            sum_energy[0] = sum([hit.energy for hit in hits])
+            b["nhit_slab"][0] = len(set([hit.slab for hit in hits]))
+            b["nhit_chip"][0] = len(set([(hit.slab, hit.chip) for hit in hits]))
+            b["nhit_chan"][0] = len(set([(hit.slab, hit.chip, hit.chan) for hit in hits]))
+            b["sum_hg"][0] = sum([hit.hg for hit in hits])
+            b["sum_energy"][0] = sum([hit.energy for hit in hits])
 
-            if len(hits) > 8000:
-                print("Suspicious number of hits! %i for bcid %i and previous bcid %i" %(len(hits),bcid_b[0],prev_bcid_b[0]))
-                print("Skipping event %i" % event[0] )
+            if len(hits) > self.ecal_config._N.bcid_too_many_hits:
+                txt = "Suspicious number of hits! %i " %len(hits)
+                txt += "for bcid %i and previous bcid %i" %(b["bcid"][0], b["prev_bcid"][0])
+                txt += "\nSkipping event %i." % b["event"][0]
+                print(txt)
                 continue
 
-            for i,hit in enumerate(hits):
-                hit_slab[i] = hit.slab; hit_chip[i] = hit.chip; hit_chan[i] = hit.chan; hit_sca[i] = hit.sca
-                hit_x[i] = hit.x; hit_y[i] = hit.y; hit_z[i] = hit.z; hit_x0[i] = hit.x0
-                hit_hg[i] = hit.hg; hit_lg[i] = hit.lg; hit_tdc[i]=hit.tdc
-                hit_isHit[i] = hit.isHit; hit_isMasked[i] = hit.isMasked
-
-                hit_energy[i] = hit.energy
-
-            outtree.Fill()
-
-    outtree.Write()
-    #outtree.Print()
-    print("# Created tree with %i events" % outtree.GetEntries())
-    outf.Close()
-
-    tfile.Close()
+            for i, hit in enumerate(hits):
+                for hit_attr in self._hit_branches:
+                    b["hit_" + hit_attr][i] = getattr(hit, hit_attr)
+            self.out_tree.Fill()
 
 
 if __name__ == "__main__":
-
-
-    filename = "/Users/artur/cernbox/CALICE/TB2017/data/Jun_2017_TB/BT2017/findbeam/run_9__merge.root"
-    maxEntries = -1
-    w_config = 0
-
-    if len(sys.argv) < 3:
-        filename = sys.argv[1]
-    elif len(sys.argv) < 4:
-        filename = sys.argv[1]
-        maxEntries = int(sys.argv[2])
-    elif len(sys.argv) < 5:
-        filename = sys.argv[1]
-        maxEntries = int(sys.argv[2])
-        w_config = int(sys.argv[3])
-
-    print("# Input file is %s" % filename)
-    print("# maxEntries is %i" % maxEntries)
-    print("# W-config is %i" % w_config)
-
-
-    if os.path.exists(filename):
-        build_events(filename,maxEntries,w_config)
-    else:
-        print("The file does not exist!")
+    parser = argparse.ArgumentParser(
+        description="Build an event-level rootfile (smaller) from the raw rootfile.",
+    )
+    parser.add_argument("file_name", help="The raw rootfile from converter_SLB")
+    parser.add_argument("-n", "--max_entries", default=-1, type=int)
+    parser.add_argument("-w", "--w_config", default=-1, type=int)
+    parser.add_argument("-o", "--out_file_name", default=None)
+    parser.add_argument("-c", "--commissioning_folder", default=None)
+    parser.add_argument("--cob_positions_string", default="")
+    # Run ./build_events.py --help to see all options.
+    for config_option, config_value in dummy_config.items():
+        parser.add_argument("--" + config_option, default=config_value)
+    BuildEvents(**vars(parser.parse_args())).build_events()
