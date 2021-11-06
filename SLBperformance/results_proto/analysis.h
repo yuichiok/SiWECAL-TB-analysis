@@ -317,32 +317,43 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int la
 	canvastemp->cd();
 	//GetGoodEntries
 	TH1F *temp=(TH1F*)_file0->Get(TString::Format("layer_%i/charge_layer%i_chip%i_chn%i",layer,layer,i,j));
-	if(temp==NULL) continue;
-	temp->Rebin(4);
+	if(temp==NULL){
+    delete canvastemp; continue;
+  }
+	// temp->Rebin(4);
 
 	MIPN->Fill(map_pointX[i][j],map_pointY[i][j],temp->GetEntries());
-
 	 Double_t fr[2];
 	 Double_t sv[4], pllo[4], plhi[4], fp[4], fpe[4];   
-	 pllo[0]=1.0; pllo[1]=15; pllo[2]=1.0; pllo[3]=1;
+	 pllo[0]=0.5; pllo[1]=15; pllo[2]=1.0; pllo[3]=0;
 	 plhi[0]=100.0; plhi[1]=100.0; plhi[2]=100000000.0; plhi[3]=20.0;
-	 sv[0]=15.0;
 	 Double_t chisqr;
 	 Int_t    ndf;
-
-	 
-	 if(temp->GetEntries()>10){
-	   fr[0]=15;
-	   fr[1]=150;//fr[0]+0.5*temp->GetRMS();
+   
+	fr[0]=15;
+	fr[1]=150;//fr[0]+0.5*temp->GetRMS();
+	 temp->GetXaxis()->SetRangeUser(fr[0], fr[1]);
+	 if(temp->Integral() > 10){ // At least 10 entries in the fit range.
+     // Temporarily reset the hist range for more robust starting values.
+     temp->GetXaxis()->SetRangeUser(fr[0], fr[1]);
+	   sv[0] = temp->GetRMS() * 0.25;
+	   sv[1] = temp->GetMean() * 0.67;
+	   sv[2] = temp->Integral("width") * 1.2;
+	   sv[3] = temp->GetRMS()* 0.1;
 	   TF1 *fitsnr_temp=langaufit(temp,fr,sv,pllo,plhi,fp,fpe,&chisqr,&ndf);
+     //std::cout << layer << "  " << i << " " << j << std::endl << std::flush;
+     for (int k = 0; k < 4; k++) {
+       if ((sv[k] >= pllo[k]) && (sv[k] <= plhi[k])) continue;
+       std::cout << "Langaus fit parameter " << k << " has starting value " << sv[k] 
+            <<  " outside the range [" << pllo[k] << ", " << plhi[k] << "]!" << std::endl;
+     }
 	
 	   double mpv=fitsnr_temp->GetParameter(1);
 	   double empv=fitsnr_temp->GetParError(1);
 	   double wmpv=fitsnr_temp->GetParameter(0);
 	   double chi2ndf=0;
+	   if(ndf > 0) chi2ndf = chisqr / ndf;
 	   fout_mip<<layer<<" "<<i<<" "<<j<<" "<<mpv<<" "<<empv<<" "<<wmpv<<" "<<chi2ndf<<" "<<temp->GetEntries()<<"\n";
-
-	   if(ndf>0) chi2ndf=chisqr/ndf;
 
 	   MIPM->Fill(i,j,mpv);
 	   MIPM_xy->Fill(map_pointX[i][j],map_pointY[i][j],mpv);
@@ -367,6 +378,7 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int la
 	 } else {
            fout_mip<<layer<<" "<<i<<" "<<j<<" "<<0<<" "<<0<<" "<<0<<" "<<0<<" "<<0<<"\n";
 	 }
+  delete canvastemp;
       }
       file->cd();
       //canvas_mip->Print(TString::Format("plots/MIPs_%s_layer_%i_chip%i.eps",run.Data(),layer,i));
@@ -436,6 +448,5 @@ void mipanalysis(TFile* file, TString run="Run_ILC_cosmic_test_11222019", int la
   delete  canvas;
   delete  canvas2;
   file->Close();
-  
+  std::cout << "Finished the MIP analysis for layer " << layer << std::setw(50) << " " << std::endl;
 }
-
