@@ -1,12 +1,31 @@
 #!/bin/bash
 
-data_folder="/eos/project/s/siw-ecal/TB2021-11/commissioning/data/run_050XXX/run_050001_25062021_19h25min_Ascii/"
-output="../converter_SLB/convertedfiles/run_050001_25062021_19h25min_Ascii/"
+run=$1
+data_folder="/mnt/win1/Run_Data/"${run}"/"
+output="../converter_SLB/convertedfiles/"${run}"/"
 
-mkdir $output
+cd ${data_folder}
+FILE_start=${run}".dat"
+if test -f "${FILE_start}"; then
+    FILE_new=${FILE_start}"_0000"
+    mv ${FILE_start} ${FILE_new}
+fi
+cd -
+
+if [ -d "$output" ]; then
+    cd $output
+    ls -1tr | tail -n -1 | xargs -d '\n' rm -f --
+    cd -
+else
+    mkdir $output
+fi
 
 cd ../converter_SLB
-root -l -q ConvertDirectorySL.cc\(\"${data_folder}\",false,\"${output}\"\)
+
+root -l -q ConvertDirectorySL_TB.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/${run}\",2\) &
+root -l -q ConvertDirectorySL_TB.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/${run}\",1\) &
+root -l -q ConvertDirectorySL_TB.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/${run}\",0\)
+
 cd -
 
 

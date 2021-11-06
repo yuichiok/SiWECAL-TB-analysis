@@ -3,9 +3,9 @@
 
 using namespace std;
 
-int ConvertDataSL(TString filename, bool zerosupression=false){
+int ConvertDataSL(TString filename, bool zerosupression=false, TString outputname="default"){
     SLBdecoded2ROOT ss;
-    ss.ReadFile(filename, true, "default", zerosupression);
+    ss.ReadFile(filename, true, outputname, zerosupression);
     gSystem->Exit(0);
     return 0;
 }

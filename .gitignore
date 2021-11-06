@@ -2,6 +2,7 @@
 .*
 *~
 *~*
+#*
 
 #cernbox conflict files
 *conflict*
@@ -39,7 +40,8 @@
 *.out
 *.app
 
-# Data Files
+# Data and output Files
 *.root
 *_Ascii*
 *.log
+*.eps
