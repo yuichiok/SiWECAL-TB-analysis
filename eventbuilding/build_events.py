@@ -18,9 +18,12 @@ try:
                 break
             yield i, spill
 except ImportError:
+    from datetime import datetime
+
     def get_tree_spills(tree, max_entries):
         print("# Going to analyze %i entries..." %max_entries)
         print("# For better progress information: `pip install tqdm`.")
+        print(datetime.now())
         progress_bar = ""
         for i, spill in enumerate(tree):
             if i > max_entries:
@@ -380,7 +383,7 @@ class BuildEvents:
             # count hits per slab/chan/chip
             b["nhit_slab"][0] = len(set([hit.slab for hit in hits]))
             b["nhit_chip"][0] = len(set([(hit.slab, hit.chip) for hit in hits]))
-            b["nhit_chan"][0] = len(set([(hit.slab, hit.chip, hit.chan) for hit in hits]))
+            b["nhit_chan"][0] = len(set([(hit.slab, hit.chip, hit.chan) for hit in hits if hit.isHit]))
             b["sum_hg"][0] = sum([hit.hg for hit in hits])
             b["sum_energy"][0] = sum([hit.energy for hit in hits])
 

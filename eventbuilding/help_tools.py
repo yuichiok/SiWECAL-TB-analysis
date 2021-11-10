@@ -24,6 +24,12 @@ class EcalNumbers:
         self.w_config_options = {  # abs thickness of Tungsten/W plates.
             1: w_conf_1,
         }
+        # TB2021_11 scenario: https://llrelog.in2p3.fr/calice/2207
+        w_conf_2 = np.copy(w_conf_1)
+        w_conf_2[0] = 0
+        self.w_config_options = {
+            2: w_conf_2,
+        }
 
         self.bcid_skip_noisy_acquisition_start = 50
         self.bcid_merge_delta = 3
@@ -130,11 +136,16 @@ class EcalHit:
 
     def _mip_calibration(self):
         mip_value = self._ecal_config.mip_map[self._idx_slab][self.chip][self.chan]
-        if mip_value > self._ecal_config._N.mip_cutoff:
-            self.energy = self.hg / mip_value
-        else:
-            self.energy = 0
+        if mip_value < self._ecal_config._N.mip_cutoff:
             self.isCommissioned = 0
+            chip_mip_map = self._ecal_config.mip_map[self._idx_slab][self.chip]
+            valid_chip_mips = chip_mip_map[chip_mip_map >= self._ecal_config._N.mip_cutoff]
+            if len(valid_chip_mips):
+                mip_value = np.mean(valid_chip_mips) 
+            else:
+                print("No MIP was calibrated on this chip!", self._idx_slab, self.chip)
+                mip_value = 1
+        self.energy = self.hg / mip_value
 
 
 class EcalConfig:
