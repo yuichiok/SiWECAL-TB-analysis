@@ -4,6 +4,8 @@ run=$1
 data_folder="/mnt/win1/Run_Data/"${run}"/"
 output="../converter_SLB/convertedfiles/"${run}"/"
 
+initial=${PWD}
+
 cd ${data_folder}
 FILE_start=${run}".dat"
 if test -f "${FILE_start}"; then
@@ -28,4 +30,7 @@ root -l -q ConvertDirectorySL_TB.cc\(\"${data_folder}\",false,\"${run}\",\"../co
 
 cd -
 
+cd ${initial}/../
+# source compress_TB2021_endedrun.sh $run &
+cd ${initial}
 
