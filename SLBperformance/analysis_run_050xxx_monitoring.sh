@@ -4,7 +4,7 @@ run=$1
 conversion=$2
 shifter=0
 debug1=0
-debug2=0  
+debug2=0 
 run_file="converted"
 output=${PWD}"/../converter_SLB/convertedfiles/"${run}"/"
 
@@ -17,7 +17,7 @@ fi
 cd $initial_folder
 
 j=0
-for i in {0..999..10}
+for i in {0..1999}
 do
     
     if [ $i -gt 999 ]
@@ -51,19 +51,20 @@ do
     if [ -f "$FILE0" ]; then
         if [ -f "$FILE1" ]; then
 	    cd $initial_folder
+#            if [ -f results_monitoring/HitMapsSimpleTracks_${run}_$i0.root ]; then continue; fi
 	    if [ "$shifter" -gt 0 ]; then
 		if [ $((j%2)) -eq 0 ]
 		then
-		    root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",100,true,$debug1,$debug2\) &
+		    root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",1,true,$debug1,$debug2\) &
 		else
-		    root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",100,true,$debug1,$debug2\)
+		    root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",1,true,$debug1,$debug2\)
 		fi
 	    else
 		if [ $((j%2)) -eq 0 ]
                 then
-		    root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",100,false,$debug1,$debug2\) &
+		    root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",1,false,$debug1,$debug2\) &
 		else
-		    root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",100,false,$debug1,$debug2\)
+		    root -l -q Monitoring.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$j\",1,false,$debug1,$debug2\)
                 fi
 	    fi
 	    cd -
