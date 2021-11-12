@@ -5,9 +5,9 @@ conversion=$2
 run_file="converted"
 output=${PWD}"/../converter_SLB/convertedfiles/"${run}"/"
 
-PEDESTAL=1
-MIP=1
-MONITORING=0
+PEDESTAL=0
+MIP=0
+MONITORING=1
 
 initial_folder=$PWD
 
