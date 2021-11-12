@@ -30,7 +30,7 @@ std::array<int,4096> DecodedSLBAnalysis::SimpleCoincidenceTagger(int jentry, int
       for(int isca=0; isca<15; isca++) {
 	if(bcid[islboard][ichip][isca]<0) break; //not include elements with no value (-999)
 
-	if( bcid[islboard][ichip][isca]>5 && badbcid[islboard][ichip][isca]==0 && nhits[islboard][ichip][isca]<(maxnhit+1))
+	if( corrected_bcid[islboard][ichip][isca]>5 && badbcid[islboard][ichip][isca]==0 && nhits[islboard][ichip][isca]<(maxnhit+1) && (bcid[islboard][ichip][isca]<899 || bcid[islboard][ichip][isca]>993))
 	  bcid_seen_slb[bcid[islboard][ichip][isca]]++; //save the recorded bcids, we add a count for each time that the bcid has been recorded
       }//end isca
     }
@@ -389,7 +389,7 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay", int nla
   TH3F* event_display[200];
 
   for(int j=0; j<200; j++) {
-    event_display[j]=new TH3F(TString::Format("event_display_coinc_xyz_%i",j),TString::Format("event_display_coinc_xyz_%i",j),32,-90,90,32,-90,90,15,-232.5,7.5);
+    event_display[j]=new TH3F(TString::Format("event_display_coinc_xyz_%i",j),TString::Format("event_display_coinc_xyz_%i",j),227,-0.5,226.5,32,-90,90,32,-90,90);
   }
   
   // --------------
@@ -429,8 +429,9 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay", int nla
       for(int ichip=0; ichip<16; ichip++) {
 	for(int isca=0; isca<15; isca++) {
 	  if(bcid[islboard][ichip][isca]<0) continue;
-	  
-	  if(bcid[islboard][ichip][isca]>50 && (bcid[islboard][ichip][isca]<270 || bcid[islboard][ichip][isca]>295)  && nhits[islboard][ichip][isca]<6 && badbcid[islboard][ichip][isca]==0)
+	  if(badbcid[islboard][ichip][isca]!=0) continue;
+
+	  if(bcid[islboard][ichip][isca]>50 && nhits[islboard][ichip][isca]<6 && badbcid[islboard][ichip][isca]==0)
 	    if(bcid[islboard][ichip][isca]>0 && bcid[islboard][ichip][isca]<4095) 
 	      if( bcid_seen.at(bcid[islboard][ichip][isca])>(nlayers_minimum-1) || bcid_seen.at(bcid[islboard][ichip][isca]+1)>(nlayers_minimum-1) || bcid_seen.at(bcid[islboard][ichip][isca]-1)>(nlayers_minimum-1)) {
 	    //if(bcid[islboard][ichip][isca]>50 && (bcid[islboard][ichip][isca]<270 || bcid[islboard][ichip][isca]>295) && badbcid[islboard][ichip][isca]==0 && bcid_seen.at(bcid[islboard][ichip][isca])>(nlayers_minimum-1)) {
@@ -438,9 +439,9 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay", int nla
 		//	cout<<islboard<<" "<<ichip<<" "<<isca<<" "<<bcid[islboard][ichip][isca]<<endl;
 
 	    for(int ichn=0;ichn<64; ichn++) {
-	      double z=-15.*slot[islboard];
+	      double z=15.*(15-islboard)+0.5;
 	      if(gain_hit_high[islboard][ichip][isca][ichn]==1) 
-		event_display[n+nhistos[bcid[islboard][ichip][isca]]-1]->Fill(map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn],z,charge_hiGain[islboard][ichip][isca][ichn]);
+		event_display[n+nhistos[bcid[islboard][ichip][isca]]-1]->Fill(z,map_pointX[islboard][ichip][ichn],map_pointY[islboard][ichip][ichn],charge_hiGain[islboard][ichip][isca][ichn]);
 	      
 	    }
 	  }
@@ -455,13 +456,13 @@ void DecodedSLBAnalysis::QuickDisplay(TString outputname="QuickDisplay", int nla
 
   // -----------------------------------------------------------------------------------------------------   
   // Signal analysis
-  TFile *monitoringfile_summary = new TFile("results_monitoring/Cosmics_"+outputname+".root" , "RECREATE");
+  TFile *monitoringfile_summary = new TFile("results_monitoring/Display_"+outputname+".root" , "RECREATE");
   monitoringfile_summary->cd();
   
   for(int i=0; i<200; i++) {
-    event_display[i]->GetXaxis()->SetTitle("X [mm]");
-    event_display[i]->GetYaxis()->SetTitle("Y [mm]");
-    event_display[i]->GetZaxis()->SetTitle("Z (0=upper module) [mm]");
+    event_display[i]->GetYaxis()->SetTitle("X [mm]");
+    event_display[i]->GetZaxis()->SetTitle("Y [mm]");
+    event_display[i]->GetXaxis()->SetTitle("Z (0=upper module) [mm]");
     if(event_display[i]->GetEntries()>0) event_display[i]->Write();
   }
   
