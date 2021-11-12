@@ -1,14 +1,14 @@
 #!/bin/bash
 
 run=$1
-folder="/mnt/win1/Run_data/run_"$run
+folder="/mnt/win1/Run_data/"$run
 cd $folder
 
 	    
 j=1
 for i in {0..9999}
 do
-    FILE_start="run_"${run}".dat"
+    FILE_start=${run}".dat"
     if test -f "${FILE_start}"; then
 	FILE_new=${FILE_start}"_0000"
 	mv ${FILE_start} ${FILE_new}
@@ -29,9 +29,9 @@ do
 	i0=000$i
     fi
 
-    echo $i0 
+    #echo $i0 
 
-    FILE0="run_"${run}".dat_"$i0
+    FILE0=${run}".dat_"$i0
     if [ -f "$FILE0" ]; then
 	tar czvf ${FILE0}.tar.gz $FILE0
 	rm $FILE0
@@ -39,4 +39,6 @@ do
 
 done
 
-cd -
+cd - 
+#mv $folder /mnt/win1/Run_data/compressed/.
+
