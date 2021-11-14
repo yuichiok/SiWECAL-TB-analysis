@@ -4,7 +4,7 @@ run=$1
 conversion=$2
 shifter=0
 debug1=0
-debug2=0 
+debug2=0
 run_file="converted"
 output=${PWD}"/../converter_SLB/convertedfiles/"${run}"/"
 
@@ -51,7 +51,7 @@ do
     if [ -f "$FILE0" ]; then
         if [ -f "$FILE1" ]; then
 	    cd $initial_folder
-#            if [ -f results_monitoring/HitMapsSimpleTracks_${run}_$i0.root ]; then continue; fi
+            if [ -f results_monitoring/HitMapsSimpleTracks_${run}_$i0.root ]; then continue; fi
 	    if [ "$shifter" -gt 0 ]; then
 		if [ $((j%2)) -eq 0 ]
 		then
@@ -75,6 +75,7 @@ do
     fi
 done
 
+hadd -f results_monitoring/HitMapsSimpleTracks_${run}.root results_monitoring/HitMapsSimpleTracks_${run}_*.root
 sleep 20
 
 cd results_monitoring

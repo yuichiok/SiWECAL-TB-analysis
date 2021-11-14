@@ -19,9 +19,10 @@ void Monitoring(TString filename_in, TString output="", int freq=1, bool shifter
   }
 
   //  ss.n_layers=3;
-  if(debug2==true) ss.HitMapsSimpleTracks(output,10);
+  ss.HitMapsSimpleTracks(output,12);
+  ss.QuickDisplay(output,13);
   if(debug2==true) ss.Monitoring(output,freq,shifter);
-  ss.HitMapsSimpleTracks(output,10);
+  // if(debug2==true) ss.HitMapsSimpleTracks(output,10);
   //ss.SynchronizationStudies(output,freq,shifter); 
   if(shifter==false) gSystem->Exit(0);
 
