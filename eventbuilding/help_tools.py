@@ -125,11 +125,12 @@ class EcalHit:
             self.hg -= pedestals_per_sca[self.sca]
         else:
             is_good_pedestal = pedestals_per_sca > self._ecal_config._N.pedestal_min_average
-            if sum(is_good_pedestal) > 0:
+            n_good_pedestals = is_good_pedestal.sum()
+            if n_good_pedestals > 0:
                 pedestal_average = np.mean(pedestals_per_sca[is_good_pedestal])
             else:
                 pedestal_average = 0
-            if sum(is_good_pedestal) < self._ecal_config._N.pedestal_min_scas:
+            if n_good_pedestals < self._ecal_config._N.pedestal_min_scas:
                 self.isCommissioned = 0
             self.hg -= pedestal_average
 
