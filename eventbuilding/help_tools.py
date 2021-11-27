@@ -26,7 +26,8 @@ class EcalNumbers:
         }
         # TB2021_11 scenario: https://llrelog.in2p3.fr/calice/2207
         w_conf_2 = np.copy(w_conf_1)
-        w_conf_2[0] = 0
+        if len(w_conf_2) > 0:
+            w_conf_2[0] = 0
         self.w_config_options = {
             2: w_conf_2,
         }
@@ -119,33 +120,11 @@ class EcalHit:
 
     def _pedestal_subtraction(self):
         pedestals_per_sca = self._ecal_config.pedestal_map[self._idx_slab][self.chip][self.chan]
-
-        sca_has_valid_pedestal = pedestals_per_sca[self.sca] > self._ecal_config._N.pedestal_min_value
-        if sca_has_valid_pedestal:
-            self.hg -= pedestals_per_sca[self.sca]
-        else:
-            is_good_pedestal = pedestals_per_sca > self._ecal_config._N.pedestal_min_average
-            n_good_pedestals = is_good_pedestal.sum()
-            if n_good_pedestals > 0:
-                pedestal_average = np.mean(pedestals_per_sca[is_good_pedestal])
-            else:
-                pedestal_average = 0
-            if n_good_pedestals < self._ecal_config._N.pedestal_min_scas:
-                self.isCommissioned = 0
-            self.hg -= pedestal_average
+        self.hg -= pedestals_per_sca[self.sca]
 
 
     def _mip_calibration(self):
         mip_value = self._ecal_config.mip_map[self._idx_slab][self.chip][self.chan]
-        if mip_value < self._ecal_config._N.mip_cutoff:
-            self.isCommissioned = 0
-            chip_mip_map = self._ecal_config.mip_map[self._idx_slab][self.chip]
-            valid_chip_mips = chip_mip_map[chip_mip_map >= self._ecal_config._N.mip_cutoff]
-            if len(valid_chip_mips):
-                mip_value = np.mean(valid_chip_mips) 
-            else:
-                print("No MIP was calibrated on this chip!", self._idx_slab, self.chip)
-                mip_value = 1
         self.energy = self.hg / mip_value
 
 
@@ -182,6 +161,8 @@ class EcalConfig:
         self.pedestal_map = self._read_pedestals(pedestals_file)
         self.mip_map = self._read_mip_values(mip_calibration_file)
         self.masked_map = self._read_masked(masked_file)
+
+        self.is_commissioned_map = self._handle_uncommissioned_positions(self.pedestal_map, self.mip_map)
 
 
     def get_channel_map(self, slab):
@@ -310,5 +291,62 @@ class EcalConfig:
         return masked_map
 
 
+    def _handle_uncommissioned_positions(self, pedestal_map, mip_map):
+        """This changes the passed arrays in-place."""
+        is_commissioned_map = np.ones_like(pedestal_map)
+
+        # Handle pedestals
+        sca_has_bad_pedestal = pedestal_map < self._N.pedestal_min_value
+        if np.any(sca_has_bad_pedestal):
+            sca_is_used_for_average = pedestal_map > self._N.pedestal_min_average
+            channel_can_provide_average = np.expand_dims(
+                sca_is_used_for_average.sum(axis=-1) >= self._N.pedestal_min_scas, 
+                sca_is_used_for_average.ndim - 1,
+            )
+            pedestal_has_no_fix = np.logical_and(
+                sca_has_bad_pedestal,
+                np.logical_not(channel_can_provide_average),
+            )
+            average_pedestal = np.empty_like(pedestal_map)
+            average_pedestal[:] = np.expand_dims(
+                np.divide(
+                    np.multiply(pedestal_map, sca_is_used_for_average).sum(axis=-1),
+                    np.maximum(1, sca_is_used_for_average.sum(axis=-1)),
+                ),
+                sca_is_used_for_average.ndim - 1,
+            )
+            pedestal_map[sca_has_bad_pedestal] = average_pedestal[sca_has_bad_pedestal]
+
+            is_commissioned_map[np.logical_and(
+                sca_has_bad_pedestal,
+                channel_can_provide_average,
+            )] = 0  # We might want to consider this case as "is_commissioned".
+            is_commissioned_map[pedestal_has_no_fix] = 0
+            pedestal_map[pedestal_has_no_fix] = -1
+        if self._verbose:
+            print("corrected pedestal_map", pedestal_map)
+
+        # Handle MIPs
+        has_bad_mip = mip_map < self._N.mip_cutoff
+        if np.any(has_bad_mip):
+            channel_is_used_for_average = mip_map > self._N.mip_cutoff
+            mip_average_on_chip = np.empty_like(mip_map)
+            mip_average_on_chip[:] = np.expand_dims(
+                channel_is_used_for_average.mean(axis=-1),
+                channel_is_used_for_average.ndim - 1,
+            )
+            mip_average_on_chip[np.isnan(mip_average_on_chip)] = -1
+            is_commissioned_map[has_bad_mip] = 0
+            mip_map[has_bad_mip] = mip_average_on_chip[has_bad_mip]
+        if self._verbose:
+            print("corrected mip_map", mip_map)
+
+        if self._verbose:
+            print("is_commissioned_map", is_commissioned_map)
+            print("Rate of commissioned scas: {:.2f}%".format(is_commissioned_map.mean() * 100))
+        return is_commissioned_map
+
+
 if __name__ == "__main__":
-    EcalConfig(verbose=True)
+    numbers = EcalNumbers(slabs=np.arange(15).tolist())
+    EcalConfig(verbose=True, numbers=numbers)
