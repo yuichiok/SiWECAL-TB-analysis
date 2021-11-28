@@ -89,8 +89,8 @@ class EcalHit:
         self._ecal_config = ecal_config
         self._idx_slab = self._ecal_config._N.slabs.index(self.slab)
 
-        self.isMasked = int(self._ecal_config.masked_map[self._idx_slab][self.chip][self.chan])
-        self.isCommissioned = 1 if self.isMasked == 0 else 0
+        self.isMasked = self._ecal_config.masked_map[self._idx_slab][self.chip][self.chan]
+        self.isCommissioned = self._ecal_config.is_commissioned_map[self._idx_slab][self.chip][self.chan][self.sca]
         self._gain_hit_high = gain_hit_high
 
         self._set_positions()
@@ -100,12 +100,12 @@ class EcalHit:
 
     @property
     def isHit(self):
-        return 1 if self._gain_hit_high > 0 else 0
+        return int(self._gain_hit_high > 0)
 
     def _set_positions(self):
-        self.x = self._ecal_config.x[self.slab][self.chip][self.chan]
-        self.y = self._ecal_config.y[self.slab][self.chip][self.chan]
-        self.z = self._ecal_config.z[self.slab][self.chip][self.chan]
+        self.x = self._ecal_config.x[self._idx_slab][self.chip][self.chan]
+        self.y = self._ecal_config.y[self._idx_slab][self.chip][self.chan]
+        self.z = self._ecal_config.z[self._idx_slab][self.chip][self.chan]
 
 
     def _pedestal_subtraction(self):
@@ -152,7 +152,9 @@ class EcalConfig:
         self.mip_map = self._read_mip_values(mip_calibration_file)
         self.masked_map = self._read_masked(masked_file)
 
-        self.is_commissioned_map = self._handle_uncommissioned_positions(self.pedestal_map, self.mip_map)
+        self.is_commissioned_map = self._handle_uncommissioned_positions(
+            self.pedestal_map, self.mip_map, self.masked_map
+        )
 
 
     def _get_x_y(self, mapping_file, mapping_file_cob):
@@ -274,7 +276,7 @@ class EcalConfig:
             self._N.n_slabs,
             self._N.n_chips,
             self._N.n_channels,
-        ))
+        ), dtype=int)
         print("Reading masked channels from %s." %file_name)
         lines = self._get_lines(file_name)
 
@@ -298,9 +300,10 @@ class EcalConfig:
         return masked_map
 
 
-    def _handle_uncommissioned_positions(self, pedestal_map, mip_map):
+    def _handle_uncommissioned_positions(self, pedestal_map, mip_map, masked_map):
         """This changes the passed arrays in-place."""
-        is_commissioned_map = np.ones_like(pedestal_map)
+        is_commissioned_map = np.ones_like(pedestal_map, dtype=int)
+        is_commissioned_map[masked_map == 1] = 0
 
         # Handle pedestals
         sca_has_bad_pedestal = pedestal_map < self._N.pedestal_min_value
