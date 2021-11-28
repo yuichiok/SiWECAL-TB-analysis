@@ -78,10 +78,6 @@ dummy_config = dict(
 )
 
 
-def position_per_slab(slab):
-    return 15 * slab  # in mm.
-
-
 class EcalHit:
     def __init__(self, slab, chip, chan, sca, hg, lg, gain_hit_high, ecal_config):
         self.slab = slab
@@ -107,15 +103,9 @@ class EcalHit:
         return 1 if self._gain_hit_high > 0 else 0
 
     def _set_positions(self):
-        self.z = position_per_slab(self.slab)  # Here we use the actual slab position, not the index.
-        slab_channel_map = self._ecal_config.get_channel_map(self.slab)
-        (self.x,self.y) = slab_channel_map[(self.chip, self.chan)]
-        # TODO: Is this really doing the right thing to the positioning? Check with new cosmic runs.
-        # Invert the mapping for the 5 first slabs, to agree with the last 4.
-        # if slab < 5: currently equivalent to:
-        # if "_dif_" in self._ecal_config._N.slab_map[self._idx_slab]:
-        #    self.x = -self.x
-        #    self.y = -self.y
+        self.x = self._ecal_config.x[self.slab][self.chip][self.chan]
+        self.y = self._ecal_config.y[self.slab][self.chip][self.chan]
+        self.z = self._ecal_config.z[self.slab][self.chip][self.chan]
 
 
     def _pedestal_subtraction(self):
@@ -156,8 +146,8 @@ class EcalConfig:
         else:
             self._N = EcalNumbers()
 
-        self._channel_map = self._read_mapping(mapping_file)
-        self._channel_map_cob = self._read_mapping(mapping_file_cob)
+        self.x, self.y = self._get_x_y(mapping_file, mapping_file_cob)
+        self.z = self._get_z()
         self.pedestal_map = self._read_pedestals(pedestals_file)
         self.mip_map = self._read_mip_values(mip_calibration_file)
         self.masked_map = self._read_masked(masked_file)
@@ -165,11 +155,21 @@ class EcalConfig:
         self.is_commissioned_map = self._handle_uncommissioned_positions(self.pedestal_map, self.mip_map)
 
 
-    def get_channel_map(self, slab):
-        if slab in self._N.cob_slabs:
-            return self._channel_map
-        else:
-            return self._channel_map_cob
+    def _get_x_y(self, mapping_file, mapping_file_cob):
+        _x, _y = self._read_mapping_xy(mapping_file)
+        _x_cob, _y_cob = self._read_mapping_xy(mapping_file_cob)
+
+        x = np.stack([_x_cob if slab in self._N.cob_slabs else _x for slab in self._N.slabs])
+        y = np.stack([_y_cob if slab in self._N.cob_slabs else _y for slab in self._N.slabs])
+        return x, y
+
+
+    def _get_z(self):
+        """15 mm distance between slabs in the prototype."""
+        def z_val_layer(slab):
+            return np.full((self._N.n_chips, self._N.n_channels), 15 * slab)
+
+        return np.stack([z_val_layer(slab) for slab in self._N.slabs])
 
 
     def _get_lines(self, file_name):
@@ -187,7 +187,7 @@ class EcalConfig:
         return lines
 
 
-    def _read_mapping(self, file_name):
+    def _read_mapping_xy(self, file_name):
         channel_map = dict()
         lines = self._get_lines(file_name)
 
@@ -201,7 +201,14 @@ class EcalConfig:
             v = line.split()
             pos = (float(v[i_x]), float(v[i_y]))
             channel_map[(int(v[i_chip]), int(v[i_channel]))] = pos
-        return channel_map
+
+        x = np.empty((self._N.n_chips, self._N.n_channels))
+        y = np.empty((self._N.n_chips, self._N.n_channels))
+        assert len(channel_map) == x.size
+        for (chip, channel), (x_i, y_i) in channel_map.items():
+            x[chip][channel] = x_i
+            y[chip][channel] = y_i
+        return x, y
 
 
     def _read_pedestals(self, file_name):
