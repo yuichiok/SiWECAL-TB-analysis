@@ -28,9 +28,8 @@ except ImportError:
         for i, spill in enumerate(tree):
             if i > max_entries:
                 break
-            if i%10 == 0:
-                if (30 * i / max_entries > len(progress_bar)):
-                    progress_bar += "#"
+            if i%10 == 0 or i == max_entries:
+                progress_bar = "#" * int(30 * i / max_entries)
                 print("# Build events [{}] Spill {}/{}".format(
                         progress_bar.ljust(30),
                         str(i).rjust(len(str(max_entries))), 
@@ -128,40 +127,67 @@ class BCIDHandler:
 
 
 def get_hits_per_event(entry, bcid_handler, ecal_config):
-    event = collections.defaultdict(list)
-    gain_hit_high = entry.gain_hit_high
-    charge_hiGain = entry.charge_hiGain
-    charge_lowGain = entry.charge_lowGain
-
-    n_slabs = ecal_config._N.n_slabs
+    event = {}
     n_chips = ecal_config._N.n_chips
     n_channels = ecal_config._N.n_channels
     n_scas = ecal_config._N.n_scas
-    for i_slab in range(n_slabs):
-        for i_chip in range(n_chips):
-            for i_sca in range(n_scas):
-                index_sca = (i_slab * n_chips + i_chip) * n_scas + i_sca
-                bcid = bcid_handler.merged_bcid[index_sca]
-                if bcid == bcid_handler.bad_bcid_value:
-                    continue
-                ## energies
-                for i_channel in range(n_channels):
-                    index_channel = index_sca * n_channels + i_channel
-                    hit = EcalHit(
-                        i_slab,
-                        i_chip,
-                        i_channel,
-                        i_sca,
-                        charge_hiGain[index_channel],
-                        charge_lowGain[index_channel],
-                        gain_hit_high[index_channel],
-                        ecal_config,
-                    )
-                    event[bcid].append(hit)
+    
+    # It is faster to fill the arrays once outside the loop.
+    all_gain_hit = np.array(entry.gain_hit_high)
+    all_hg = np.array(entry.charge_hiGain)
+    all_lg = np.array(entry.charge_lowGain)
+
+    # assert bcid_handler.merged_bcid.shape == np.array(event.bcid).shape
+    for i, bcid in enumerate(bcid_handler.merged_bcid):
+        if bcid == bcid_handler.bad_bcid_value:
+            continue
+        bcid_channel_id = slice(i * n_channels, (i + 1) * n_channels)
+        gain_hit_high = all_gain_hit[bcid_channel_id]
+        if np.all(gain_hit_high < 0):
+            continue
+        if bcid not in event:
+            event[bcid] = collections.defaultdict(list)
+
+        slab = entry.slot[(i // n_scas // n_chips)]
+        slab_id = ecal_config._N.slabs.index(slab)
+        chip = entry.chipid[i // n_scas]
+        sca = i % n_scas
+
+        def ext(name, array):
+            return event[bcid][name].extend(array)
+
+        ext("isHit", gain_hit_high > 0)
+        ext("isMasked", np.array(ecal_config.masked_map[slab_id, chip], dtype=int))
+        ext("isCommissioned", np.array(ecal_config.is_commissioned_map[slab_id, chip, :, sca], dtype=int))
+        ext("x", np.array(ecal_config.x[slab_id, chip]))
+        ext("y", np.array(ecal_config.y[slab_id, chip]))
+        ext("z", np.array(ecal_config.z[slab_id, chip]))
+
+        hg = all_hg[bcid_channel_id]
+        energy = hg.astype(float)
+        energy -= ecal_config.pedestal_map[slab_id, chip, :, sca]
+        energy /= ecal_config.mip_map[slab_id, chip]
+        ext("hg", hg)
+        ext("energy", energy)
+        lg = all_lg[bcid_channel_id]
+        ext("lg", lg)
+
+        n_in_batch = n_channels
+        ext("slab", np.full(n_in_batch, slab, dtype=int))
+        ext("chip", np.full(n_in_batch, chip, dtype=int))
+        ext("sca", np.full(n_in_batch, sca, dtype=int))
+        ext("chan", np.arange(n_channels, dtype=int))
+        n_scas_filled = entry.nColumns[i // n_scas]
+        ext("n_scas_filled", np.full(n_in_batch, n_scas_filled, dtype=int))
+
+    for bcid, event_arrays in event.items():
+        for key in event_arrays:
+            event_arrays[key] = np.array(event_arrays[key])
+        event[bcid] = event_arrays
     return event
 
 
-def _get_hit_branches(out_arrays, ecal_config):
+def _get_hit_branches(out_arrays):
     """Get the names of the branches that are filled per-hit (through EcalHit).
 
     At the same time, this function checks that EcalHit and the branches
@@ -170,13 +196,6 @@ def _get_hit_branches(out_arrays, ecal_config):
     a good hint in case of erroneous code changes.
     """
     hit_branches = {br[4:] for br in out_arrays if br.startswith("hit_")}
-    n_hit_args = EcalHit.__init__.__code__.co_argcount - 1
-    dummy_hit = EcalHit(*([0] * (n_hit_args - 1) + [ecal_config]))
-    hit_properties = {a for a in dir(dummy_hit) if not a.startswith("_")}
-    if hit_properties != hit_branches:
-        print("per-hit branches:  ", sorted(hit_branches))
-        print("EcalHit properties:", sorted(hit_properties))
-        raise EventBuildingException("EcalHit and BuildEvents not matching.")
     return hit_branches
 
 
@@ -196,29 +215,32 @@ class BuildEvents:
             "nhit_slab/I",
             "nhit_chip/I",
             "nhit_chan/I",
+            "nhit_len/I",
             "sum_hg/F",
             "sum_energy/F",
         ],
+        # 64: the number of channels on a chip.
         "hit id": [
-            "hit_slab[nhit_chan]/I",
-            "hit_chip[nhit_chan]/I",
-            "hit_chan[nhit_chan]/I",
-            "hit_sca[nhit_chan]/I",
+            "hit_slab[nhit_len]/I",
+            "hit_chip[nhit_len]/I",
+            "hit_chan[nhit_len]/I",
+            "hit_sca[nhit_len]/I",
         ],
         "hit coord": [
-            "hit_x[nhit_chan]/F",
-            "hit_y[nhit_chan]/F",
-            "hit_z[nhit_chan]/F",
+            "hit_x[nhit_len]/F",
+            "hit_y[nhit_len]/F",
+            "hit_z[nhit_len]/F",
         ],
         "hit readout": [
-            "hit_hg[nhit_chan]/F",
-            "hit_lg[nhit_chan]/F",
-            "hit_energy[nhit_chan]/F",
+            "hit_hg[nhit_len]/I",
+            "hit_lg[nhit_len]/I",
+            "hit_energy[nhit_len]/F",
+            "hit_n_scas_filled[nhit_len]/I",
         ],
         "hit booleans": [
-            "hit_isHit[nhit_chan]/I",
-            "hit_isMasked[nhit_chan]/I",
-            "hit_isCommissioned[nhit_chan]/I",
+            "hit_isHit[nhit_len]/I",
+            "hit_isMasked[nhit_len]/I",
+            "hit_isCommissioned[nhit_len]/I",
         ],
     }
 
@@ -282,13 +304,13 @@ class BuildEvents:
     def _add_branch(self, tag):
         name, branch_type = tag.split("/")
         branch_type = {"I": "i", "F": "f"}[branch_type]
-        array_indicator = "[nhit_chan]"
+        array_indicator = "[nhit_len]"
         if array_indicator in name:
             name = name.replace(array_indicator, "")
             starting_value = 10000 * [0]
         else:
             starting_value = [0]
-        self.out_arrays[name] = array(branch_type, starting_value)
+        self.out_arrays[name] = np.array(starting_value, dtype=branch_type)
         self.out_tree.Branch(name, self.out_arrays[name], tag)
 
 
@@ -306,13 +328,13 @@ class BuildEvents:
 
         for branch_tag in [bt for bts in self._branch_tags.values() for bt in bts]:
             self._add_branch(branch_tag)
-        self._hit_branches = _get_hit_branches(self.out_arrays, self.ecal_config)
+        self._hit_branches = _get_hit_branches(self.out_arrays)
         return self.out_tree
 
 
     def _write_and_close(self):
         self.out_tree.Write()
-        print("# Created tree with %i events." % self.out_tree.GetEntries())
+        print("\n# Created tree with %i events." % self.out_tree.GetEntries())
         self.out_file.Close()
         self.in_file.Close()
 
@@ -381,11 +403,15 @@ class BuildEvents:
             b["next_bcid"][0] = bcid_handler.next_bcid(bcid)
 
             # count hits per slab/chan/chip
-            b["nhit_slab"][0] = len(set([hit.slab for hit in hits]))
-            b["nhit_chip"][0] = len(set([(hit.slab, hit.chip) for hit in hits]))
-            b["nhit_chan"][0] = len(set([(hit.slab, hit.chip, hit.chan) for hit in hits if hit.isHit]))
-            b["sum_hg"][0] = sum([hit.hg for hit in hits])
-            b["sum_energy"][0] = sum([hit.energy for hit in hits])
+            tmp_for_unique = hits["slab"]
+            b["nhit_slab"][0] = np.unique(tmp_for_unique).size
+            tmp_for_unique = tmp_for_unique * self.ecal_config._N.n_chips + hits["chip"]
+            b["nhit_chip"][0] = np.unique(tmp_for_unique).size
+            b["nhit_len"][0] = hits["isHit"].size
+            tmp_for_unique = tmp_for_unique * self.ecal_config._N.n_channels + hits["chan"]
+            b["nhit_chan"][0] = np.unique(tmp_for_unique[hits["isHit"]]).size
+            b["sum_hg"][0] = hits["hg"][hits["isHit"]].sum()
+            b["sum_energy"][0] = hits["energy"][hits["isHit"]].sum()
 
             if len(hits) > self.ecal_config._N.bcid_too_many_hits:
                 txt = "Suspicious number of hits! %i " %len(hits)
@@ -394,9 +420,9 @@ class BuildEvents:
                 print(txt)
                 continue
 
-            for i, hit in enumerate(hits):
-                for hit_attr in self._hit_branches:
-                    b["hit_" + hit_attr][i] = getattr(hit, hit_attr)
+            for hit_field in self._hit_branches:
+                ev_val = hits[hit_field]
+                b["hit_" + hit_field][:ev_val.size] = ev_val
             self.out_tree.Fill()
 
 

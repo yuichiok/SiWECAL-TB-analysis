@@ -78,46 +78,6 @@ dummy_config = dict(
 )
 
 
-class EcalHit:
-    def __init__(self, slab, chip, chan, sca, hg, lg, gain_hit_high, ecal_config):
-        self.slab = slab
-        self.chip = chip
-        self.chan = chan
-        self.sca = sca
-        self.hg = hg
-        self.lg = lg
-        self._ecal_config = ecal_config
-        self._idx_slab = self._ecal_config._N.slabs.index(self.slab)
-
-        self.isMasked = self._ecal_config.masked_map[self._idx_slab][self.chip][self.chan]
-        self.isCommissioned = self._ecal_config.is_commissioned_map[self._idx_slab][self.chip][self.chan][self.sca]
-        self._gain_hit_high = gain_hit_high
-
-        self._set_positions()
-        self._pedestal_subtraction()
-        self._mip_calibration()
-
-
-    @property
-    def isHit(self):
-        return int(self._gain_hit_high > 0)
-
-    def _set_positions(self):
-        self.x = self._ecal_config.x[self._idx_slab][self.chip][self.chan]
-        self.y = self._ecal_config.y[self._idx_slab][self.chip][self.chan]
-        self.z = self._ecal_config.z[self._idx_slab][self.chip][self.chan]
-
-
-    def _pedestal_subtraction(self):
-        pedestals_per_sca = self._ecal_config.pedestal_map[self._idx_slab][self.chip][self.chan]
-        self.hg -= pedestals_per_sca[self.sca]
-
-
-    def _mip_calibration(self):
-        mip_value = self._ecal_config.mip_map[self._idx_slab][self.chip][self.chan]
-        self.energy = self.hg / mip_value
-
-
 class EcalConfig:
 
     def __init__(
@@ -236,7 +196,7 @@ class EcalConfig:
             v = line.split()
             for i_sca in range(ped_map.shape[-1]):
                 n_entries_per_sca = 3  # ped, eped, widthped
-                ped_val = float(v[2 + i_sca * n_entries_per_sca])
+                ped_val = float(v[3 + i_sca * n_entries_per_sca])
                 idx_slab = self._N.slabs.index(int(v[i_slab]))
                 ped_map[idx_slab][int(v[i_chip])][int(v[i_channel])][i_sca] = ped_val
         if self._verbose:
