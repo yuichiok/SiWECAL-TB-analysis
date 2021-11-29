@@ -347,7 +347,7 @@ class BuildEvents:
         self.in_tree = self._get_tree(file_name)
         self.out_arrays = {}
         self.out_tree = self._create_out_tree(out_file_name, file_name)
-        self._fill_w_config_hist()
+        self._create_config_hists()
 
         if max_entries is None:
             max_entries = self.max_entries
@@ -357,6 +357,14 @@ class BuildEvents:
         for i_spill, entry in get_tree_spills(self.in_tree, max_entries):
             self._fill_spill(i_spill, entry)
         self._write_and_close()
+
+
+    def _create_config_hists(self):
+        self.out_file.mkdir("config")
+        self.out_file.GetDirectory("config").cd()
+        self._fill_w_config_hist()
+        self._fill_config_maps()
+        self.out_file.cd()
 
 
     def _fill_w_config_hist(self):
@@ -380,6 +388,48 @@ class BuildEvents:
         w_hist.Write()
         print("W config %i used." %self.w_config, end=" ")
         print("Absolute thickness:", abs_thick)
+
+
+    def _fill_config_maps(self):
+        def is_config_map(name):
+            return not name.startswith("_") and "_map" in name
+
+        for name in dir(self.ecal_config):
+            if is_config_map(name):
+                config_map = getattr(self.ecal_config, name)
+                self._fill_config_map(config_map, name)
+
+
+    def _fill_config_map(self, config_map, name):
+        # There might be a faster implementation than this for-loop.
+        # But at it is only run once (per config map), this should be ok.
+        if len(config_map.shape) == 4:
+            # There is no TH4. Instead, build a TH3 for each sca.
+            assert config_map.shape[3] == self.ecal_config._N.n_scas
+            for i in range(config_map.shape[3]):
+                new_name = name + "_sca{:02d}".format(i)
+                self._fill_config_map(config_map[:,:,:, i], new_name)
+            return
+        if len(config_map.shape) != 3:
+            print("Warning: Storing of this config map is not implemented:", name)
+        assert config_map.shape[0] == self.ecal_config._N.n_slabs
+        assert config_map.shape[1] == self.ecal_config._N.n_chips
+        assert config_map.shape[2] == self.ecal_config._N.n_channels
+        if config_map.dtype == int or config_map.dtype == bool:
+            hist_fct = rt.TH3I
+        else:
+            hist_fct = rt.TH3F
+        hist = hist_fct(
+            name, name,
+            self.ecal_config._N.n_slabs, np.arange(-0.5, self.ecal_config._N.n_slabs),
+            self.ecal_config._N.n_chips, np.arange(-0.5, self.ecal_config._N.n_chips),
+            self.ecal_config._N.n_channels, np.arange(-0.5, self.ecal_config._N.n_channels),
+        )
+        for i_slab in range(self.ecal_config._N.n_slabs):
+            for i_chip in range(self.ecal_config._N.n_chips):
+                for i_channel in range(self.ecal_config._N.n_channels):
+                    hist.Fill(i_slab, i_chip, i_channel, config_map[i_slab, i_chip, i_channel])
+        hist.Write()
 
 
     def _fill_spill(self, spill, entry):
