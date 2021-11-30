@@ -3,9 +3,10 @@ from __future__ import print_function
 
 import argparse
 import collections
+import sys
+
 import numpy as np
 import ROOT as rt
-from array import array
 from help_tools import *
 
 
@@ -37,6 +38,7 @@ except ImportError:
                     ),
                     end="\r",
                 )
+                sys.stdout.flush()
             yield i, spill
 
 
@@ -74,7 +76,7 @@ class BCIDHandler:
             if sum(is_main_bcid_candidate) == 1:
                 main_bcid = bcid_group[np.argmax(is_main_bcid_candidate)]
             else:
-                bcid_group = np.array(bcid_group)
+                bcid_group = np.array(bcid_group, dtype=float)
                 weighted_mean = bcid_group * group_counts / len(bcid_group)
                 weighted_mean -= 0.01  # Choose the smaller BCID when in between.
                 main_bcid = bcid_group[np.argmin(np.abs(bcid_group - weighted_mean))]
@@ -203,46 +205,40 @@ class BuildEvents:
     _in_tree_name = "siwecaldecoded"
     _out_tree_name = "ecal"
 
-    _branch_tags = {
-        "event info": [
+    _branch_tags = [
+        # "event info":
             "event/I",
             "spill/I",
             "bcid/I",
             "prev_bcid/I",
             "next_bcid/I",
-        ],
-        "hit summary": [
+        # "hit summary":
             "nhit_slab/I",
             "nhit_chip/I",
             "nhit_chan/I",
             "nhit_len/I",
             "sum_hg/F",
             "sum_energy/F",
-        ],
         # 64: the number of channels on a chip.
-        "hit id": [
+        # "hit id":
             "hit_slab[nhit_len]/I",
             "hit_chip[nhit_len]/I",
             "hit_chan[nhit_len]/I",
             "hit_sca[nhit_len]/I",
-        ],
-        "hit coord": [
+        # "hit coord":
             "hit_x[nhit_len]/F",
             "hit_y[nhit_len]/F",
             "hit_z[nhit_len]/F",
-        ],
-        "hit readout": [
+        # "hit readout":
             "hit_hg[nhit_len]/I",
             "hit_lg[nhit_len]/I",
             "hit_energy[nhit_len]/F",
             "hit_n_scas_filled[nhit_len]/I",
-        ],
-        "hit booleans": [
+        # "hit booleans":
             "hit_isHit[nhit_len]/I",
             "hit_isMasked[nhit_len]/I",
             "hit_isCommissioned[nhit_len]/I",
-        ],
-    }
+    ]
 
     def __init__(
         self,
@@ -253,7 +249,7 @@ class BuildEvents:
         commissioning_folder=None,
         cob_positions_string="",
         ecal_numbers=None,  # Not provided in CLI. Mainly useful for debugging/changing.
-        **config_file_kws,
+        **config_file_kws
     ):
         self.file_name = file_name
         self.w_config = w_config
@@ -273,7 +269,7 @@ class BuildEvents:
         self.ecal_config = EcalConfig(
             commissioning_folder=commissioning_folder,
             numbers=ecal_numbers,
-            **config_file_kws,
+            **config_file_kws
         )
 
 
@@ -326,7 +322,7 @@ class BuildEvents:
         self.out_file = rt.TFile(out_file_name,"recreate")
         self.out_tree = rt.TTree(self._out_tree_name, "Build ecal events")
 
-        for branch_tag in [bt for bts in self._branch_tags.values() for bt in bts]:
+        for branch_tag in self._branch_tags:
             self._add_branch(branch_tag)
         self._hit_branches = _get_hit_branches(self.out_arrays)
         return self.out_tree

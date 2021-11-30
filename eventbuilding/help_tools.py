@@ -99,7 +99,8 @@ class EcalConfig:
         else:
             # Resolves to the root folder of this repo
             # Equivalent to ../ if called from within the eventbuilding folder.
-            self._commissioning_folder = os.path.dirname(os.path.dirname((__file__)))
+            event_building_folder = os.path.dirname(os.path.abspath(__file__))
+            self._commissioning_folder = os.path.dirname(event_building_folder)
         if numbers:
             EcalNumbers.validate_ecal_numbers(numbers)  # Catch problems early on.
             self._N = numbers
