@@ -125,9 +125,7 @@ void read_configuration_file(TString filename="Run_Settings.txt", bool debug=tru
   std::cout << "Begin 1: " << begin << std::endl;
   // == SETTINGS FILE SAVED WITH ILC SL-SOFTWARE VERSION: V2.16  == DATE OF RUN: UnixTime = 1582821640.563 date = 2020.2.27 time = 17h.40m.40s  ===
   reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> detector.sl_soft_v >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> detector.date_run_unix >> tmpst>> tmpst >> detector.date_run_date >> tmpst >> tmpst >> detector.date_run_time >> tmpst ;
-  //  == DESY_MOVING_TABLE: CONNECTED LAST_SET_X_POSITION: -800 LAST_SET_Y_POSITION 800 LAST_READ_X_POSITION: 792 LAST_READ_Y_POSITION: -766 ==
-  //reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst>> tmpst >> tmpst >> tmpst >>tmpst;
-  //cout<<" HOLAAAAAAAAAA "<<tmpst;
+
   //CRP 7/12/20 Playing with positions in the file
   //CRP The action should bring us back to the beginning of the line (if successful we can analyse the string in parallel to the existing code) 
   //reading_file.clear();  
@@ -181,10 +179,20 @@ void read_configuration_file(TString filename="Run_Settings.txt", bool debug=tru
   //A[5] = 0;
   // printing the character stream 
   //cout << "The character 2+: " << A << endl;
+  
+  // If the Stage is connected:
+  //  == DESY_MOVING_TABLE: CONNECTED LAST_SET_X_POSITION: -800 LAST_SET_Y_POSITION 800 LAST_READ_X_POSITION: 792 LAST_READ_Y_POSITION: -766 ==
+  // reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst>> tmpst >> tmpst >> tmpst >> tmpst;
+
+  // If the Stage is not connected:
+  // == DESY_MOVING_TABLE: NOT_CONNECTED ==
+  reading_file >> tmpst >> tmpst >> tmpst >> tmpst;
+
   //== SYSTEM_TYPE: SL_COREMODULE_INTERFACE USB_SerNum: 2.41A FPGA_Version: V2.1.11  NB_Of_Core_Daughters: 1 EXT_CLOCK: 0 ( 1 = YES, 0= NO) ==
   reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst>> tmpst >> tmpst >> tmpst >>tmpst;                                                                                
   reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> detector.usb_sernum >> tmpst >> detector.fpga_ver >> tmpst >> detector.n_core_daughters >> tmpst >> detector.external_clock >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst;
   if(debug) cout<<" COREMODULE: USB_SerNum " <<detector.usb_sernum<<", FPGA Ver "<<detector.fpga_ver<<", NB_Of_Core_Daughters "<< detector.n_core_daughters<<", EXT_CLOCK "<<detector.external_clock<< "( 1 = YES, 0= NO)"<<endl;
+
   //CRP Analysing the second line
   //return to beginning of line
   //bool iscore(false);
