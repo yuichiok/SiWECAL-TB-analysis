@@ -50,7 +50,7 @@ protected:
     NCHANNELS=64,
     NCHIP=16,
     NEGDATA_THR=11, //event with data below are tagged badbcid+=32
-    BCIDTHRES=3
+    BCIDTHRES=15
   };
 
   int R2Rstate;
