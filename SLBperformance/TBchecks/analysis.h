@@ -157,6 +157,7 @@ void pedanalysis(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
   ped_all->Draw("colz");
   canvas0->cd(2);
   rms_all->GetZaxis()->SetRangeUser(1.0,6.0);
+  if(gain=="low") rms_all->GetZaxis()->SetRangeUser(0.5,3.0);
   rms_all->Draw("colz");
   canvas0->Print(TString::Format("%s_%sgain_PedSummary.png",run.Data(),gain.Data()));
   _file1->cd();
