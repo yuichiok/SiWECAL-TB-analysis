@@ -1,8 +1,15 @@
 #!/bin/bash
 
 run=$1
-data_folder="/mnt/win1/Run_Data/"${run}"/"
+data_folder="/mnt/HardDrive/beamData/ascii/"${run}"/"
 output="../converter_SLB/convertedfiles/"${run}"/"
+
+cd $data_folder
+for file in *tar.gz
+do
+    tar xzvf ${file}
+done
+cd -
 
 initial=${PWD}
 
@@ -28,9 +35,7 @@ root -l -q ConvertDirectorySL_TB.cc\(\"${data_folder}\",false,\"${run}\",\"../co
 root -l -q ConvertDirectorySL_TB.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/${run}\",1\) &
 root -l -q ConvertDirectorySL_TB.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/${run}\",0\)
 
-cd -
-
-cd ${initial}/../
 # source compress_TB2021_endedrun.sh $run &
 cd ${initial}
 
+rm -rf $data_folder
