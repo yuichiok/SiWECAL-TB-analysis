@@ -1,7 +1,7 @@
 #include "analysis.h"
 
  
-void analysis(TString run="PedestalMIP3GeVMIPscan_run_050043", TString gain="high") {
+void analysis(TString run="3GeVMIPscan", TString gain="high") {
 
   gROOT->Reset();
   //SetIrlesStyle();
@@ -17,9 +17,10 @@ void analysis(TString run="PedestalMIP3GeVMIPscan_run_050043", TString gain="hig
   gStyle->SetTitleFontSize(0.05);
   gStyle->SetMarkerSize(1.2);
 
-  pedanalysis(run,gain);
+  //  pedanalysis(run,gain);
+  mipanalysis_summary(run,gain);
+  s_n_analysis_summary(run,gain);
 
-
-  //  gSystem->Exit(0);
+  //gSystem->Exit(0);
   return 0;
 }

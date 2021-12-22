@@ -14,7 +14,7 @@ int Proto(TString filename_in, TString output="", int monitoring=0){
   cout<<"Start NSlabsNAalysis"<<endl;
   int result1=1;
   int result2=1;
-  if(monitoring>0) ss.HitMonitoring(output,30,4);
+  if(monitoring>0) ss.HitMonitoring(output,1000,4);
   else result2=ss.NSlabsAnalysis(output,2,10);
   return result1*result2;
 

@@ -1,4 +1,4 @@
-/bash
+
 
 run=$1
 run_file="converted"
@@ -49,7 +49,7 @@ do
 		root -l -q Proto.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$i0\",1\) &
             else
 		root -l -q Proto.cc\(\"${output}/${run_file}_${run}.dat_$i0\",\"${run}_$i0\",1\)  
-            fi
+	    fi
 	    cd -
 	    j=$((i+1))
         else
@@ -61,7 +61,7 @@ done
 sleep 45
 cd TBchecks/
 j=$((j-1))
-root -l -q statistics.cc\(\"HitMonitoring_${run}\",$j\)
-rm results_proto/HitMonitoring_${run}*
+root -l -q statistics.cc\(\"stats_${run}\",$j\)
+rm ../results_proto/stats_${run}*
 cd -
 

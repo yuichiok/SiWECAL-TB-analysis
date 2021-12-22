@@ -3,7 +3,7 @@
 #include "conf_struct.h"
 
 //void test_read_masked_channels_summary(TString filename="15102021/Run_Settings_DataTaking_TB2021_15102021_WRITENbyDAQ", bool debug=true) {
-void test_read_masked_channels_summary(TString filename="15102021/Run_Settings_DataTaking_TB2021_15102021", bool debug=true) {
+void test_read_masked_channels_summary(TString filename="/mnt/HardDrive/beamData/ascii/1.4GeV_W_run_050163/Run_Settings", bool debug=true) {
   //void test_read_masked_channels_summary(TString filename="run_150014/Run_Settings", bool debug=true) {  
 
   read_configuration_file(filename+".txt",true);

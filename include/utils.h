@@ -249,7 +249,7 @@ TF1* langaufit(TH1F *his, Double_t *fitrange, Double_t *startvalues, Double_t *p
 
 
 
-void ReadPedestalsProto(TString filename, bool invertedordering=true) 
+void ReadPedestalsProto(TString filename, bool invertedordering=false) 
 {
   std::ifstream reading_file(filename);
   if(!reading_file){

@@ -35,7 +35,11 @@ root -l -q ConvertDirectorySL_TB.cc\(\"${data_folder}\",false,\"${run}\",\"../co
 root -l -q ConvertDirectorySL_TB.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/${run}\",1\) &
 root -l -q ConvertDirectorySL_TB.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/${run}\",0\)
 
+sleep 30s
 # source compress_TB2021_endedrun.sh $run &
 cd ${initial}
+
+cd ../SLBcommissioning
+root -l test_read_masked_channels_TB.C\(\"${data_folder}/Run_Settings.txt\",\"${initial}/../masked/masked_channels_${run}\"\)
 
 rm -rf $data_folder

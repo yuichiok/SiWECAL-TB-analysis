@@ -17,7 +17,7 @@
 #include <iostream>
 #include <fstream>
 #include "TLatex.h"
-#include "../../include/utils3.h"
+#include "../../include/utils.h"
 
 //#include "../../style/Style.C"
 //#include "../../style/Labels.C"
@@ -259,7 +259,7 @@ void statistics_evts(TString run="Run_ILC_cosmic_test_11222019", int jmax=63){
   std::vector<TH2F*> results = statistics_calc(run,"Events",jmax);
   statistics_plots(run,"Events",results,jmax);
 
-  ofstream fout(TString::Format("../results_calib/statistics_%s.txt",run.Data()).Data(),ios::out);
+  ofstream fout(TString::Format("../../run_list/statistics_%s.txt",run.Data()).Data(),ios::out);
   TH2F* cycles = results.at(8);
   TH2F* signal = results.at(9);
   TH2F* noise = results.at(10);

@@ -78,6 +78,7 @@ void DecodedSLBAnalysis::HitMonitoring(TString outputname="", int maxnhit=5, int
 
 	  if( bcid[ilayer][ichip][isca]<50 || (bcid[ilayer][ichip][isca]>900 && bcid[ilayer][ichip][isca]<1000) || badbcid[ilayer][ichip][isca]==1 || badbcid[ilayer][ichip][isca]==2 ) continue;
 
+	  
 	  int bcid_seen = SimpleCoincidenceTagger(ilayer,ichip,maxnhit,bcid[ilayer][ichip][isca]);
 	  if(bcid_seen>nslabshit ) {
 	    event_monitoring->Fill(1,(14-ilayer)*20 +ichip);
@@ -144,7 +145,7 @@ void DecodedSLBAnalysis::HitMonitoring(TString outputname="", int maxnhit=5, int
    
   // --------------------------------------------------------------------------------
   // PEDESTAL ANALYSIS
-  TFile *pedfile = new TFile("results_proto/HitMonitoring_"+outputname+".root" , "RECREATE");
+  TFile *pedfile = new TFile("results_proto/stats_"+outputname+".root" , "RECREATE");
   pedfile->cd();
   hit_monitoring->Write();
   hit_monitoring_layer->Write();
