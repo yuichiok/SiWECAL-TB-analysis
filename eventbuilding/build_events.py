@@ -24,7 +24,7 @@ except ImportError:
     def get_tree_spills(tree, max_entries):
         print("# Going to analyze %i entries..." %max_entries)
         print("# For better progress information: `pip install tqdm`.")
-        print(datetime.now())
+        print("# Start time:", datetime.now())
         progress_bar = ""
         for i, spill in enumerate(tree):
             if i > max_entries:
@@ -261,17 +261,17 @@ class BuildEvents:
         slabs = self._get_slabs(self.in_tree)
         cob_slabs = set(map(int, filter(None, cob_positions_string.split(" "))))
         if ecal_numbers is None:
-            ecal_numbers = EcalNumbers(slabs=slabs, cob_slabs=cob_slabs)
+           ecal_numbers = EcalNumbers(slabs=slabs, cob_slabs=cob_slabs)
         else:
             assert ecal_numbers.slabs == slabs
             assert ecal_numbers.cob_slabs == cob_slabs
 
+        speed_warning_if_python2()
         self.ecal_config = EcalConfig(
             commissioning_folder=commissioning_folder,
             numbers=ecal_numbers,
             **config_file_kws
         )
-
 
     def _get_tree(self, file_name):
         self.in_file = rt.TFile(file_name,"read")
