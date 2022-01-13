@@ -269,6 +269,7 @@ class BuildEvents:
         max_entries=-1,
         out_file_name=None,
         commissioning_folder=None,
+        min_slabs_hit=4,
         cob_positions_string="",
         ecal_numbers=None,  # Not provided in CLI. Mainly useful for debugging/changing.
         no_zero_suppress=False,
@@ -279,6 +280,7 @@ class BuildEvents:
         self.w_config = w_config
         self.max_entries = max_entries
         self.out_file_name = out_file_name
+        self.min_slabs_hit = min_slabs_hit
         self.event_counter = 0
 
         self.in_tree = self._get_tree(file_name)
@@ -471,6 +473,11 @@ class BuildEvents:
             hits = hits_per_event[bcid]
             if len(hits) == 0:
                 raise EventBuildingException("Event with 0 hits. Why?")
+            tmp_for_unique = hits["slab"]
+            nhit_slab = np.unique(tmp_for_unique).size
+            if nhit_slab < self.min_slabs_hit:
+                continue
+
             self.event_counter += 1
             b["event"][0] = self.event_counter
             b["bcid"][0] = bcid
@@ -478,8 +485,7 @@ class BuildEvents:
             b["next_bcid"][0] = bcid_handler.next_bcid(bcid)
 
             # count hits per slab/chan/chip
-            tmp_for_unique = hits["slab"]
-            b["nhit_slab"][0] = np.unique(tmp_for_unique).size
+            b["nhit_slab"][0] = nhit_slab
             tmp_for_unique = tmp_for_unique * self.ecal_config._N.n_chips + hits["chip"]
             b["nhit_chip"][0] = np.unique(tmp_for_unique).size
             b["nhit_len"][0] = hits["isHit"].size
@@ -512,6 +518,7 @@ if __name__ == "__main__":
     parser.add_argument("-w", "--w_config", default=-1, type=int)
     parser.add_argument("-o", "--out_file_name", default=None)
     parser.add_argument("-c", "--commissioning_folder", default=None)
+    parser.add_argument("-s", "--min_slabs_hit", default=4, type=int)
     parser.add_argument("--cob_positions_string", default="")
     parser.add_argument("--no_zero_suppress", action="store_true", help="Store all channels on hit chip.")
     parser.add_argument("--no_lg", action="store_true", help="Ignore low gain")
