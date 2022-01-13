@@ -172,6 +172,11 @@ def get_hits_per_event(entry, bcid_handler, ecal_config):
         ext("hg", hg)
         ext("energy", energy)
         lg = all_lg[bcid_channel_id]
+        if not ecal_config.no_lg:
+            energy_lg = hg.astype(float)
+            energy_lg -= ecal_config.pedestal_lg_map[slab_id, chip, :, sca]
+            energy_lg /= ecal_config.mip_lg_map[slab_id, chip]
+            ext("energy_lg", energy_lg)
         ext("lg", lg)
 
         n_in_batch = n_channels
@@ -219,6 +224,7 @@ class BuildEvents:
             "nhit_len/I",
             "sum_hg/F",
             "sum_energy/F",
+            "sum_energy_lg/F",
         # 64: the number of channels on a chip.
         # "hit id":
             "hit_slab[nhit_len]/I",
@@ -233,12 +239,18 @@ class BuildEvents:
             "hit_hg[nhit_len]/I",
             "hit_lg[nhit_len]/I",
             "hit_energy[nhit_len]/F",
+            "hit_energy_lg[nhit_len]/F",
             "hit_n_scas_filled[nhit_len]/I",
         # "hit booleans":
             "hit_isHit[nhit_len]/I",
             "hit_isMasked[nhit_len]/I",
             "hit_isCommissioned[nhit_len]/I",
     ]
+    
+    _branch_tags_lg_only = ["sum_energy_lg/F", "hit_energy_lg[nhit_len]/F"]
+    # Fast checks to avoid introducing errors.
+    assert set(_branch_tags_lg_only).issubset(_branch_tags)  
+    
 
     def __init__(
         self,
@@ -249,6 +261,7 @@ class BuildEvents:
         commissioning_folder=None,
         cob_positions_string="",
         ecal_numbers=None,  # Not provided in CLI. Mainly useful for debugging/changing.
+        no_lg=False,
         **config_file_kws
     ):
         self.file_name = file_name
@@ -270,6 +283,7 @@ class BuildEvents:
         self.ecal_config = EcalConfig(
             commissioning_folder=commissioning_folder,
             numbers=ecal_numbers,
+            no_lg=no_lg,
             **config_file_kws
         )
 
@@ -318,11 +332,14 @@ class BuildEvents:
                 out_file_name = file_name[:-len(".root")] + "_build.root"
             else:
                 raise EventBuildingException("Unexpected file extension: %s" %file_name)
-        print("# Creating ecal tree in file %s" %out_file_name)
+        print(aligned_path("# Creating ecal tree in file ", out_file_name))
         self.out_file = rt.TFile(out_file_name,"recreate")
         self.out_tree = rt.TTree(self._out_tree_name, "Build ecal events")
 
         for branch_tag in self._branch_tags:
+            if self.ecal_config.no_lg:
+                if branch_tag in self._branch_tags_lg_only:
+                    continue
             self._add_branch(branch_tag)
         self._hit_branches = _get_hit_branches(self.out_arrays)
         return self.out_tree
@@ -458,6 +475,8 @@ class BuildEvents:
             b["nhit_chan"][0] = np.unique(tmp_for_unique[hits["isHit"]]).size
             b["sum_hg"][0] = hits["hg"][hits["isHit"]].sum()
             b["sum_energy"][0] = hits["energy"][hits["isHit"]].sum()
+            if "energy_lg" in hits:
+                b["sum_energy_lg"][0] = hits["energy_lg"][hits["isHit"]].sum()
 
             if len(hits) > self.ecal_config._N.bcid_too_many_hits:
                 txt = "Suspicious number of hits! %i " %len(hits)
@@ -482,6 +501,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--out_file_name", default=None)
     parser.add_argument("-c", "--commissioning_folder", default=None)
     parser.add_argument("--cob_positions_string", default="")
+    parser.add_argument("--no_lg", action="store_true", help="Ignore low gain")
     # Run ./build_events.py --help to see all options.
     for config_option, config_value in dummy_config.items():
         parser.add_argument("--" + config_option, default=config_value)

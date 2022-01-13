@@ -76,8 +76,16 @@ dummy_config = dict(
     mapping_file_cob="mapping/fev11_cob_chip_channel_x_y_mapping.txt",
     pedestals_file="pedestals/pedestal_PROTO15_dummy.txt",
     mip_calibration_file="mip_calib/MIP_PROTO15_dummy.txt",
+    pedestals_lg_file="pedestals/pedestal_PROTO15_dummy_lg.txt",
+    mip_calibration_lg_file="mip_calib/MIP_PROTO15_dummy_lg.txt",
     masked_file="masked/masked_PROTO15_dummy.txt",
 )
+
+
+def aligned_path(text, path):
+    _text_length = 29
+    assert _text_length >= len(text)
+    return text + (_text_length - len(text)) * " " + str(path)
 
 
 class EcalConfig:
@@ -88,9 +96,12 @@ class EcalConfig:
         mapping_file_cob=dummy_config["mapping_file_cob"],
         pedestals_file=dummy_config["pedestals_file"],
         mip_calibration_file=dummy_config["mip_calibration_file"],
+        pedestals_lg_file=dummy_config["pedestals_lg_file"],
+        mip_calibration_lg_file=dummy_config["mip_calibration_lg_file"],
         masked_file=dummy_config["masked_file"],
         commissioning_folder=None,
         numbers=None,
+        no_lg=False,
         error_on_missing_config=True,
         verbose=False,
     ):
@@ -111,13 +122,33 @@ class EcalConfig:
 
         self.x, self.y = self._get_x_y(mapping_file, mapping_file_cob)
         self.z = self._get_z()
+
+        self.masked_map = self._read_masked(masked_file)
         self.pedestal_map = self._read_pedestals(pedestals_file)
         self.mip_map = self._read_mip_values(mip_calibration_file)
-        self.masked_map = self._read_masked(masked_file)
 
         self.is_commissioned_map = self._handle_uncommissioned_positions(
             self.pedestal_map, self.mip_map, self.masked_map
         )
+
+        self.no_lg = no_lg
+        if self.no_lg:
+            print("As requested with --no_lg, low gain will not be calibrated.")
+        else:
+            try:
+                self.pedestal_lg_map = self._read_pedestals(pedestals_lg_file)
+                self.mip_lg_map = self._read_mip_values(mip_calibration_lg_file)
+
+                lg_is_commissioned = self._handle_uncommissioned_positions(
+                    self.pedestal_lg_map, self.mip_lg_map, self.masked_map
+                )
+                self.is_commissioned_map = np.logical_and(
+                    self.is_commissioned_map, lg_is_commissioned
+                )
+            except EventbuildingException as e:
+                print("To run without the lowgain information, use --no_lg.")
+                raise e
+            
 
 
     def _get_x_y(self, mapping_file, mapping_file_cob):
@@ -183,7 +214,7 @@ class EcalConfig:
             self._N.n_channels,
             self._N.n_scas,
         ))
-        print("Reading pedestals from %s." %file_name)
+        print(aligned_path("Reading pedestals from ", file_name))
         lines = self._get_lines(file_name)
 
         assert lines[0].startswith("#pedestal results")
@@ -213,7 +244,7 @@ class EcalConfig:
             self._N.n_chips,
             self._N.n_channels,
         ))
-        print("Reading MIP values from %s." %file_name)
+        print(aligned_path("Reading MIP values from ", file_name))
         lines = self._get_lines(file_name)
 
         assert lines[0].startswith("#mip results")
@@ -240,7 +271,7 @@ class EcalConfig:
             self._N.n_chips,
             self._N.n_channels,
         ), dtype=int)
-        print("Reading masked channels from %s." %file_name)
+        print(aligned_path("Reading masked channels from ", file_name))
         lines = self._get_lines(file_name)
 
         start_tag = "#masked_chns_list "
