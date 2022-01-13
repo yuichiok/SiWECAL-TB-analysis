@@ -147,18 +147,28 @@ def get_hits_per_event(entry, bcid_handler, ecal_config):
         gain_hit_high = all_gain_hit[bcid_channel_id]
         if np.all(gain_hit_high < 0):
             continue
+        # gain_hit_high == gain_hit_low (up to tiny errors), confirmed by Stephane Callier.
+        is_hit = np.array(gain_hit_high > 0)
+        if ecal_config.zero_suppress:
+            if is_hit.sum() == 0:
+                # It is not clear to me why chips with no hit-bit for any of their channels
+                # are ever written to memory, but the DAQ writes such lines.
+                continue
+
+            def ext(name, array):
+                return event[bcid][name].extend(array[is_hit])
+        else:
+            def ext(name, array):
+                return event[bcid][name].extend(array)
+
         if bcid not in event:
             event[bcid] = collections.defaultdict(list)
-
         slab = entry.slot[(i // n_scas // n_chips)]
         slab_id = ecal_config._N.slabs.index(slab)
         chip = entry.chipid[i // n_scas]
         sca = i % n_scas
 
-        def ext(name, array):
-            return event[bcid][name].extend(array)
-
-        ext("isHit", gain_hit_high > 0)
+        ext("isHit", is_hit)
         ext("isMasked", np.array(ecal_config.masked_map[slab_id, chip], dtype=int))
         ext("isCommissioned", np.array(ecal_config.is_commissioned_map[slab_id, chip, :, sca], dtype=int))
         ext("x", np.array(ecal_config.x[slab_id, chip]))
@@ -261,6 +271,7 @@ class BuildEvents:
         commissioning_folder=None,
         cob_positions_string="",
         ecal_numbers=None,  # Not provided in CLI. Mainly useful for debugging/changing.
+        no_zero_suppress=False,
         no_lg=False,
         **config_file_kws
     ):
@@ -284,6 +295,7 @@ class BuildEvents:
             commissioning_folder=commissioning_folder,
             numbers=ecal_numbers,
             no_lg=no_lg,
+            zero_suppress=not bool(no_zero_suppress),
             **config_file_kws
         )
 
@@ -501,6 +513,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--out_file_name", default=None)
     parser.add_argument("-c", "--commissioning_folder", default=None)
     parser.add_argument("--cob_positions_string", default="")
+    parser.add_argument("--no_zero_suppress", action="store_true", help="Store all channels on hit chip.")
     parser.add_argument("--no_lg", action="store_true", help="Ignore low gain")
     # Run ./build_events.py --help to see all options.
     for config_option, config_value in dummy_config.items():

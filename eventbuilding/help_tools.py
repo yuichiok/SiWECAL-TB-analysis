@@ -101,6 +101,7 @@ class EcalConfig:
         masked_file=dummy_config["masked_file"],
         commissioning_folder=None,
         numbers=None,
+        zero_suppress=True,
         no_lg=False,
         error_on_missing_config=True,
         verbose=False,
@@ -131,6 +132,7 @@ class EcalConfig:
             self.pedestal_map, self.mip_map, self.masked_map
         )
 
+        self.zero_suppress = zero_suppress
         self.no_lg = no_lg
         if self.no_lg:
             print("As requested with --no_lg, low gain will not be calibrated.")
