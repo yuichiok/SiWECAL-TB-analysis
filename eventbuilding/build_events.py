@@ -24,7 +24,7 @@ except ImportError:
     def get_tree_spills(tree, max_entries):
         print("# Going to analyze %i entries..." %max_entries)
         print("# For better progress information: `pip install tqdm`.")
-        print("# Start time:", datetime.now())
+        print("# Start time:", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         progress_bar = ""
         for i, spill in enumerate(tree):
             if i > max_entries:
@@ -33,85 +33,115 @@ except ImportError:
                 progress_bar = "#" * int(30 * i / max_entries)
                 print("# Build events [{}] Spill {}/{}".format(
                         progress_bar.ljust(30),
-                        str(i).rjust(len(str(max_entries))), 
+                        str(i).rjust(len(str(max_entries))),
                         max_entries,
                     ),
                     end="\r",
                 )
                 sys.stdout.flush()
             yield i, spill
+        print("\n# Final time:", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 
 class BCIDHandler:
-    def __init__(self, bcid_skip_noisy_acquisition_start, delta_merge):
-        self.bcid_skip_noisy_acquisition_start = bcid_skip_noisy_acquisition_start
-        self.delta_merge = delta_merge
-        self.bad_bcid_value = -999
+    def __init__(self, bcid_numbers, min_slabs_hit=1):
+        self._N = bcid_numbers
+        self._min_slabs_hit = min_slabs_hit
 
 
-    def _get_corrected_bcids(self, bcids):
-        """Using corrected_bcid, these corrections should already be in place."""
-        bcids = np.array(list(bcids))
-        bcids[bcids < self.bcid_skip_noisy_acquisition_start] = self.bad_bcid_value
-        return bcids
+    def _apply_overflow_correction(self, arr):
+        """"Within a chips memory, the BCID must increase. A drop indicates overflow."""
+        # assert np.max(arr) < self._N.bcid_overflow
+        n_memory_cycles = np.cumsum(arr[:,1:] - arr[:,:-1] < 0, axis=1)
+        is_filled = arr[:,1:] != self._N.bcid_bad_value
+        arr[:,1:] = arr[:,1:] + self._N.bcid_overflow * n_memory_cycles * is_filled
+        return arr
 
 
-    def _get_good_bcids(self, bcids, bad_bcids):
-        """Returns Counter for #events within the spill with same good BCID."""
-        good_bcid_counts = collections.Counter(bcids)
-        # Apparently np.arrray(array.array) does not work, as numpy thinks the
-        # array/buffer is longer, and includes the following memory-nonsense to.
-        bad_bcid_values = set(np.array(list(bcids))[np.array(list(bad_bcids)) != 0])
-        for bad_bcid in bad_bcid_values:
-            good_bcid_counts.pop(bad_bcid)
-        return good_bcid_counts
+    def _is_retrigger(self, arr):
+        """Within each chip's memory, look for consecutive BCIDs."""
+        delta = arr[:,1:] - arr[:,:-1]
+        return np.logical_and(delta > 0, delta <= self._N.bcid_drop_retrigger_delta)
 
 
-    def _choose_main_bcid_for_merger(self, bcid_group, good_bcid_counts):
-        if len(bcid_group) == 1:
-            main_bcid = bcid_group[0]
+    def _find_bcid_filling_last_sca(self, arr):
+        bcid_in_last_sca = arr[:,-1]
+        bcid_in_last_sca = bcid_in_last_sca[bcid_in_last_sca != self._N.bcid_bad_value]
+        if len(bcid_in_last_sca):
+            bcid_in_last_sca = bcid_in_last_sca.min()
         else:
-            group_counts = np.array([good_bcid_counts[x] for x in bcid_group])
-            is_main_bcid_candidate = group_counts == max(group_counts)
-            if sum(is_main_bcid_candidate) == 1:
-                main_bcid = bcid_group[np.argmax(is_main_bcid_candidate)]
+            bcid_in_last_sca = self._N.bcid_bad_value
+        return bcid_in_last_sca
+
+
+    def _get_bcids(self, raw_bcid_array):
+        raw_bcids = np.array(list(raw_bcid_array)).reshape(-1, self._N.n_scas)
+        chip_ids = np.nonzero(
+            np.any(raw_bcids != self._N.bcid_bad_value, axis=1)
+        )[0]
+        bcids = np.copy(raw_bcids[chip_ids])
+        bcids = self._apply_overflow_correction(bcids)
+        bcids[:,1:][self._is_retrigger(bcids)] = self._N.bcid_bad_value
+        bcids[bcids < self._N.bcid_skip_noisy_acquisition_start] = self._N.bcid_bad_value
+        for drop_bcid in self._N.bcid_drop:
+            bcids[bcids == drop_bcid] = self._N.bcid_bad_value
+        return chip_ids, bcids
+
+
+    def _get_bcid_start_stop(self, arr):
+        all_bcids = np.unique(arr)
+        all_bcids = all_bcids[all_bcids != self._N.bcid_bad_value]
+        if len(all_bcids) == 0:
+            return dict()
+        previous_bcid = all_bcids[0]
+        bcid_start_stop = {previous_bcid: previous_bcid}
+        for current_bcid in all_bcids[1:]:
+            if current_bcid - bcid_start_stop[previous_bcid] < self._N.bcid_merge_delta:
+                bcid_start_stop[previous_bcid] = current_bcid
             else:
-                bcid_group = np.array(bcid_group, dtype=float)
-                weighted_mean = bcid_group * group_counts / len(bcid_group)
-                weighted_mean -= 0.01  # Choose the smaller BCID when in between.
-                main_bcid = bcid_group[np.argmin(np.abs(bcid_group - weighted_mean))]
-        return main_bcid
+                bcid_start_stop[current_bcid] = current_bcid
+                previous_bcid = current_bcid
+        return bcid_start_stop
 
 
-    def merge_bcids(self, bcids, bad_bcids):
-        bcids = self._get_corrected_bcids(bcids)
-        good_bcid_counts = self._get_good_bcids(bcids, bad_bcids)
-        good_bcids = np.array(sorted(good_bcid_counts))
-        delta_good_bcids = good_bcids[1:] - good_bcids[:-1]
-        merge_with_following = delta_good_bcids <= self.delta_merge
+    def _get_array_positions_per_bcid(self, chip_ids, bcids):
+        bcid_start_stop = self._get_bcid_start_stop(bcids)
+        _pos_per_bcid = {k: [] for k in bcid_start_stop}
+        bcid_before_merge = {k: [] for k in bcid_start_stop}
+        for bcid_start in bcid_start_stop:
+            i_chip_local, i_sca = np.nonzero(np.logical_and(
+                bcids >= bcid_start, bcids <= bcid_start_stop[bcid_start]
+            ))
+            bcid_before_merge[bcid_start].extend(bcids[i_chip_local, i_sca])
+            i_chip = chip_ids[i_chip_local]
+            _pos_per_bcid[bcid_start].extend(i_chip * self._N.n_scas + i_sca)
 
-        if len(good_bcids) == 0: 
-            return np.full_like(bcids, self.bad_bcid_value)
-        good_bcid_groups = [[good_bcids[0]]]
-        for i, do_merge in enumerate(merge_with_following, start=1):
-            if do_merge:
-                good_bcid_groups[-1].append(good_bcids[i])
-            else:
-                good_bcid_groups.append([good_bcids[i]])
-
-        map_to_main_bcid_in_group = collections.defaultdict(lambda: self.bad_bcid_value)
-        for group in good_bcid_groups:
-            main_bcid = self._choose_main_bcid_for_merger(group, good_bcid_counts)
-            for bcid_in_group in group:
-                map_to_main_bcid_in_group[bcid_in_group] = main_bcid
-
-        merged_bcids = np.array([map_to_main_bcid_in_group[b] for b in bcids])
-        return merged_bcids
+        pos_per_bcid = {}
+        for k, v in _pos_per_bcid.items():
+            pos = np.array(v)
+            slabs_hit = pos // (self._N.n_chips * self._N.n_scas)
+            if len(np.unique(slabs_hit)) >= self._min_slabs_hit:
+                pos_per_bcid[k] = pos
+        return pos_per_bcid, bcid_before_merge
 
 
     def load_spill(self, spill_entry):
-        self.merged_bcid = self.merge_bcids(spill_entry.corrected_bcid, spill_entry.badbcid)
-        self.spill_bcids = sorted(set(self.merged_bcid) - {self.bad_bcid_value})
+        """False if the current spill is empty."""
+        chip_ids, bcids = self._get_bcids(spill_entry.bcid)
+        self.bcid_first_sca_full = self._find_bcid_filling_last_sca(bcids)
+
+        self.pos_per_bcid, self._bcid_before_merge = \
+            self._get_array_positions_per_bcid(chip_ids, bcids)
+        self.spill_bcids = sorted(self.pos_per_bcid.keys())
+        return len(self.pos_per_bcid) > 0
+
+
+    def yield_from_spill(self):
+        for bcid in self.spill_bcids:
+            before_merge = self._bcid_before_merge[bcid]
+            for i, pos in enumerate(self.pos_per_bcid[bcid]):
+                yield pos, bcid, before_merge[i]
+
 
     def previous_bcid(self, bcid):
         i_bcid = self.spill_bcids.index(bcid)
@@ -130,19 +160,18 @@ class BCIDHandler:
 
 def get_hits_per_event(entry, bcid_handler, ecal_config):
     event = {}
+    bcid_merge_end = collections.defaultdict(int)
     n_chips = ecal_config._N.n_chips
     n_channels = ecal_config._N.n_channels
     n_scas = ecal_config._N.n_scas
-    
+
     # It is faster to fill the arrays once outside the loop.
     all_gain_hit = np.array(entry.gain_hit_high)
     all_hg = np.array(entry.charge_hiGain)
     all_lg = np.array(entry.charge_lowGain)
 
     # assert bcid_handler.merged_bcid.shape == np.array(event.bcid).shape
-    for i, bcid in enumerate(bcid_handler.merged_bcid):
-        if bcid == bcid_handler.bad_bcid_value:
-            continue
+    for i, bcid, bcid_before_merge in bcid_handler.yield_from_spill():
         bcid_channel_id = slice(i * n_channels, (i + 1) * n_channels)
         gain_hit_high = all_gain_hit[bcid_channel_id]
         if np.all(gain_hit_high < 0):
@@ -197,11 +226,13 @@ def get_hits_per_event(entry, bcid_handler, ecal_config):
         n_scas_filled = entry.nColumns[i // n_scas]
         ext("n_scas_filled", np.full(n_in_batch, n_scas_filled, dtype=int))
 
+        bcid_merge_end[bcid] = max(bcid_before_merge, bcid_merge_end[bcid])
+
     for bcid, event_arrays in event.items():
         for key in event_arrays:
             event_arrays[key] = np.array(event_arrays[key])
         event[bcid] = event_arrays
-    return event
+    return event, bcid_merge_end
 
 
 def _get_hit_branches(out_arrays):
@@ -225,8 +256,10 @@ class BuildEvents:
             "event/I",
             "spill/I",
             "bcid/I",
-            "prev_bcid/I",
-            "next_bcid/I",
+            "bcid_first_sca_full/I",
+            "bcid_merge_end/I",
+            "bcid_prev/I",
+            "bcid_next/I",
         # "hit summary":
             "nhit_slab/I",
             "nhit_chip/I",
@@ -256,11 +289,11 @@ class BuildEvents:
             "hit_isMasked[nhit_len]/I",
             "hit_isCommissioned[nhit_len]/I",
     ]
-    
+
     _branch_tags_lg_only = ["sum_energy_lg/F", "hit_energy_lg[nhit_len]/F"]
     # Fast checks to avoid introducing errors.
-    assert set(_branch_tags_lg_only).issubset(_branch_tags)  
-    
+    assert set(_branch_tags_lg_only).issubset(_branch_tags)
+
 
     def __init__(
         self,
@@ -311,15 +344,15 @@ class BuildEvents:
             raise EventBuildingException(ex_txt)
         return self.tree
 
-    
+
     def _get_slabs(self, tree):
         tree.Draw("slot >> slot_hist", "", "goff")
-        hist = rt.gDirectory.Get("slot_hist") 
+        hist = rt.gDirectory.Get("slot_hist")
         slabs = []
         for i in range(1, hist.GetNbinsX() + 1):  # 0 is undeflow bin.
             if hist.GetBinContent(i) > 0:
                 slabs.append(int(np.ceil(hist.GetBinLowEdge(i))))
-        if -1 in slabs: 
+        if -1 in slabs:
             slabs.remove(-1)  # Used to indicate dummy entries.
         assert len(set(slabs)) == len(slabs)
         return slabs
@@ -361,7 +394,7 @@ class BuildEvents:
 
     def _write_and_close(self):
         self.out_tree.Write()
-        print("\n# Created tree with %i events." % self.out_tree.GetEntries())
+        print("# Created tree with %i events." % self.out_tree.GetEntries())
         self.out_file.Close()
         self.in_file.Close()
 
@@ -462,12 +495,11 @@ class BuildEvents:
     def _fill_spill(self, spill, entry):
         b = self.out_arrays
         b["spill"][0] = spill
-        bcid_handler = BCIDHandler(
-            self.ecal_config._N.bcid_skip_noisy_acquisition_start,
-            self.ecal_config._N.bcid_merge_delta,
-        )
+        bcid_handler = BCIDHandler(self.ecal_config._N, self.min_slabs_hit)
         bcid_handler.load_spill(entry)
-        hits_per_event = get_hits_per_event(entry, bcid_handler, self.ecal_config)
+        hits_per_event, bcid_merge_end = get_hits_per_event(
+            entry, bcid_handler, self.ecal_config
+        )
 
         for bcid in sorted(hits_per_event):
             hits = hits_per_event[bcid]
@@ -476,13 +508,17 @@ class BuildEvents:
             tmp_for_unique = hits["slab"]
             nhit_slab = np.unique(tmp_for_unique).size
             if nhit_slab < self.min_slabs_hit:
+                # This check is not redundant: here we filter out cases were all
+                # channels in a chip/slab had isHit == False.
                 continue
 
             self.event_counter += 1
             b["event"][0] = self.event_counter
             b["bcid"][0] = bcid
-            b["prev_bcid"][0] = bcid_handler.previous_bcid(bcid)
-            b["next_bcid"][0] = bcid_handler.next_bcid(bcid)
+            b["bcid_first_sca_full"][0] = bcid_handler.bcid_first_sca_full
+            b["bcid_merge_end"][0] = bcid_merge_end[bcid]
+            b["bcid_prev"][0] = bcid_handler.previous_bcid(bcid)
+            b["bcid_next"][0] = bcid_handler.next_bcid(bcid)
 
             # count hits per slab/chan/chip
             b["nhit_slab"][0] = nhit_slab

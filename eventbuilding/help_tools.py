@@ -35,7 +35,11 @@ class EcalNumbers:
         }
 
         self.bcid_skip_noisy_acquisition_start = 50
+        self.bcid_bad_value = -999
+        self.bcid_drop = [901]
+        self.bcid_drop_retrigger_delta = 2
         self.bcid_merge_delta = 3
+        self.bcid_overflow = 2**12
         self.bcid_too_many_hits = 8000
 
         self.pedestal_min_average = 200
@@ -59,6 +63,9 @@ class EcalNumbers:
         assert all(len(w_conf) == n.n_slabs for w_conf in n.w_config_options.values())
 
         assert type(n.bcid_skip_noisy_acquisition_start) == int
+        assert type(n.bcid_bad_value) == int
+        assert all(type(i_drop) == int for i_drop in n.bcid_drop)
+        assert n.bcid_drop_retrigger_delta >= 0
         assert n.bcid_merge_delta >= 0
         assert type(n.bcid_too_many_hits) == int
 
@@ -150,7 +157,7 @@ class EcalConfig:
             except EventbuildingException as e:
                 print("To run without the lowgain information, use --no_lg.")
                 raise e
-            
+
 
 
     def _get_x_y(self, mapping_file, mapping_file_cob):
@@ -306,7 +313,7 @@ class EcalConfig:
         if np.any(sca_has_bad_pedestal):
             sca_is_used_for_average = pedestal_map > self._N.pedestal_min_average
             channel_can_provide_average = np.expand_dims(
-                sca_is_used_for_average.sum(axis=-1) >= self._N.pedestal_min_scas, 
+                sca_is_used_for_average.sum(axis=-1) >= self._N.pedestal_min_scas,
                 sca_is_used_for_average.ndim - 1,
             )
             pedestal_has_no_fix = np.logical_and(
@@ -356,10 +363,10 @@ class EcalConfig:
 def speed_warning_if_python2():
     if sys.version_info.major == 2:
         print(
-            "Warning: Slow. The eventbuilding is run with python2. " 
+            "Warning: Slow. The eventbuilding is run with python2. "
             "While the code aims to stay python2/3 compatible, "
             "it was found to run significantly faster with python3 "
-            "(x5, see https://github.com/SiWECAL-TestBeam/SiWECAL-TB-analysis/pull/20#issuecomment-982763034)" 
+            "(x5, see https://github.com/SiWECAL-TestBeam/SiWECAL-TB-analysis/pull/20#issuecomment-982763034)"
         )
 
 
