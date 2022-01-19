@@ -33,7 +33,7 @@ if [ ! -d "${softw_path}/SLBcommissioning/masking/histos" ]; then
 fi
 
 data_path="/mnt/win1/"
-# data_path="/mnt/win1/"
+# data_path="/mnt/win2/"
 
 
 if [[ $round == "masking" ]]

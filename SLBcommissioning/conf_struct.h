@@ -230,7 +230,13 @@ void read_configuration_file(TString filename="Run_Settings.txt", bool debug=tru
 
       search_string(line,"USB_SerNum:", detector.usb_sernum);
       search_string(line,"FPGA_Version:", detector.fpga_ver);
-      search_string(line,"NB_Of_Core_Daughters:", detector.n_core_daughters);
+    
+      if(detector.isCore){
+	search_string(line,"NB_Of_Core_Daughters:", detector.n_core_daughters);
+      }else{
+	search_string(line,"Nb_Of_Connected_ASUs:", detector.slab[0][0].nb_asus);
+      }
+    
       search_string(line,"EXT_CLOCK:", detector.external_clock);
 
       search_string(line,"TriggerType:", detector.trigger_type);
@@ -292,9 +298,6 @@ void read_configuration_file(TString filename="Run_Settings.txt", bool debug=tru
 
   }else{
     
-    getline(reading_file, line);
-    search_string(line,"Nb_Of_Connected_ASUs:",detector.slab[0][0].nb_asus);
-    
     detector.n_core_daughters         = 1;
     detector.core_daughter_n_slabs[0] = 1;
 
@@ -328,6 +331,7 @@ void read_configuration_file(TString filename="Run_Settings.txt", bool debug=tru
         for (int ichip = 0; ichip < detector.slab[i][j].asu[k].n_chips; ichip++) {
 
           getline(reading_file,line);
+
           search_string(line,"ChipIndex:",detector.slab[i][j].asu[k].skiroc[ichip].idx);
           search_string(line,"ChipId:",detector.slab[i][j].asu[k].skiroc[ichip].id);
           search_string(line,"FeedbackCap:",detector.slab[i][j].asu[k].skiroc[ichip].feedback_cap);
