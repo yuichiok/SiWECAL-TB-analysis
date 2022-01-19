@@ -240,6 +240,9 @@ class EcalConfig:
             for i_sca in range(ped_map.shape[-1]):
                 n_entries_per_sca = 3  # ped, eped, widthped
                 ped_val = float(v[3 + i_sca * n_entries_per_sca])
+                err_ped_val = float(v[4 + i_sca * n_entries_per_sca])
+                if err_ped_val < 0:
+                    ped_val = 0
                 idx_slab = self._N.slabs.index(int(v[i_slab]))
                 ped_map[idx_slab][int(v[i_chip])][int(v[i_channel])][i_sca] = ped_val
         if self._verbose:
@@ -263,10 +266,13 @@ class EcalConfig:
         i_chip = fields.index("chip")
         i_channel = fields.index("channel")
         i_mpv = fields.index("mpv")
+        i_error_mpv = fields.index("empv")
 
         for line in lines[2:]:
             v = line.split()
             mip_val = float(v[i_mpv])
+            if float(v[i_error_mpv]) < 0:
+                mip_val = 0
             idx_slab = self._N.slabs.index(int(v[i_slab]))
             mip_map[idx_slab][int(v[i_chip])][int(v[i_channel])] = mip_val
         if self._verbose:
