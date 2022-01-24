@@ -4,7 +4,7 @@
 #include "TFile.h"
 #include "DecodedSLBAnalysis.cc"
 
-int Proto(TString filename_in, TString output="", int monitoring=0){
+int Noise(TString filename_in, TString output="", int gain=1, int sca=15){
 
 
   filename_in=filename_in+".root";
@@ -12,10 +12,7 @@ int Proto(TString filename_in, TString output="", int monitoring=0){
   DecodedSLBAnalysis ss(filename_in,"siwecaldecoded");
 
   cout<<"Start NSlabsNAalysis"<<endl;
-  int result1=1;
-  int result2=1;
-  if(monitoring>0) ss.HitMonitoring(output,1000,4);
-  else result2=ss.NSlabsAnalysis(output,3,5);
-  return result1*result2;
+  int result=ss.NSlabsAnalysisNoise(output,1,12,gain,sca);
+  return result;
 
 }
