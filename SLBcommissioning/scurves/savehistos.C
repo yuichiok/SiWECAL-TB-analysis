@@ -59,7 +59,7 @@ void ReadScurves(TString filename)
   }
   
  
-  TString tmpst;
+  // TString tmpst;
   //  int nslabs[2];
   int ndaughter=0;
   int nasu[2][15];
@@ -71,51 +71,111 @@ void ReadScurves(TString filename)
       idslab[i][j]=0;
     }
   }
-      
-  TString nsteps_tmp;
 
-  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst>> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
-  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> ndaughter >> tmpst;
-  for(int k=0; k<ndaughter; k++) {
-    reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> nslabs[k]>> tmpst ;
-    for(int i=0; i<nslabs[k]; i++) {
-      reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> idslab[k][i] >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst>> tmpst >> tmpst >> tmpst >> tmpst >> nasu[k][i] >> tmpst ;
-    }
-  }
-   
-  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst>> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >>  tmpst >> nsteps_tmp >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
+  std::string line;
+  bool isCore = false;
 
-  std::cout<< "-----" << ndaughter<< " " <<nslabs[0] << " " << nslabs[1] << " " << std::endl;
-  /*  for(int i=0; i<2; i++) {
-    for(int j=0; j<15; j++) {
-      std::cout<< nasu[i][j]<< " "<< idslab[i][j] << std::endl;
-    }
-    }*/
-  nsteps_tmp.Remove(nsteps_tmp.Length()-1);
-  nsteps=nsteps_tmp.Atoi();
+  // check USB or Core
+  getline(reading_file, line);
+  getline(reading_file, line);
 
-  /*  == X AXIS : Threshold[7 values] ==
-170 180 190 200 210 220 230 
-== Y AXIS for CORE 0 SLAB 0 ASU 0 SKIROC 0 CH 0 ==*/
 
-  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
-  for(int i=0; i<nsteps; i++) {
-    reading_file >> x[i] ;
+  std::size_t found_core = line.find("SL_COREMODULE_INTERFACE");
+  std::size_t found_usb  = line.find("SL_DIRECT_INTERFACE");
+
+  if(found_core!=std::string::npos){
+    isCore = true;
+  }else if(found_usb!=std::string::npos){
+    isCore = false;
+  }else{
+    exit (EXIT_FAILURE);
   }
 
-  while(reading_file){
-    int core =-1, asu=-1, asic=-1, chn=-1, slab=-1;
-    reading_file >> tmpst >> tmpst  >> tmpst >> tmpst >> tmpst >> core >> tmpst >> slab >> tmpst >> asu >> tmpst >> asic >> tmpst >> chn >> tmpst;
-    asic=asic+16*asu;
-    if(asu >-1 && asic>-1 && chn >-1 && slab >-1) {
-      for(int i=0; i<nsteps; i++) {
-	reading_file >> value[core][slab][asic][chn][i];
-	if(value[core][slab][asic][chn][i]>0) error_value[core][slab][asic][chn][i]=sqrt(value[core][slab][asic][chn][i]);
+
+
+  std::cout << line << std::endl;
+
+  if(!isCore){
+    ndaughter = 1;
+    nslabs[0] = 1;
+    idslab[0][0] = 0;
+
+    search_string_nocolon(line,"NB OF CONNECTED ASUS",nasu[0][0]);
+
+  }else{
+
+    search_string(line,"NB OF CORE DAUGHTERS:",ndaughter);
+
+    for(int k=0; k<ndaughter; k++) {
+
+      getline(reading_file,line);
+      search_string_nocolon(line,"NB OF CONNECTED SLABs",nslabs[k]);
+
+      for(int i=0; i<nslabs[k]; i++) {
+
+        getline(reading_file,line);
+        search_string_nocolon(line,"SL BOARD ADD",idslab[k][i]);
+        search_string_nocolon(line,"NB OF CONNECTED ASUs",nasu[k][i]);
+
       }
-    }
-  }
-   
 
+    }
+
+  }
+
+  getline(reading_file,line);
+
+  std::string nsteps_tmp;
+  search_string(line,"Nb Of Steps:",nsteps_tmp);
+  nsteps_tmp = nsteps_tmp.substr(0,nsteps_tmp.size()-1); // Nb Of Steps: 15, (rm ,)
+  nsteps=std::stoi(nsteps_tmp);
+
+
+  /*  
+  == X AXIS : Threshold[7 values] ==
+  170 180 190 200 210 220 230 
+  */
+
+  getline(reading_file,line);
+  getline(reading_file,line);
+
+  std::string space_delimiter = " ";
+  size_t pos = 0;
+  int i = 0;
+  while ((pos = line.find(space_delimiter)) != string::npos) {
+      if(i>nsteps) break;
+      x[i] = std::stoi(line.substr(0, pos));
+      line.erase(0, pos + space_delimiter.length());
+      i++;
+  }
+
+
+
+  while( getline(reading_file,line) ) {
+    // == Y AXIS for CORE 0 SLAB 0 ASU 0 SKIROC 0 CH 0 ==
+  
+    int core =-1, asu=-1, asic=-1, chn=-1, slab=-1;
+    search_string_nocolon(line,"CORE",core);
+    search_string_nocolon(line,"SLAB",slab);
+    search_string_nocolon(line,"ASU",asu);
+    search_string_nocolon(line,"SKIROC",asic);
+    search_string_nocolon(line,"CH",chn);
+    asic = asic + 16*asu;
+  
+    getline(reading_file,line);
+    // 103 119 118 121 125 123 122 75 11 3 0 0 0 0 0
+  
+    size_t pos2 = 0;
+    int j = 0;
+    while ((pos2 = line.find(space_delimiter)) != string::npos) {
+        if(j>nsteps) break;
+        value[core][slab][asic][chn][j] = std::stoi(line.substr(0, pos2));  
+        if(value[core][slab][asic][chn][j]>0) error_value[core][slab][asic][chn][j]=sqrt(value[core][slab][asic][chn][j]);
+        line.erase(0, pos2 + space_delimiter.length());
+        j++;
+    }
+  
+  } // next == Y AXIS ...
   
 
 }
@@ -128,6 +188,7 @@ void savehistos(TString filename = "", TString date=""){//TString filename, int 
 
   cout<<filename_input<<endl;
  ReadScurves(filename_input);
+
 
  for(int i=0; i<nslabs[0]; i++) {
    for(int iasic=0; iasic<16; iasic++) {

@@ -11,7 +11,7 @@
 #include <iostream>
 #include <fstream>
 #include "TF1.h"
-#include "../conf_struct.h"
+// #include "../conf_struct.h"
 
 //#include "../../style/Style.C"
 //#include "../../style/Labels.C"
@@ -180,104 +180,108 @@ void fithistos(TString filename, std::vector<int> slboards , int iteration=0, bo
     for(int iasic=0; iasic<16; iasic++) {
       for(int ichn=0; ichn<64; ichn++) {
 
-	scurve[i][iasic][ichn]=(TGraphErrors*)file_summary->Get(TString::Format("scurve_slbAdd%i_chip%i_chn%i",slboards.at(i),iasic,ichn));
-	scurvefit[i][iasic][ichn]=FitScurve(scurve[i][iasic][ichn]);
-      }
-    }
-  }
+       scurve[i][iasic][ichn]=(TGraphErrors*)file_summary->Get(TString::Format("scurve_slbAdd%i_chip%i_chn%i",slboards.at(i),iasic,ichn));
+       scurvefit[i][iasic][ichn]=FitScurve(scurve[i][iasic][ichn]);
+     }
+   }
+ }
 
-  
-  TGraph *scurve_mean[15][16];
-  TGraph *scurve_width[15][16];
-  TGraph *scurve_threshold[15][16];
-  TGraph *scurve_offset[15][16];
+ std::cout << scurve[1][0][5]->GetErrorX(2) << std::endl;
 
 
-  for(int i=0; i<slboards.size(); i++) {
-    for(int iasic=0; iasic<16; iasic++) {
-        double mean[64];
-        double width[64];
-        double threshold[64];
-	double offset[64];
-        double chn[64];
+ TGraph *scurve_mean[15][16];
+ TGraph *scurve_width[15][16];
+ TGraph *scurve_threshold[15][16];
+ TGraph *scurve_offset[15][16];
 
-	for(int ichn=0; ichn<64; ichn++) {
-	  mean[ichn]=-1;
-	  width[ichn]=-1;
-	  threshold[ichn]=-1;
-	  offset[ichn]=-1;
-	  
-	  chn[ichn]=ichn;
-	  
-	  if(scurvefit[i][iasic][ichn]!=NULL) {
-	    mean[ichn]=scurvefit[i][iasic][ichn]->GetParameter(1);
-	    width[ichn]=scurvefit[i][iasic][ichn]->GetParameter(2);
-	    threshold[ichn]=scurvefit[i][iasic][ichn]->GetParameter(1)+5*scurvefit[i][iasic][ichn]->GetParameter(2);
-	    offset[ichn]=scurvefit[i][iasic][ichn]->GetParameter(3);
-	  }
+
+ for(int i=0; i<slboards.size(); i++) {
+  for(int iasic=0; iasic<16; iasic++) {
+    double mean[64];
+    double width[64];
+    double threshold[64];
+    double offset[64];
+    double chn[64];
+
+    for(int ichn=0; ichn<64; ichn++) {
+     mean[ichn]=-1;
+     width[ichn]=-1;
+     threshold[ichn]=-1;
+     offset[ichn]=-1;
+
+     chn[ichn]=ichn;
+
+     if(scurvefit[i][iasic][ichn]!=NULL) {
+       mean[ichn]=scurvefit[i][iasic][ichn]->GetParameter(1);
+       width[ichn]=scurvefit[i][iasic][ichn]->GetParameter(2);
+       threshold[ichn]=scurvefit[i][iasic][ichn]->GetParameter(1)+5*scurvefit[i][iasic][ichn]->GetParameter(2);
+       offset[ichn]=scurvefit[i][iasic][ichn]->GetParameter(3);
+     }
 	  //if(ichn==37)
 	  //cout<<" Result  " <<i<<  " "<<iasic <<" "<<ichn<<" "<< mean[ichn] << " " <<width[ichn] <<" "<<threshold[ichn]<<" "<<offset[ichn]<<endl;
-	}
-	scurve_mean[i][iasic]= new TGraph(64,chn,mean);
-	scurve_width[i][iasic]= new TGraph(64,chn,width);
-	scurve_threshold[i][iasic]= new TGraph(64,chn,threshold);
-	scurve_offset[i][iasic]= new TGraph(64,chn,offset);
+   }
+   scurve_mean[i][iasic]= new TGraph(64,chn,mean);
+   scurve_width[i][iasic]= new TGraph(64,chn,width);
+   scurve_threshold[i][iasic]= new TGraph(64,chn,threshold);
+   scurve_offset[i][iasic]= new TGraph(64,chn,offset);
 
-    }
-  }
-  if(write ==true) {
-    for(int i=0; i<slboards.size(); i++) {
-      TString type="SK2";
-      if(detector.slab[0][i].add==4 || detector.slab[0][i].add==5 || detector.slab[0][i].add==6 || detector.slab[0][i].add==7 )
-	type = "SK2a";
-	       
-      for(int iasic=0; iasic<16; iasic++) {
-	cout<<" Thresholds for layer:" <<i<<" skiroc:"<<iasic <<" "<<type<<" ";
-	std::vector<double> mean_sigma = MeanSigma(scurve_threshold[i][iasic],type,slboards.at(i),iasic);
-	cout<<endl;
-	double mean=mean_sigma.at(0);
-	double fine_tuning[64];
+ }
+}
+if(write ==true) {
+  for(int i=0; i<slboards.size(); i++) {
+    TString type="SK2";
+    if(detector.slab[0][i].add==4 || detector.slab[0][i].add==5 || detector.slab[0][i].add==6 || detector.slab[0][i].add==7 )
+     type = "SK2a";
+
+   for(int iasic=0; iasic<16; iasic++) {
+     cout<<" Thresholds for layer:" <<i<<" skiroc:"<<iasic <<" "<<type<<" ";
+     std::vector<double> mean_sigma = MeanSigma(scurve_threshold[i][iasic],type,slboards.at(i),iasic);
+     cout<<endl;
+     double mean=mean_sigma.at(0);
+     double fine_tuning[64];
 	//std::cout<<" -------------------------------------- "<< endl;
 	////      std::cout<<"slab: "<<i<<" asic:"<<iasic<<"    TH:"<<mean<< endl;
-	detector.slab[0][i].asu[0].skiroc[iasic].threshold_dac=mean;
-	for(int ichn=0; ichn<64; ichn++) {
-	  fine_tuning[ichn]=mean_sigma.at(1+ichn);
+     detector.slab[0][i].asu[0].skiroc[iasic].threshold_dac=mean;
+     for(int ichn=0; ichn<64; ichn++) {
+       fine_tuning[ichn]=mean_sigma.at(1+ichn);
 	  //	if(type=="SK2a") fine_tuning[ichn]=15;//mean_sigma.at(1+ichn);
 	  //else fine_tuning[ichn]=0;//mean_sigma.at(1+ichn);
 	  //std::cout<<" chn:"<<ichn<<" TH : "<<fine_tuning[ichn]<<endl;
-	  detector.slab[0][i].asu[0].skiroc[iasic].chn_threshold_adj[ichn]=fine_tuning[ichn];
-	}
-      }
-    }
-    
-    write_configuration_file(TString::Format("../"+filename+"/Run_Settings_comm_it%i.txt",iteration+1));
-  }
+       detector.slab[0][i].asu[0].skiroc[iasic].chn_threshold_adj[ichn]=fine_tuning[ichn];
+     }
+   }
+ }
 
-  if(draw==true) {
-      TCanvas *canvas_asic[15];
+ write_configuration_file(TString::Format("../"+filename+"/Run_Settings_comm_it%i.txt",iteration+1));
+
+}
+
+if(draw==true) {
+  TCanvas *canvas_asic[15];
   
-      for(int i=0; i<15; i++) {
-	canvas_asic[i]= new TCanvas(TString::Format("canvas_slbAdd%i",i),TString::Format("canvas_slbAdd%i",i),1600,1600);
-	canvas_asic[i]->Divide(4,4);
-	
-	for(int iasic=0; iasic<16; iasic++) {
-	  canvas_asic[i]->cd(iasic+1);
+  // for(int i=0; i<15; i++) {
+  for(int i=0; i<slboards.size(); i++) {
+   canvas_asic[i]= new TCanvas(TString::Format("canvas_slbAdd%i",i),TString::Format("canvas_slbAdd%i",i),1600,1600);
+   canvas_asic[i]->Divide(4,4);
+
+   for(int iasic=0; iasic<16; iasic++) {
+     canvas_asic[i]->cd(iasic+1);
 	  //scurve_threshold[i][iasic]->Draw("alp");
 	  // scurve_offset[i][iasic]->Draw("alp");
-	  
-	  for(int ichn=0; ichn<64; ichn++) {
+
+     for(int ichn=0; ichn<64; ichn++) {
 	    //	    canvas_asic[i][iasic]->cd(1+ichn);
-	    scurve[i][iasic][ichn]->GetXaxis()->SetTitle("DAC");
-	    scurve[i][iasic][ichn]->GetYaxis()->SetTitle("Nhits");
-	    scurve[i][iasic][ichn]->SetTitle(TString::Format("chn %i",ichn));
-	    if(i==0) scurve[i][iasic][ichn]->Draw("alp");
-	    if(i>0) scurve[i][iasic][ichn]->Draw("lp");
-	  }
-	}
-      }
-      
-    }
-  
+       scurve[i][iasic][ichn]->GetXaxis()->SetTitle("DAC");
+       scurve[i][iasic][ichn]->GetYaxis()->SetTitle("Nhits");
+       scurve[i][iasic][ichn]->SetTitle(TString::Format("chn %i",ichn));
+       if(i==0) scurve[i][iasic][ichn]->Draw("alp");
+       if(i>0) scurve[i][iasic][ichn]->Draw("lp");
+     }
+   }
+ }
+
+}
+
 }
 
 
