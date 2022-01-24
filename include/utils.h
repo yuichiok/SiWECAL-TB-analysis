@@ -4,25 +4,96 @@
 
 //#include <bits/stdc++.h>
 
-int SimpleCoincidenceTagger(int ilayer, int ichip, int maxnhit=5, int bcid_ref=0){
+std::vector<int> SimpleCoincidenceGlobal(int maxnhit=5, int bcid_ref=0){
+
+  int bcid_seen=0;
+  int bcid_seen_withfirsts=0;
+  int bcid_seen_slb[30]={0};
+  for(int islboard=0; islboard<n_slboards; islboard++) {
+    //    if(islboard==3) continue;
+    for(int ichip=0; ichip<16; ichip++) {
+
+    for(int isca=0; isca<15; isca++) {
+      if( bcid[islboard][ichip][isca]<10 || nhits[islboard][ichip][isca]>maxnhit || ( bcid[islboard][ichip][isca]<1000 && bcid[islboard][ichip][isca]>950) )
+	  continue;
+      if(badbcid[islboard][ichip][isca]!=0)
+      	continue;
+      
+      if(isca>0) if(bcid[islboard][ichip][isca]-bcid[islboard][ichip][isca-1]<2) continue;
+      if(isca<14) if(bcid[islboard][ichip][isca+1]-bcid[islboard][ichip][isca]<2) continue;
+      
+      if( fabs(bcid[islboard][ichip][isca]-bcid_ref)<5)
+	bcid_seen_slb[islboard]++;
+      
+    }//end isca
+    }
+  }
+  
+  for(int islboard=0; islboard<n_slboards; islboard++) {
+    if(bcid_seen_slb[islboard]>0) bcid_seen++;
+  }
+  std::vector<int> bcid_seen_vec;
+  bcid_seen_vec.push_back(bcid_seen);
+   
+  int nslabs_beginning=0;
+  for(int islboard=12; islboard<n_slboards; islboard++) {
+    if(bcid_seen_slb[islboard]>0) nslabs_beginning++;
+  }
+  if(nslabs_beginning>2) bcid_seen_vec.push_back(bcid_seen);
+  else bcid_seen_vec.push_back(-1);
+
+  nslabs_beginning=0;
+  for(int islboard=12; islboard<n_slboards; islboard++) {
+    if(bcid_seen_slb[islboard]>0) nslabs_beginning++;
+  }
+  if(nslabs_beginning>1) bcid_seen_vec.push_back(bcid_seen);
+  else bcid_seen_vec.push_back(-1);
+  
+  nslabs_beginning=0;
+  for(int islboard=12;islboard<n_slboards; islboard++) {
+    if(bcid_seen_slb[islboard]>0 ) nslabs_beginning++;
+  }
+  if(nslabs_beginning>1 && (bcid_seen_slb[0]>0 || bcid_seen_slb[1]>0)) bcid_seen_vec.push_back(bcid_seen);
+  else bcid_seen_vec.push_back(-1);
+
+  
+  return bcid_seen_vec;
+
+}
+
+
+int SimpleCoincidenceTagger(int ilayer, int maxnhit=5, int bcid_ref=0){
   
   int bcid_seen=0;
   int bcid_seen_slb[30]={0};
   for(int islboard=0; islboard<n_slboards; islboard++) {
+    if(islboard==ilayer) continue;
     for(int isca=0; isca<15; isca++) {
-      if( bcid[islboard][ichip][isca]<50 || nhits[islboard][ichip][isca]>maxnhit || ( bcid[islboard][ichip][isca]<1000 && bcid[islboard][ichip][isca]>900) )
-        continue;
-      if(islboard==ilayer) continue;
-      if( fabs(bcid[islboard][ichip][isca]-bcid_ref)<2)
-        bcid_seen_slb[islboard]++;
-    }//end isca                                                                                      
-
+      for(int ichip=0; ichip<16; ichip++) {
+	if( bcid[islboard][ichip][isca]<10 || nhits[islboard][ichip][isca]>maxnhit || ( bcid[islboard][ichip][isca]<1000 && bcid[islboard][ichip][isca]>950) )
+	  continue;
+	//	if(badbcid[islboard][ichip][isca]!=0)
+	//  continue;
+	
+	if(isca>0) if(bcid[islboard][ichip][isca]-bcid[islboard][ichip][isca-1]<3) continue;
+	if(isca<14) if(bcid[islboard][ichip][isca+1]-bcid[islboard][ichip][isca]<3) continue;
+	
+	if( fabs(bcid[islboard][ichip][isca]-bcid_ref)<4)
+	  bcid_seen_slb[islboard]++;
+      }//ichip
+    }//isca
     if(bcid_seen_slb[islboard]>0) bcid_seen++;
   }
 
-  return bcid_seen;
+  int first_slabs=0;
+  for(int islboard=12;islboard<n_slboards; islboard++) {
+    if(bcid_seen_slb[islboard]>0) first_slabs++;
+  }
 
+  if(first_slabs>0 && (bcid_seen_slb[14-7]>0 || bcid_seen_slb[14-8]>0)) return bcid_seen;
+  else return -bcid_seen;
 }
+
 
 double weigthedAv(double val[], double err[], int n) {
 
@@ -85,31 +156,59 @@ void ReadMasked(TString filename)
   if(!reading_file){
     cout<<" dameyo - damedame"<<endl;
   }
-  for(int i=0; i<16; i++) {
-    for(int j=0; j<64; j++) {
-      masked[i][j] = 0;
+
+  for(int k=0; k<15; k++) {
+    for(int i=0; i<16; i++) {
+      for(int j=0; j<64; j++) {
+	masked[k][i][j] = 0;
+      }
     }
   }
-
-  Int_t tmp_chip = 0,tmp_channel = 0;
+  
+  Int_t tmp_layer=0, tmp_chip = 0,tmp_channel = 0;
   Int_t tmp_masked = 0;
   TString tmpst;
   reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
-  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst  ;
 
   cout<<"Read Masked: "<<filename<<endl;
+  
   while(reading_file){
-    reading_file >> tmp_chip >> tmp_channel >> tmp_masked ;
-    masked[tmp_chip][tmp_channel] = tmp_masked;
+    double masked_temp[64];
+    reading_file >> tmp_layer >> tmp_chip ;
+      for(int j=0; j<64; j++) reading_file >>masked_temp[j];
+    for(int j=0; j<64; j++)masked[tmp_layer][tmp_chip][j]=masked_temp[j];      
   }
+  
+  /* string line;
+  
+  if(reading_file.is_open())  {
+    while(!reading_file.eof())   {
+      getline(reading_file, line);
+      std::vector<int> masked_temp;
+
+      size_t pos = 0;
+      while ((pos = line.find(" ")) != string::npos) {
+        masked_temp.push_back(std::stoi(line.substr(0, pos)));
+        line.erase(0, pos + 1);
+      }
+      masked_temp.push_back(stoi(line.substr(0, pos)));
+      masked_temp.size();
+      for(int j=0; j<64; j++) masked[masked_temp.at(0)][masked_temp.at(1)][j]=masked_temp.at(j+2);  
+    }
+    }*/
 
   double nmasked=0.;
-  for(int i=0; i<16; i++) {
-    for(int j=0; j<64; j++) {
-      if(masked[i][j]==1) nmasked++;
+  double ntotal=0;
+  for(int k=0; k<15; k++) {
+    for(int i=0; i<16; i++) {
+      for(int j=0; j<64; j++) {
+	if(masked[k][i][j]==1) nmasked++;
+	if(k==0 && i==0) cout << masked[k][i][j];
+	ntotal++;
+      }
     }
   }
-  nmasked=100.*nmasked/1024;
+  nmasked=100.*nmasked/ntotal;
   cout<< "In file " <<filename << " we read that "<<nmasked<<"% of channels are masked"<<endl;
   
 }
@@ -247,6 +346,88 @@ TF1* langaufit(TH1F *his, Double_t *fitrange, Double_t *startvalues, Double_t *p
 
 }
 
+
+
+void ReadPedestalsProtoCovariance(TString filename) 
+{
+  std::ifstream reading_file(filename);
+  if(!reading_file){
+    cout<<" ERROR  ----------------------------------- No pedestal file: "<<filename<<endl;
+  } else {
+    cout<<" Pedestal input file: "<<filename<<endl;
+  }
+
+  for(int islboard=0; islboard<15; islboard++) {
+    std::vector<std::vector<std::vector<Double_t> > > chip_ped_mean_slb;
+    std::vector<std::vector<std::vector<Double_t> > > chip_ped_w_i_slb;
+    std::vector<std::vector<std::vector<Double_t> > > chip_ped_w_c1_slb;
+    std::vector<std::vector<std::vector<Double_t> > > chip_ped_w_c2_slb;
+
+    //initialize pedestal vectors                                                                                                                                                                                                                                   
+    for(int i=0; i<16; i++) {
+      std::vector<std::vector<Double_t> > chip_ped_mean;
+      std::vector<std::vector<Double_t> > chip_ped_w_i;
+      std::vector<std::vector<Double_t> > chip_ped_w_c1;
+      std::vector<std::vector<Double_t> > chip_ped_w_c2;
+
+      for(int j=0; j<64; j++) {
+	std::vector<Double_t> chn_ped_mean;
+	std::vector<Double_t> chn_ped_w_i;
+	std::vector<Double_t> chn_ped_w_c1;
+	std::vector<Double_t> chn_ped_w_c2;
+
+	for(int isca=0; isca<15; isca++) {
+	  chn_ped_mean.push_back(-1);
+	  chn_ped_w_i.push_back(-1);
+	  chn_ped_w_c1.push_back(-1);
+	  chn_ped_w_c2.push_back(-1);
+	}
+	chip_ped_mean.push_back(chn_ped_mean);
+	chip_ped_w_i.push_back(chn_ped_w_i);
+	chip_ped_w_c1.push_back(chn_ped_w_c1);
+	chip_ped_w_c2.push_back(chn_ped_w_c2);
+      }
+      chip_ped_mean_slb.push_back(chip_ped_mean);
+      chip_ped_w_i_slb.push_back(chip_ped_w_i);
+      chip_ped_w_c1_slb.push_back(chip_ped_w_c1);
+      chip_ped_w_c2_slb.push_back(chip_ped_w_c2);
+    }
+    ped_mean_cov_slboard.push_back(chip_ped_mean_slb);
+    ped_w_i_slboard.push_back(chip_ped_w_i_slb);
+    ped_w_c1_slboard.push_back(chip_ped_w_c1_slb);
+    ped_w_c2_slboard.push_back(chip_ped_w_c2_slb);
+  }
+
+  Int_t tmp_layer=0, tmp_chip = 0,tmp_channel = 0;
+  Double_t tmp_ped[15], tmp_w_i[15], tmp_w_c1[15], tmp_w_c2[15];
+  for(int isca=0; isca<15; isca++) {
+    tmp_ped[isca]=0.;
+    tmp_w_i[isca]=0.;
+    tmp_w_c1[isca]=0.;
+    tmp_w_c2[isca]=0.;
+  }
+
+  // #pedestal results (method of covariance matrix) : PROTO15
+  //#layer chip channel ped0 noise_incoherent_ped0 noise_coherent1_ped0 noise_coherent1_ped0 ...  ped14 noise_incoherent_ped14 noise_coherent1_ped14 noise_coherent2_ped14 (all SCA)
+  TString tmpst;
+  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >>  tmpst >> tmpst >> tmpst  ;
+  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >>  tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
+  //cout<<tmpst<<endl;
+  while(reading_file){
+    reading_file >> tmp_layer >> tmp_chip >> tmp_channel >> tmp_ped[0] >> tmp_w_i[0] >> tmp_w_c1[0] >>tmp_w_c2[0] >> tmp_ped[1] >> tmp_w_i[1] >> tmp_w_c1[1] >>tmp_w_c2[1] >> tmp_ped[2] >> tmp_w_i[2] >> tmp_w_c1[2] >>tmp_w_c2[2] >> tmp_ped[3] >> tmp_w_i[3] >> tmp_w_c1[3] >>tmp_w_c2[3] >> tmp_ped[4] >> tmp_w_i[4] >> tmp_w_c1[4] >>tmp_w_c2[4] >> tmp_ped[5] >> tmp_w_i[5] >> tmp_w_c1[5] >>tmp_w_c2[5] >> tmp_ped[6] >> tmp_w_i[6] >> tmp_w_c1[6] >>tmp_w_c2[6] >> tmp_ped[7] >> tmp_w_i[7] >> tmp_w_c1[7] >>tmp_w_c2[7] >> tmp_ped[8] >> tmp_w_i[8] >> tmp_w_c1[8] >>tmp_w_c2[8] >> tmp_ped[9] >> tmp_w_i[9] >> tmp_w_c1[9] >>tmp_w_c2[9] >> tmp_ped[10] >> tmp_w_i[10] >> tmp_w_c1[10] >>tmp_w_c2[10] >> tmp_ped[11] >> tmp_w_i[11] >> tmp_w_c1[11] >>tmp_w_c2[11] >> tmp_ped[12] >> tmp_w_i[12] >> tmp_w_c1[12] >>tmp_w_c2[12] >> tmp_ped[13] >> tmp_w_i[13] >> tmp_w_c1[13] >>tmp_w_c2[13] >> tmp_ped[14] >> tmp_w_i[14] >> tmp_w_c1[14] >> tmp_w_c2[14];
+    // cout<<tmp_layer <<" "<< tmp_chip <<" "<< tmp_channel <<" "<< tmp_ped[0]<<endl;
+    for(int isca=0; isca<15; isca++) {
+      if(tmp_ped[isca]>0. ){//&& (tmp_w_i[isca]<ped_w_i.at(tmp_chip).at(tmp_channel).at(isca) || ped_w_i.at(tmp_chip).at(tmp_channel).at(isca)==0) ){
+	ped_mean_cov_slboard.at(tmp_layer).at(tmp_chip).at(tmp_channel).at(isca)=tmp_ped[isca];
+	ped_w_i_slboard.at(tmp_layer).at(tmp_chip).at(tmp_channel).at(isca)=tmp_w_i[isca];
+	ped_w_c1_slboard.at(tmp_layer).at(tmp_chip).at(tmp_channel).at(isca)=tmp_w_c1[isca];
+	ped_w_c2_slboard.at(tmp_layer).at(tmp_chip).at(tmp_channel).at(isca)=tmp_w_c2[isca];
+      }
+    }
+
+  }
+
+}
 
 
 void ReadPedestalsProto(TString filename, bool invertedordering=false) 

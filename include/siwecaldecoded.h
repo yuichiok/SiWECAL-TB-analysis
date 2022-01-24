@@ -9,7 +9,7 @@ using namespace std;
 
 Float_t map_pointX[15][16][64];
 Float_t map_pointY[15][16][64];
-Int_t masked[16][64];
+Int_t masked[15][16][64];
 std::vector<std::vector<std::vector<Double_t> > > ped_mean;
 std::vector<std::vector<std::vector<Double_t> > > ped_error;
 std::vector<std::vector<std::vector<Double_t> > > ped_width;
@@ -17,6 +17,11 @@ std::vector<std::vector<std::vector<Double_t> > > ped_width;
 std::vector<std::vector<std::vector<std::vector<Double_t> > > > ped_mean_slboard;
 std::vector<std::vector<std::vector<std::vector<Double_t> > > > ped_error_slboard;
 std::vector<std::vector<std::vector<std::vector<Double_t> > > > ped_width_slboard;
+
+std::vector<std::vector<std::vector<std::vector<Double_t> > > > ped_mean_cov_slboard;
+std::vector<std::vector<std::vector<std::vector<Double_t> > > > ped_w_i_slboard;
+std::vector<std::vector<std::vector<std::vector<Double_t> > > > ped_w_c1_slboard;
+std::vector<std::vector<std::vector<std::vector<Double_t> > > > ped_w_c2_slboard;
 
 //mapping between slboard add and position
 int slboard_array_mapping[15]={-1};
