@@ -6,4 +6,10 @@
 # Dummy list of MIP values created by createDummyMIPfiles.cc
 
 
+#24/01/2022
+Two different methods are used, for the pedestal calculation.
+
+- the standard one (without special name) doing gaussian fits to the pedestal distributions (hit-bit=0)
+- method 2 based on https://arxiv.org/pdf/1401.7095.pdf
+   ---> this one is taken as default one
 
