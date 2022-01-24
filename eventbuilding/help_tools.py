@@ -233,13 +233,14 @@ class EcalConfig:
         i_chip = fields.index("chip")
         i_channel = fields.index("channel")
         i_ped0 = fields.index("ped0")
+        i_ped1 = fields.index("ped1")
+        n_entries_per_sca = i_ped1 - i_ped0
 
 
         for line in lines[2:]:
             v = line.split()
             for i_sca in range(ped_map.shape[-1]):
-                n_entries_per_sca = 3  # ped, eped, widthped
-                ped_val = float(v[3 + i_sca * n_entries_per_sca])
+                ped_val = float(v[i_ped0 + i_sca * n_entries_per_sca])
                 err_ped_val = float(v[4 + i_sca * n_entries_per_sca])
                 if err_ped_val < 0:
                     ped_val = 0
