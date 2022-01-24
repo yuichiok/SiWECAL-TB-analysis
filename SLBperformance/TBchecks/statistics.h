@@ -23,56 +23,62 @@
 //#include "../../style/Labels.C"
 
 using namespace std;
-std::vector<TH2F*> defaultvec;
+//std::vector<TH2F*> defaultvec;
 
-std::vector<TH2F*> statistics_calc(TString run="Run_ILC_cosmic_test_11222019", TString type="Trigger", int jmax=11){
-  TString name="hit";
-  if(type!="Triggers") name="event";
-  TH2F* hitrate_layer_beam=new TH2F(name+"rate_layer_beam",type +"(coinc) Rates per chip  (kHz) in beam spot ; File  ; Layer ",1000,-0.5,999.5,15,-0.5,14.5);
-  TH2F* hitnoiserate_layer_beam=new TH2F(name+"noiserate_layer_beam",type +"(not coinc) Rates per chip (kHz) in beam spot ; File  ; Layer ",1000,-0.5,999.5,15,-0.5,14.5);
-  TH2F* hitrate_layer_nobeam=new TH2F(name+"rate_layer_nobeam",type +"(coinc) Rates per chip  (kHz) out-beam spot ; File  ; Layer ",1000,-0.5,999.5,15,-0.5,14.5);
-  TH2F* hitnoiserate_layer_nobeam=new TH2F(name+"noiserate_layer_nobeam",type +"(not coinc) Rates per chip (kHz) out-beam spot ; File  ; Layer ",1000,-0.5,999.5,15,-0.5,14.5);
-  TH2F* hitrate_layer=new TH2F(name+"rate_layer",type +"(coinc) Rates per layer (kHz) ; File  ; Layer ",1000,-0.5,999.5,15,-0.5,14.5);
-  TH2F* hitnoiserate_layer=new TH2F(name+"noiserate_layer",type +"(not coinc) Rates per layer (kHz) ; File  ; Layer ",1000,-0.5,999.5,15,-0.5,14.5);
+TString name="event";
+TString type="Events";
 
-  TH2F* hitrate_chip=new TH2F(name+"rate_chip",type +"(coinc) Rates per layer (kHz) ; File  ; Layer*20 + chip ",1000,-0.5,999.5,300,-0.5,299.5);
-  TH2F* hitnoiserate_chip=new TH2F(name+"noiserate_chip",type +"(not coinc) Rates per layer (kHz) ; File  ;Layer*20 + chip ",1000,-0.5,999.5,300,-0.5,299.5);
+ TH2F*  hitrate_chip=new TH2F(name+"rate_chip",type +"(coinc) Rates per layer (kHz) ; File  ; Layer*20 + chip ",1999+1,-0.5,1999+0.5,300,-0.5,299.5);
+ TH2F*  hitnoiserate_chip=new TH2F(name+"noiserate_chip",type +"(not coinc) Rates per layer (kHz) ; File  ;Layer*20 + chip ",1999+1,-0.5,1999+0.5,300,-0.5,299.5);
+ TH2F*  hitrate_layer=new TH2F(name+"rate_layer",type +"(coinc) Rates per layer (kHz) ; File  ; Layer ",1999+1,-0.5,1999+0.5,15,-0.5,14.5);
+ TH2F*  hitnoiserate_layer=new TH2F(name+"noiserate_layer",type +"(not coinc) Rates per layer (kHz) ; File  ; Layer ",1999+1,-0.5,1999+0.5,15,-0.5,14.5);
+  
+ TH2F*  cycles_layer=new TH2F("cycles per layer","File ; layer ;cycles ",1999+1,-0.5,1999+0.5,15,-0.5,14.5);
+ TH2F*  signal_layer=new TH2F("signal per layer","File ; layer ;signal ",1999+1,-0.5,1999+0.5,15,-0.5,14.5);
+ TH2F*  noise_layer=new TH2F("noise_layer","File ; layer ;noise ",1999+1,-0.5,1999+0.5,15,-0.5,14.5);
 
-  TH2F* cycles_layer=new TH2F("cycles per layer","File ; layer ;cycles ",1000,-0.5,999.5,15,-0.5,14.5);
-  TH2F* signal_layer=new TH2F("signal per layer","File ; layer ;signal ",1000,-0.5,999.5,15,-0.5,14.5);
-  TH2F* noise_layer=new TH2F("noise per layer","File ; layer ;noise ",1000,-0.5,999.5,15,-0.5,14.5);
+ TH2F*   hitrate_layer_beam=new TH2F(name+"rate_layer_beam",type +"(coinc) Rates per chip  (kHz) in beam spot ; File  ; Layer ",1999+1,-0.5,1999+0.5,15,-0.5,14.5);
+ TH2F*   hitnoiserate_layer_beam=new TH2F(name+"noiserate_layer_beam",type +"(not coinc) Rates per chip (kHz) in beam spot ; File  ; Layer ",1999+1,-0.5,1999+0.5,15,-0.5,14.5);
+ TH2F*   hitrate_layer_nobeam=new TH2F(name+"rate_layer_nobeam",type +"(coinc) Rates per chip  (kHz) out-beam spot ; File  ; Layer ",1999+1,-0.5,1999+0.5,15,-0.5,14.5);
+ TH2F*   hitnoiserate_layer_nobeam=new TH2F(name+"noiserate_layer_nobeam",type +"(not coinc) Rates per chip (kHz) out-beam spot ; File  ; Layer ",1999+1,-0.5,1999+0.5,15,-0.5,14.5);
 
-  /*
-  int arr[] = { 1, 5, 2, 1, 3, 2, 1 };
-    int n = sizeof(arr) / sizeof(arr[0]);
-    cout << mostFrequent(arr, n);
-  */
+void statistics_calc(TString run="Run_ILC_cosmic_test_11222019", int jmax=11){
+
+
   int maxhits[10000] ={0};
   int n=0;
   for(int j=0; j<jmax; j++) {
-    
+    cout<<j<< " statistics_calc"<<endl;
     TString filename = TString::Format("../results_proto/%s_000%i.root",run.Data(),j);
     if(j>9) filename = TString::Format("../results_proto/%s_00%i.root",run.Data(),j);
     if(j>99) filename = TString::Format("../results_proto/%s_0%i.root",run.Data(),j);
     if(j>999) filename = TString::Format("../results_proto/%s_%i.root",run.Data(),j);
-
+    cout<<j<< " statistics_calc"<<endl;
     TFile *_file0  = TFile::Open(filename);
+    if(_file0==NULL) continue;
     TH1F* temp=(TH1F*)_file0->Get(name+"monitoring_norettrains_layer");
     TH1F* temp2=(TH1F*)_file0->Get(name+"monitoring_norettrains");
 
+    if(temp==NULL || temp2==NULL) {
+      _file0->Close();
+      continue;
+    }
+    cout<<j<< " statistics_calc"<<endl;
+
     for(int layer=0; layer<15; layer++) {
+
       double cycles=temp->GetBinContent(3,layer+1);
       double hits=temp->GetBinContent(1,layer+1);
       double noise=temp->GetBinContent(2,layer+1);
       signal_layer->SetBinContent(j+1,layer+1,double(hits));
       noise_layer->SetBinContent(j+1,layer+1,double(noise));
 
-      if(cycles>0) {
+      /*  if(cycles>0) {
 	hitrate_layer->SetBinContent(j+1,layer+1,double(hits/cycles));
 	hitnoiserate_layer->SetBinContent(j+1,layer+1,double(noise/cycles));
-      }
+	}*/
       cycles_layer->SetBinContent(j+1,layer+1,cycles);
-      int maxhitschip=0;
+      /*  int maxhitschip=0;
       int maxchip=-1;
       for(int ichip=0; ichip<16; ichip++) {
 	double hits_c=temp2->GetBinContent(1,20*layer+ichip+1);
@@ -91,14 +97,17 @@ std::vector<TH2F*> statistics_calc(TString run="Run_ILC_cosmic_test_11222019", T
       }
       maxhits[n]=maxchip;
       n++;
-
+      */
     }
+
     _file0->Close();
+
   }
 
-  int chip_beam = mostFrequent(maxhits, n);
+    int chip_beam = mostFrequent(maxhits, n);
+    /*
   for(int j=0; j<jmax; j++) {
-    
+    cout<<j<<" second loop"<<endl;
     TString filename = TString::Format("../results_proto/%s_000%i.root",run.Data(),j);
     if(j>9) filename = TString::Format("../results_proto/%s_00%i.root",run.Data(),j);
     if(j>99) filename = TString::Format("../results_proto/%s_0%i.root",run.Data(),j);
@@ -108,8 +117,14 @@ std::vector<TH2F*> statistics_calc(TString run="Run_ILC_cosmic_test_11222019", T
     TFile *_file0  = TFile::Open(filename);
     TH1F* temp=(TH1F*)_file0->Get(name+"monitoring_norettrains_layer");
     TH1F* temp2=(TH1F*)_file0->Get(name+"monitoring_norettrains");
+
+    if(temp==NULL || temp2==NULL) {
+      _file0->Close();
+      continue;
+    }
     
     for(int layer=0; layer<15; layer++) {
+      cout<<layer<<endl;
       double cycles=temp->GetBinContent(3,layer+1);
       double hits=temp->GetBinContent(1,layer+1);
       double noise=temp->GetBinContent(2,layer+1);
@@ -130,38 +145,39 @@ std::vector<TH2F*> statistics_calc(TString run="Run_ILC_cosmic_test_11222019", T
       }
     }
     _file0->Close();
-  }
+
+    }*/
   
 
-  std::vector<TH2F*> result;
-  result.push_back(hitrate_layer_beam);
-  result.push_back(hitnoiserate_layer_beam);
-  result.push_back(hitrate_layer_nobeam);
-  result.push_back(hitnoiserate_layer_nobeam);
-  result.push_back(hitrate_layer);
-  result.push_back(hitnoiserate_layer);
-  result.push_back(hitrate_chip);
-  result.push_back(hitnoiserate_chip);
-  result.push_back(cycles_layer);
-  result.push_back(signal_layer);
-  result.push_back(noise_layer);
+  // std::vector<TH2F*> result;
+  // result.push_back(hitrate_layer_beam);
+  // result.push_back(hitnoiserate_layer_beam);
+  // result.push_back(hitrate_layer_nobeam);
+  // result.push_back(hitnoiserate_layer_nobeam);
+  // result.push_back(hitrate_layer);
+  // result.push_back(hitnoiserate_layer);
+  // result.push_back(hitrate_chip);
+  // result.push_back(hitnoiserate_chip);
+  // result.push_back(cycles_layer);
+  // result.push_back(signal_layer);
+  // result.push_back(noise_layer);
 
-  return result;
+  // return result;
 
 }
 
-void statistics_plots(TString run="Run_ILC_cosmic_test_11222019", TString type="Trigger", std::vector<TH2F*>results=defaultvec, int jmax=63){
+void statistics_plots(TString run="Run_ILC_cosmic_test_11222019", int jmax=63){
 
   
-  TH2F* hitrate_layer_beam = results.at(0);
-  TH2F* hitnoiserate_layer_beam = results.at(1);
-  TH2F* hitrate_layer_nobeam = results.at(2);
-  TH2F* hitnoiserate_layer_nobeam = results.at(3);
-  TH2F* hitrate_layer = results.at(4);
-  TH2F* hitnoiserate_layer = results.at(5);
+   // hitrate_layer_beam = results.at(0);
+   // hitnoiserate_layer_beam = results.at(1);
+   // hitrate_layer_nobeam = results.at(2);
+   // hitnoiserate_layer_nobeam = results.at(3);
+   // hitrate_layer = results.at(4);
+   // hitnoiserate_layer = results.at(5);
 
-  TH2F* hitrate_chip = results.at(6);
-  TH2F* hitnoiserate_chip = results.at(7);
+   // hitrate_chip = results.at(6);
+   // hitnoiserate_chip = results.at(7);
   
   gStyle->SetTitleX(0.5);
   gStyle->SetTitleSize(0.5);
@@ -248,21 +264,22 @@ void statistics_plots(TString run="Run_ILC_cosmic_test_11222019", TString type="
 
 void statistics_hits(TString run="Run_ILC_cosmic_test_11222019", int jmax=63){
 
-  std::vector<TH2F*> results = statistics_calc(run,"Trigger",jmax);
-  statistics_plots(run,"Trigger",results,jmax); 
+  //std::vector<TH2F*> results =
+  type="Trigger";
+  statistics_calc(run,jmax);
+  statistics_plots(run,jmax); 
 
 }
 
 
 void statistics_evts(TString run="Run_ILC_cosmic_test_11222019", int jmax=63){
 
-  std::vector<TH2F*> results = statistics_calc(run,"Events",jmax);
-  statistics_plots(run,"Events",results,jmax);
-
+  statistics_calc(run,jmax);
+  // statistics_plots(run,jmax);
   ofstream fout(TString::Format("../../run_list/statistics_%s.txt",run.Data()).Data(),ios::out);
-  TH2F* cycles = results.at(8);
-  TH2F* signal = results.at(9);
-  TH2F* noise = results.at(10);
+  /*TH2F* cycles_temp = results.at(8);
+  TH2F* signal_temp = results.at(9);
+  TH2F* noise = results.at(10);*/
 
   float tot_cycles[15]={0};
   float tot_signal[15]={0};
@@ -271,9 +288,9 @@ void statistics_evts(TString run="Run_ILC_cosmic_test_11222019", int jmax=63){
   fout << run <<" ";
   for(int ilayer=0; ilayer<15; ilayer++) {
     for(int j=0; j<jmax; j++) {
-      tot_cycles[ilayer]+=cycles->GetBinContent(j+1,ilayer+1);
-      tot_signal[ilayer]+=signal->GetBinContent(j+1,ilayer+1);
-      tot_noise[ilayer]+=noise->GetBinContent(j+1,ilayer+1);
+      tot_cycles[ilayer]+=cycles_layer->GetBinContent(j+1,ilayer+1);
+      tot_signal[ilayer]+=signal_layer->GetBinContent(j+1,ilayer+1);
+      tot_noise[ilayer]+=noise_layer->GetBinContent(j+1,ilayer+1);
     }
     if(tot_cycles[ilayer]>max_cycles) max_cycles=tot_cycles[ilayer];
   }

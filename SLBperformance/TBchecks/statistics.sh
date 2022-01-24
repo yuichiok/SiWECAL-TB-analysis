@@ -1,4 +1,4 @@
-run="HitMonitoring_3GeVMIPscan_run_050121"
-root -l -q statistics.cc\(\"$run\",666\) 
+run="stats_1GeV_W_22degrees_run_050185"
+root -l -q statistics.cc\(\"$run\",1038\) 
 
 
