@@ -1,8 +1,8 @@
-#include "../Fit.h"
+#include "Fit.h"
 
 void SummaryNoise(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 
-  TString map="../../../mapping/fev10_chip_channel_x_y_mapping.txt";
+  TString map="../../mapping/fev10_chip_channel_x_y_mapping.txt";
   //  if(layer==0 || layer==2)  map="../../mapping/fev11_cob_chip_channel_x_y_mapping.txt";
   ReadMap(map,0);
 
@@ -137,7 +137,7 @@ void SummaryNoise(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 
 void SummaryPedestal(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 
-  TString map="../../../mapping/fev10_chip_channel_x_y_mapping.txt";
+  TString map="../../mapping/fev10_chip_channel_x_y_mapping.txt";
   //  if(layer==0 || layer==2)  map="../../mapping/fev11_cob_chip_channel_x_y_mapping.txt";
   ReadMap(map,0);
   int nlayers=15;
@@ -158,7 +158,7 @@ void SummaryPedestal(TString name_="3GeVMIPscan",TString st_gain="highgain"){
   TH2F* ped_c1_nofit=new TH2F("ped_c1_nofit","pedestal coherent-1 noise ; Layer*20+Chip  ; SCA*100 +chn; ADC",300,-0.5,299.5,1500,-0.5,1499.5);
   TH2F* ped_c2_nofit=new TH2F("ped_c2_nofit","pedestal coherent-1 noise ; Layer*20+Chip  ; SCA*100 +chn; ADC",300,-0.5,299.5,1500,-0.5,1499.5);
   
-  ofstream fout_ped(TString::Format("Pedestal_method2_%s_%s.txt",name_.Data(),st_gain.Data()).Data(),ios::out);
+  ofstream fout_ped(TString::Format("../../../pedestals/Pedestal_method2_%s_%s.txt",name_.Data(),st_gain.Data()).Data(),ios::out);
   fout_ped<<"#pedestal results (method of covariance matrix) : PROTO15"<<endl;
   fout_ped<<"#layer chip channel ped0 noise_incoherent_ped0 noise_coherent1_ped0 noise_coherent1_ped0 ...  ped14 noise_incoherent_ped14 noise_coherent1_ped14 noise_coherent2_ped14 (all SCA)"<<endl;
 
@@ -200,15 +200,15 @@ void SummaryPedestal(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 	    pedc1v_[isca]=h2_c1->GetBinContent(chip+1,j+1);
 	    pedc2v_[isca]=h2_c2->GetBinContent(chip+1,j+1);
 	    nped++;
-	    //  if(j==4) cout<<isca<<" "<<pedv<<" "<<nped<<" "<<pedv/nped<<" "<<TString::Format("../%s_mean_c3/Summary_%s_%s.root",st_gain.Data(),name_.Data(),sca.Data())<<endl;
 	    fitted[isca]=1;
 	    if(h2_i->GetBinContent(chip+1,j+1)>0) nnoise++;
-	    ped->Fill(20*layer+chip,100*isca+j,h2_ped->GetBinContent(chip+1,j+1));
+	    /* ped->Fill(20*layer+chip,100*isca+j,h2_ped->GetBinContent(chip+1,j+1));
 	    ped_i->Fill(20*layer+chip,100*isca+j,h2_i->GetBinContent(chip+1,j+1));
 	    ped_c1->Fill(20*layer+chip,100*isca+j,h2_c1->GetBinContent(chip+1,j+1));
-	    ped_c2->Fill(20*layer+chip,100*isca+j,h2_c2->GetBinContent(chip+1,j+1));
-	    width_i_layer[layer]->Fill(h2_i->GetBinContent(chip+1,j+1));
-	    width_layer[layer]->Fill(sqrt(pow(h2_i->GetBinContent(chip+1,j+1),2)+pow(h2_c1->GetBinContent(chip+1,j+1),2)+pow(h2_c2->GetBinContent(chip+1,j+1),2)));
+	    ped_c2->Fill(20*layer+chip,100*isca+j,h2_c2->GetBinContent(chip+1,j+1));*/
+	    if(h2_i->GetBinContent(chip+1,j+1)>0) width_i_layer[layer]->Fill(h2_i->GetBinContent(chip+1,j+1));
+	    if(h2_i->GetBinContent(chip+1,j+1)>0 && h2_c1->GetBinContent(chip+1,j+1)>0 && h2_c2->GetBinContent(chip+1,j+1)>0)
+	      width_layer[layer]->Fill(sqrt(pow(h2_i->GetBinContent(chip+1,j+1),2)+pow(h2_c1->GetBinContent(chip+1,j+1),2)+pow(h2_c2->GetBinContent(chip+1,j+1),2)));
 
 	  }
 	  delete file;//file->Close();
@@ -223,12 +223,17 @@ void SummaryPedestal(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 	    ped_i_nofit->Fill(20*layer+chip,100*isca+j,pediv/nnoise);
 	    ped_c1_nofit->Fill(20*layer+chip,100*isca+j,pedc1v/nnoise);
 	    ped_c2_nofit->Fill(20*layer+chip,100*isca+j,pedc2v/nnoise);
-	    fout_ped<<pedv/nped<< " " <<pediv/nnoise<< " " <<pedc1v/nnoise<< " " <<pedc2v/nnoise<<" "; 
+	    fout_ped<<pedv/nped<< " " <<pediv/nnoise<< " " <<pedc1v/nnoise<< " " <<pedc2v/nnoise<<" "; //bad fits for all but with data for average
 	  } else {
-	    if(fitted[isca]==1 && pediv_[isca]>0 ) fout_ped<<pedv_[isca]<< " " <<pediv_[isca]<< " " <<pedc1v_[isca]<< " " <<pedc2v_[isca]<<" "; //good fits
-	    else if(fitted[isca]==1 && pediv_[isca]==0 ) {
+	    if(fitted[isca]==1 && pediv_[isca]>0 ) {
+	      fout_ped<<pedv_[isca]<< " " <<pediv_[isca]<< " " <<pedc1v_[isca]<< " " <<pedc2v_[isca]<<" "; //good fits for pedestal and noise
+	      ped->Fill(20*layer+chip,100*isca+j,pedv_[isca]);
+	      ped_i->Fill(20*layer+chip,100*isca+j,pediv_[isca]);
+	      ped_c1->Fill(20*layer+chip,100*isca+j,pedc1v_[isca]);
+	      ped_c2->Fill(20*layer+chip,100*isca+j,pedc2v_[isca]);
+	    }  else if(fitted[isca]==1 && pediv_[isca]==0 ) {
 	      if(nnoise>0) {
-		fout_ped<<pedv_[isca]<<" "<<pediv/nnoise<< " " <<pedc1v/nnoise<< " " <<pedc2v/nnoise<<" ";
+		fout_ped<<pedv_[isca]<<" "<<pediv/nnoise<< " " <<pedc1v/nnoise<< " " <<pedc2v/nnoise<<" ";//bad fit of noise, but with data for average
 		ped_i->Fill(20*layer+chip,100*isca+j,pediv/nnoise);
 		ped_c1->Fill(20*layer+chip,100*isca+j,pedc1v/nnoise);
 		ped_c2->Fill(20*layer+chip,100*isca+j,pedc2v/nnoise);
@@ -236,8 +241,8 @@ void SummaryPedestal(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 		ped_c1_nofit->Fill(20*layer+chip,100*isca+j,pedc1v/nnoise);
 		ped_c2_nofit->Fill(20*layer+chip,100*isca+j,pedc2v/nnoise);
 	      }
-	      else  fout_ped<<pedv_[isca]<< " " <<-5<< " " <<-5<< " " <<-5<<" "; //no values of fits
-	    } else fout_ped<<pedv_[isca]<< " " <<-5<< " " <<-5<< " " <<-5<<" "; //no values of fits
+	      else  fout_ped<<pedv_[isca]<< " " <<-5<< " " <<-5<< " " <<-5<<" "; //bad fits
+	    } else fout_ped<<pedv_[isca]<< " " <<-10<< " " <<-10<< " " <<-10<<" "; //no stat for fits
 	  }
 	}//isca
       	fout_ped<<endl;
@@ -245,7 +250,7 @@ void SummaryPedestal(TString name_="3GeVMIPscan",TString st_gain="highgain"){
     }//chip
   }//layer
 
-  TFile *_file1 = new TFile(TString::Format("plots/PedSummary_method2_%s_%s.root",name_.Data(),st_gain.Data()),"RECREATE");
+  TFile *_file1 = new TFile(TString::Format("../../../pedestals/PedSummary_method2_%s_%s.root",name_.Data(),st_gain.Data()),"RECREATE");
   _file1->cd();
   for(int layer=0; layer<nlayers; layer++) {
     width_i_layer[layer]->Write();
@@ -306,8 +311,8 @@ void SummaryPedestal(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 
 void SummaryPlots(){
 
-  SummaryNoise("3GeVMIPscan","highgain");
-  SummaryNoise("3GeVMIPscan","lowgain");
+  //  SummaryNoise("3GeVMIPscan","highgain");
+  //SummaryNoise("3GeVMIPscan","lowgain");
   SummaryPedestal("3GeVMIPscan","highgain");
   SummaryPedestal("3GeVMIPscan","lowgain");
   
