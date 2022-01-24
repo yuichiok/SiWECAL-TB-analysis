@@ -306,7 +306,7 @@ void pedanalysis(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
   fout_mip<<"#layer chip channel mpv empv widthmpv chi2ndf nentries"<<endl;
 
   ReadPedestalsProto(TString::Format("../../pedestals/Pedestal_%s_%sgain.txt",run.Data(),gain.Data()).Data(),false);
-  ReadPedestalsProtoCovariance(TString::Format("/mnt/HardDrive/cernbox_hd/SiWECAL/TB2021/SiWECAL-TB-analysis-Analysis2021/SLBperformance/send_noise/analysis/macros/Pedestal_method2_3GeVMIPscan_%sgain.txt",gain.Data()).Data());
+  ReadPedestalsProtoCovariance(TString::Format("../../pedestals/Pedestal_method2_3GeVMIPscan_%sgain.txt",gain.Data()).Data());
 
   TFile *_file1 = new TFile(TString::Format("../../mip_calib/%s_%sgain_MIPSummary_method2.root",run.Data(),gain.Data()),"RECREATE");
   TDirectory *cdhisto[15];

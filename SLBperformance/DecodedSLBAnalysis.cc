@@ -714,7 +714,7 @@ int DecodedSLBAnalysis::NSlabsAnalysisNoise(TString outputname="", int maxnhit=1
   TString title=gain_st;
   if(sca_test<15)  title=TString::Format("%s_sca%i",gain_st.Data(),sca_test);
   
-  TFile *pedfile = new TFile("send_noise/results_calib3/NoiseCovariance_"+outputname+"_"+title+".root" , "RECREATE");
+  TFile *pedfile = new TFile("noise_covariance_matrix/NoiseCovariance_"+outputname+"_"+title+".root" , "RECREATE");
   pedfile->cd();
   TDirectory *cdhisto[nSLB];
   for(int ilayer=0; ilayer<nSLB; ilayer++) {
