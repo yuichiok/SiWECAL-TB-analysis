@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import os
+import sys
+
 import numpy as np
 
 
@@ -24,9 +26,20 @@ class EcalNumbers:
         self.w_config_options = {  # abs thickness of Tungsten/W plates.
             1: w_conf_1,
         }
+        # TB2021_11 scenario: https://llrelog.in2p3.fr/calice/2207
+        w_conf_2 = np.copy(w_conf_1)
+        if len(w_conf_2) > 0:
+            w_conf_2[0] = 0
+        self.w_config_options = {
+            2: w_conf_2,
+        }
 
         self.bcid_skip_noisy_acquisition_start = 50
+        self.bcid_bad_value = -999
+        self.bcid_drop = [901]
+        self.bcid_drop_retrigger_delta = 2
         self.bcid_merge_delta = 3
+        self.bcid_overflow = 2**12
         self.bcid_too_many_hits = 8000
 
         self.pedestal_min_average = 200
@@ -50,6 +63,9 @@ class EcalNumbers:
         assert all(len(w_conf) == n.n_slabs for w_conf in n.w_config_options.values())
 
         assert type(n.bcid_skip_noisy_acquisition_start) == int
+        assert type(n.bcid_bad_value) == int
+        assert all(type(i_drop) == int for i_drop in n.bcid_drop)
+        assert n.bcid_drop_retrigger_delta >= 0
         assert n.bcid_merge_delta >= 0
         assert type(n.bcid_too_many_hits) == int
 
@@ -67,74 +83,16 @@ dummy_config = dict(
     mapping_file_cob="mapping/fev11_cob_chip_channel_x_y_mapping.txt",
     pedestals_file="pedestals/pedestal_PROTO15_dummy.txt",
     mip_calibration_file="mip_calib/MIP_PROTO15_dummy.txt",
+    pedestals_lg_file="pedestals/pedestal_PROTO15_dummy_lg.txt",
+    mip_calibration_lg_file="mip_calib/MIP_PROTO15_dummy_lg.txt",
     masked_file="masked/masked_PROTO15_dummy.txt",
 )
 
 
-def position_per_slab(slab):
-    return 15 * slab  # in mm.
-
-
-class EcalHit:
-    def __init__(self, slab, chip, chan, sca, hg, lg, gain_hit_high, ecal_config):
-        self.slab = slab
-        self.chip = chip
-        self.chan = chan
-        self.sca = sca
-        self.hg = hg
-        self.lg = lg
-        self._ecal_config = ecal_config
-        self._idx_slab = self._ecal_config._N.slabs.index(self.slab)
-
-        self.isMasked = int(self._ecal_config.masked_map[self._idx_slab][self.chip][self.chan])
-        self.isCommissioned = 1 if self.isMasked == 0 else 0
-        self._gain_hit_high = gain_hit_high
-
-        self._set_positions()
-        self._pedestal_subtraction()
-        self._mip_calibration()
-
-
-    @property
-    def isHit(self):
-        return 1 if self._gain_hit_high > 0 else 0
-
-    def _set_positions(self):
-        self.z = position_per_slab(self.slab)  # Here we use the actual slab position, not the index.
-        slab_channel_map = self._ecal_config.get_channel_map(self.slab)
-        (self.x,self.y) = slab_channel_map[(self.chip, self.chan)]
-        # TODO: Is this really doing the right thing to the positioning? Check with new cosmic runs.
-        # Invert the mapping for the 5 first slabs, to agree with the last 4.
-        # if slab < 5: currently equivalent to:
-        # if "_dif_" in self._ecal_config._N.slab_map[self._idx_slab]:
-        #    self.x = -self.x
-        #    self.y = -self.y
-
-
-    def _pedestal_subtraction(self):
-        pedestals_per_sca = self._ecal_config.pedestal_map[self._idx_slab][self.chip][self.chan]
-
-        sca_has_valid_pedestal = pedestals_per_sca[self.sca] > self._ecal_config._N.pedestal_min_value
-        if sca_has_valid_pedestal:
-            self.hg -= pedestals_per_sca[self.sca]
-        else:
-            is_good_pedestal = pedestals_per_sca > self._ecal_config._N.pedestal_min_average
-            if sum(is_good_pedestal) > 0:
-                pedestal_average = np.mean(pedestals_per_sca[is_good_pedestal])
-            else:
-                pedestal_average = 0
-            if sum(is_good_pedestal) < self._ecal_config._N.pedestal_min_scas:
-                self.isCommissioned = 0
-            self.hg -= pedestal_average
-
-
-    def _mip_calibration(self):
-        mip_value = self._ecal_config.mip_map[self._idx_slab][self.chip][self.chan]
-        if mip_value > self._ecal_config._N.mip_cutoff:
-            self.energy = self.hg / mip_value
-        else:
-            self.energy = 0
-            self.isCommissioned = 0
+def aligned_path(text, path):
+    _text_length = 29
+    assert _text_length >= len(text)
+    return text + (_text_length - len(text)) * " " + str(path)
 
 
 class EcalConfig:
@@ -145,9 +103,13 @@ class EcalConfig:
         mapping_file_cob=dummy_config["mapping_file_cob"],
         pedestals_file=dummy_config["pedestals_file"],
         mip_calibration_file=dummy_config["mip_calibration_file"],
+        pedestals_lg_file=dummy_config["pedestals_lg_file"],
+        mip_calibration_lg_file=dummy_config["mip_calibration_lg_file"],
         masked_file=dummy_config["masked_file"],
         commissioning_folder=None,
         numbers=None,
+        zero_suppress=True,
+        no_lg=False,
         error_on_missing_config=True,
         verbose=False,
     ):
@@ -158,25 +120,61 @@ class EcalConfig:
         else:
             # Resolves to the root folder of this repo
             # Equivalent to ../ if called from within the eventbuilding folder.
-            self._commissioning_folder = os.path.dirname(os.path.dirname((__file__)))
+            event_building_folder = os.path.dirname(os.path.abspath(__file__))
+            self._commissioning_folder = os.path.dirname(event_building_folder)
         if numbers:
             EcalNumbers.validate_ecal_numbers(numbers)  # Catch problems early on.
             self._N = numbers
         else:
             self._N = EcalNumbers()
 
-        self._channel_map = self._read_mapping(mapping_file)
-        self._channel_map_cob = self._read_mapping(mapping_file_cob)
+        self.x, self.y = self._get_x_y(mapping_file, mapping_file_cob)
+        self.z = self._get_z()
+
+        self.masked_map = self._read_masked(masked_file)
         self.pedestal_map = self._read_pedestals(pedestals_file)
         self.mip_map = self._read_mip_values(mip_calibration_file)
-        self.masked_map = self._read_masked(masked_file)
 
+        self.is_commissioned_map = self._handle_uncommissioned_positions(
+            self.pedestal_map, self.mip_map, self.masked_map
+        )
 
-    def get_channel_map(self, slab):
-        if slab in self._N.cob_slabs:
-            return self._channel_map
+        self.zero_suppress = zero_suppress
+        self.no_lg = no_lg
+        if self.no_lg:
+            print("As requested with --no_lg, low gain will not be calibrated.")
         else:
-            return self._channel_map_cob
+            try:
+                self.pedestal_lg_map = self._read_pedestals(pedestals_lg_file)
+                self.mip_lg_map = self._read_mip_values(mip_calibration_lg_file)
+
+                lg_is_commissioned = self._handle_uncommissioned_positions(
+                    self.pedestal_lg_map, self.mip_lg_map, self.masked_map
+                )
+                self.is_commissioned_map = np.logical_and(
+                    self.is_commissioned_map, lg_is_commissioned
+                )
+            except EventbuildingException as e:
+                print("To run without the lowgain information, use --no_lg.")
+                raise e
+
+
+
+    def _get_x_y(self, mapping_file, mapping_file_cob):
+        _x, _y = self._read_mapping_xy(mapping_file)
+        _x_cob, _y_cob = self._read_mapping_xy(mapping_file_cob)
+
+        x = np.stack([_x_cob if slab in self._N.cob_slabs else _x for slab in self._N.slabs])
+        y = np.stack([_y_cob if slab in self._N.cob_slabs else _y for slab in self._N.slabs])
+        return x, y
+
+
+    def _get_z(self):
+        """15 mm distance between slabs in the prototype."""
+        def z_val_layer(slab):
+            return np.full((self._N.n_chips, self._N.n_channels), 15 * slab)
+
+        return np.stack([z_val_layer(slab) for slab in self._N.slabs])
 
 
     def _get_lines(self, file_name):
@@ -194,7 +192,7 @@ class EcalConfig:
         return lines
 
 
-    def _read_mapping(self, file_name):
+    def _read_mapping_xy(self, file_name):
         channel_map = dict()
         lines = self._get_lines(file_name)
 
@@ -208,7 +206,14 @@ class EcalConfig:
             v = line.split()
             pos = (float(v[i_x]), float(v[i_y]))
             channel_map[(int(v[i_chip]), int(v[i_channel]))] = pos
-        return channel_map
+
+        x = np.empty((self._N.n_chips, self._N.n_channels))
+        y = np.empty((self._N.n_chips, self._N.n_channels))
+        assert len(channel_map) == x.size
+        for (chip, channel), (x_i, y_i) in channel_map.items():
+            x[chip][channel] = x_i
+            y[chip][channel] = y_i
+        return x, y
 
 
     def _read_pedestals(self, file_name):
@@ -218,7 +223,7 @@ class EcalConfig:
             self._N.n_channels,
             self._N.n_scas,
         ))
-        print("Reading pedestals from %s." %file_name)
+        print(aligned_path("Reading pedestals from ", file_name))
         lines = self._get_lines(file_name)
 
         assert lines[0].startswith("#pedestal results")
@@ -228,13 +233,17 @@ class EcalConfig:
         i_chip = fields.index("chip")
         i_channel = fields.index("channel")
         i_ped0 = fields.index("ped0")
+        i_ped1 = fields.index("ped1")
+        n_entries_per_sca = i_ped1 - i_ped0
 
 
         for line in lines[2:]:
             v = line.split()
             for i_sca in range(ped_map.shape[-1]):
-                n_entries_per_sca = 3  # ped, eped, widthped
-                ped_val = float(v[2 + i_sca * n_entries_per_sca])
+                ped_val = float(v[i_ped0 + i_sca * n_entries_per_sca])
+                err_ped_val = float(v[4 + i_sca * n_entries_per_sca])
+                if err_ped_val < 0:
+                    ped_val = 0
                 idx_slab = self._N.slabs.index(int(v[i_slab]))
                 ped_map[idx_slab][int(v[i_chip])][int(v[i_channel])][i_sca] = ped_val
         if self._verbose:
@@ -248,7 +257,7 @@ class EcalConfig:
             self._N.n_chips,
             self._N.n_channels,
         ))
-        print("Reading MIP values from %s." %file_name)
+        print(aligned_path("Reading MIP values from ", file_name))
         lines = self._get_lines(file_name)
 
         assert lines[0].startswith("#mip results")
@@ -258,10 +267,13 @@ class EcalConfig:
         i_chip = fields.index("chip")
         i_channel = fields.index("channel")
         i_mpv = fields.index("mpv")
+        i_error_mpv = fields.index("empv")
 
         for line in lines[2:]:
             v = line.split()
             mip_val = float(v[i_mpv])
+            if float(v[i_error_mpv]) < 0:
+                mip_val = 0
             idx_slab = self._N.slabs.index(int(v[i_slab]))
             mip_map[idx_slab][int(v[i_chip])][int(v[i_channel])] = mip_val
         if self._verbose:
@@ -274,8 +286,8 @@ class EcalConfig:
             self._N.n_slabs,
             self._N.n_chips,
             self._N.n_channels,
-        ))
-        print("Reading masked channels from %s." %file_name)
+        ), dtype=int)
+        print(aligned_path("Reading masked channels from ", file_name))
         lines = self._get_lines(file_name)
 
         start_tag = "#masked_chns_list "
@@ -298,5 +310,73 @@ class EcalConfig:
         return masked_map
 
 
+    def _handle_uncommissioned_positions(self, pedestal_map, mip_map, masked_map):
+        """This changes the passed arrays in-place."""
+        is_commissioned_map = np.ones_like(pedestal_map, dtype=int)
+        is_commissioned_map[masked_map == 1] = 0
+
+        # Handle pedestals
+        sca_has_bad_pedestal = pedestal_map < self._N.pedestal_min_value
+        if np.any(sca_has_bad_pedestal):
+            sca_is_used_for_average = pedestal_map > self._N.pedestal_min_average
+            channel_can_provide_average = np.expand_dims(
+                sca_is_used_for_average.sum(axis=-1) >= self._N.pedestal_min_scas,
+                sca_is_used_for_average.ndim - 1,
+            )
+            pedestal_has_no_fix = np.logical_and(
+                sca_has_bad_pedestal,
+                np.logical_not(channel_can_provide_average),
+            )
+            average_pedestal = np.empty_like(pedestal_map)
+            average_pedestal[:] = np.expand_dims(
+                np.divide(
+                    np.multiply(pedestal_map, sca_is_used_for_average).sum(axis=-1),
+                    np.maximum(1, sca_is_used_for_average.sum(axis=-1)),
+                ),
+                sca_is_used_for_average.ndim - 1,
+            )
+            pedestal_map[sca_has_bad_pedestal] = average_pedestal[sca_has_bad_pedestal]
+
+            is_commissioned_map[np.logical_and(
+                sca_has_bad_pedestal,
+                channel_can_provide_average,
+            )] = 0  # We might want to consider this case as "is_commissioned".
+            is_commissioned_map[pedestal_has_no_fix] = 0
+            pedestal_map[pedestal_has_no_fix] = -1
+        if self._verbose:
+            print("corrected pedestal_map", pedestal_map)
+
+        # Handle MIPs
+        has_bad_mip = mip_map < self._N.mip_cutoff
+        if np.any(has_bad_mip):
+            channel_is_used_for_average = mip_map > self._N.mip_cutoff
+            mip_average_on_chip = np.empty_like(mip_map)
+            mip_average_on_chip[:] = np.expand_dims(
+                channel_is_used_for_average.mean(axis=-1),
+                channel_is_used_for_average.ndim - 1,
+            )
+            mip_average_on_chip[np.isnan(mip_average_on_chip)] = -1
+            is_commissioned_map[has_bad_mip] = 0
+            mip_map[has_bad_mip] = mip_average_on_chip[has_bad_mip]
+        if self._verbose:
+            print("corrected mip_map", mip_map)
+
+        if self._verbose:
+            print("is_commissioned_map", is_commissioned_map)
+            print("Rate of commissioned scas: {:.2f}%".format(is_commissioned_map.mean() * 100))
+        return is_commissioned_map
+
+
+def speed_warning_if_python2():
+    if sys.version_info.major == 2:
+        print(
+            "Warning: Slow. The eventbuilding is run with python2. "
+            "While the code aims to stay python2/3 compatible, "
+            "it was found to run significantly faster with python3 "
+            "(x5, see https://github.com/SiWECAL-TestBeam/SiWECAL-TB-analysis/pull/20#issuecomment-982763034)"
+        )
+
+
 if __name__ == "__main__":
-    EcalConfig(verbose=True)
+    numbers = EcalNumbers(slabs=np.arange(15).tolist())
+    EcalConfig(verbose=True, numbers=numbers)
