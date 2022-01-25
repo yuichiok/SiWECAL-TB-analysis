@@ -152,8 +152,8 @@ void AverageHistos(TString name_="3GeVMIPscan",TString st_gain="highgain", int i
 
   double pedestal[15][16][64]={0};
   double error_pedestal[15][16][64]={0};
-  double pedestal_2[15][16][64]={0};
   double error_pedestal_2[15][16][64]={0};
+  double n_pedestal[15][16][64]={0};
 
 
   TFile *_file1 = new TFile(TString::Format("%s_mean_c3/Summary_%s_%s.root",st_gain.Data(),name_.Data(),gain.Data()),"RECREATE");
@@ -222,6 +222,9 @@ void AverageHistos(TString name_="3GeVMIPscan",TString st_gain="highgain", int i
 	  if(h2ped->GetBinContent(chip+1,j+1)>0) {
 	    pedestal[layer][chip][j]+=h2ped->GetBinContent(chip+1,j+1)/h2eped->GetBinContent(chip+1,j+1);
 	    error_pedestal[layer][chip][j]+=1.0/h2eped->GetBinContent(chip+1,j+1);
+	    error_pedestal_2[layer][chip][j]+=h2eped->GetBinContent(chip+1,j+1);
+	    n_pedestal[layer][chip][j]++;
+
 	    // if(j==4)  cout<<" *************** "<<iname<<" "<<gain<<" "<<h2ped->GetBinContent(chip+1,j+1)<<" "<<h2eped->GetBinContent(chip+1,j+1)<<endl;
 	  }
 	  
@@ -284,7 +287,10 @@ void AverageHistos(TString name_="3GeVMIPscan",TString st_gain="highgain", int i
     TH2F * h2xy_c2 = new TH2F(TString::Format("2d noise-coherent-2 layer%i -xy",layer),TString::Format("noise-coherent-2 layer%i ; x ; y ; #sigma_{c2}",layer),32,-90,90,32,-90,90);
 
     TH2F * h2pedestal   = new TH2F(TString::Format("pedestal_layer%i",layer),TString::Format("pedestal_layer%i ;chip ; chn  ; ADC",layer),16,-0.5,15.5,64,-0.5,63.5);
-    TH2F * h2pedestal_xy   = new TH2F(TString::Format("pedestal_xy_layer%i",layer),TString::Format("pedestal_layer%i ; x ; y ; ADC",layer),32,-90,90,32,-90,90);  
+    TH2F * h2pedestal_xy   = new TH2F(TString::Format("pedestal_xy_layer%i",layer),TString::Format("pedestal_layer%i ; x ; y ; ADC",layer),32,-90,90,32,-90,90);
+
+    TH2F * h2errorpedestal   = new TH2F(TString::Format("rms_pedestal_layer%i",layer),TString::Format("rms_pedestal_layer%i ;chip ; chn  ; ADC",layer),16,-0.5,15.5,64,-0.5,63.5);
+    TH2F * h2errorpedestal_xy   = new TH2F(TString::Format("rms_pedestal_xy_layer%i",layer),TString::Format("rms_pedestal_layer%i ; x ; y ; ADC",layer),32,-90,90,32,-90,90);  
 
     for(int chip=0; chip<16; chip++) {
       for(int j=0; j<64; j++) {
@@ -294,6 +300,8 @@ void AverageHistos(TString name_="3GeVMIPscan",TString st_gain="highgain", int i
 	  pedestal[layer][chip][j]/=error_pedestal[layer][chip][j];
 	  h2pedestal->Fill(chip,j,pedestal[layer][chip][j]);
 	  h2pedestal_xy->Fill(double(map_pointX[0][chip][j]),double(map_pointY[0][chip][j]),pedestal[layer][chip][j]);
+	  h2errorpedestal->Fill(chip,j,error_pedestal_2[layer][chip][j]/n_pedestal[layer][chip][j]);
+	  h2errorpedestal_xy->Fill(double(map_pointX[0][chip][j]),double(map_pointY[0][chip][j]),error_pedestal_2[layer][chip][j]/n_pedestal[layer][chip][j]);
 	}
 		  
 	if(N2_i[layer][chip][j]>0) {
@@ -369,7 +377,8 @@ void AverageHistos(TString name_="3GeVMIPscan",TString st_gain="highgain", int i
 
     h2pedestal->Write();
     h2pedestal_xy->Write();
-
+    h2errorpedestal->Write();
+    h2errorpedestal_xy->Write();
 
   }
   hacc_i->Write();
@@ -392,6 +401,6 @@ void NoiseStudy2(TString run="3GeVMIPscan"){
   //for(int isca=0; isca<15;isca++) AverageHistos("3GeV_22degrees","highgain",isca+1,126,149);
   // for(int isca=0; isca<15;isca++) AverageHistos("3GeV_22degrees","lowgain",isca+1,126,149);
   for(int isca=0; isca<15;isca++) AverageHistos(run,"highgain",isca+1,43,123);
-for(int isca=0; isca<15;isca++) AverageHistos(run,"lowgain",isca+1,43,123);
+  for(int isca=0; isca<15;isca++) AverageHistos(run,"lowgain",isca+1,43,123);
 }
 

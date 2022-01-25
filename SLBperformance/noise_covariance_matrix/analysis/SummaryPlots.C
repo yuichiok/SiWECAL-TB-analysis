@@ -149,27 +149,33 @@ void SummaryPedestal(TString name_="3GeVMIPscan",TString st_gain="highgain"){
   
   
   TH2F* ped=new TH2F("ped","pedestal pos. ; Layer*20+Chip  ; SCA*100 +chn; ADC",300,-0.5,299.5,1500,-0.5,1499.5);
+  TH2F* ped_rms=new TH2F("ped_rms","pedestal RMS. ; Layer*20+Chip  ; SCA*100 +chn; ADC",300,-0.5,299.5,1500,-0.5,1499.5);
   TH2F* ped_i=new TH2F("ped_i","pedestal incoherent noise. ; Layer*20+Chip  ; SCA*100 +chn; ADC",300,-0.5,299.5,1500,-0.5,1499.5);
   TH2F* ped_c1=new TH2F("ped_c1","pedestal coherent-1 noise ; Layer*20+Chip  ; SCA*100 +chn; ADC",300,-0.5,299.5,1500,-0.5,1499.5);
   TH2F* ped_c2=new TH2F("ped_c2","pedestal coherent-1 noise ; Layer*20+Chip  ; SCA*100 +chn; ADC",300,-0.5,299.5,1500,-0.5,1499.5);
 
   TH2F* ped_nofit=new TH2F("ped_nofit","pedestal pos. ; Layer*20+Chip  ; SCA*100 +chn; ADC",300,-0.5,299.5,1500,-0.5,1499.5);
+  TH2F* ped_rms_nofit=new TH2F("ped_rms_nofit","pedestal RMS. ; Layer*20+Chip  ; SCA*100 +chn; ADC",300,-0.5,299.5,1500,-0.5,1499.5);
   TH2F* ped_i_nofit=new TH2F("ped_i_nofit","pedestal incoherent noise. ; Layer*20+Chip  ; SCA*100 +chn; ADC",300,-0.5,299.5,1500,-0.5,1499.5);
   TH2F* ped_c1_nofit=new TH2F("ped_c1_nofit","pedestal coherent-1 noise ; Layer*20+Chip  ; SCA*100 +chn; ADC",300,-0.5,299.5,1500,-0.5,1499.5);
   TH2F* ped_c2_nofit=new TH2F("ped_c2_nofit","pedestal coherent-1 noise ; Layer*20+Chip  ; SCA*100 +chn; ADC",300,-0.5,299.5,1500,-0.5,1499.5);
   
   ofstream fout_ped(TString::Format("../../../pedestals/Pedestal_method2_%s_%s.txt",name_.Data(),st_gain.Data()).Data(),ios::out);
   fout_ped<<"#pedestal results (method of covariance matrix) : PROTO15"<<endl;
-  fout_ped<<"#layer chip channel ped0 noise_incoherent_ped0 noise_coherent1_ped0 noise_coherent1_ped0 ...  ped14 noise_incoherent_ped14 noise_coherent1_ped14 noise_coherent2_ped14 (all SCA)"<<endl;
+  fout_ped<<"#layer chip channel";
+  for(int isca=0; isca<15; isca++) fout_ped<<TString::Format(" ped_mean%i ped_rms%i noise_incoherent_ped%i noise_coherent1_ped%i noise_coherent2_ped%i",isca,isca,isca,isca,isca);
+  fout_ped<<endl;
 
   for(int layer=0; layer<nlayers; layer++) {
     for(int chip=0; chip<nchips; chip++) {
       for(int j=0; j<64; j++) {
 	double pedv=0.;
+	double pedrmsv=0.;
 	double pediv=0.;
 	double pedc1v=0.;
 	double pedc2v=0.;
 	double pedv_[15]={0.};
+	double pedrmsv_[15]={0.};
 	double pediv_[15]={0.};
 	double pedc1v_[15]={0.};
 	double pedc2v_[15]={0.};
@@ -186,16 +192,20 @@ void SummaryPedestal(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 	  TFile *file = TFile::Open(TString::Format("%s_mean_c3/Summary_%s_%s.root",st_gain.Data(),name_.Data(),sca.Data()));
 	  //	  cout<<layer<<" "<<chip<<" "<<j<<" "<<TString::Format("../%s_mean_c3/Summary_%s_%s.root",st_gain.Data(),name_.Data(),sca.Data())<<endl;
 	  TH2F * h2_ped=(TH2F*)file->Get(TString::Format("pedestal_layer%i",layer));
+	  TH2F * h2_eped=(TH2F*)file->Get(TString::Format("rms_pedestal_layer%i",layer));
+
 	  TH2F * h2_i=(TH2F*)file->Get(TString::Format("2d noise-incoherent layer%i",layer));
 	  TH2F * h2_c1=(TH2F*)file->Get(TString::Format("2d noise-coherent-1 layer%i",layer));
 	  TH2F * h2_c2=(TH2F*)file->Get(TString::Format("2d noise-coherent-2 layer%i",layer));
 	  if(h2_ped->GetBinContent(chip+1,j+1)>10) {
 	    pedv+=h2_ped->GetBinContent(chip+1,j+1);
+	    pedrmsv+=h2_eped->GetBinContent(chip+1,j+1);
 	    pediv+=h2_i->GetBinContent(chip+1,j+1);
 	    pedc1v+=h2_c1->GetBinContent(chip+1,j+1);
 	    pedc2v+=h2_c2->GetBinContent(chip+1,j+1);
 
 	    pedv_[isca]=h2_ped->GetBinContent(chip+1,j+1);
+	    pedrmsv_[isca]=h2_eped->GetBinContent(chip+1,j+1);
 	    pediv_[isca]=h2_i->GetBinContent(chip+1,j+1);
 	    pedc1v_[isca]=h2_c1->GetBinContent(chip+1,j+1);
 	    pedc2v_[isca]=h2_c2->GetBinContent(chip+1,j+1);
@@ -216,33 +226,37 @@ void SummaryPedestal(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 	for(int isca=0; isca<15; isca++) {
 	  if(fitted[isca]==0 && nped>0 && nnoise>0) {
 	    ped->Fill(20*layer+chip,100*isca+j,pedv/nped);
+	    ped_rms->Fill(20*layer+chip,100*isca+j,pedrmsv/nped);
 	    ped_i->Fill(20*layer+chip,100*isca+j,pediv/nnoise);
 	    ped_c1->Fill(20*layer+chip,100*isca+j,pedc1v/nnoise);
 	    ped_c2->Fill(20*layer+chip,100*isca+j,pedc2v/nnoise);
 	    ped_nofit->Fill(20*layer+chip,100*isca+j,pedv/nped);
+	    ped_rms_nofit->Fill(20*layer+chip,100*isca+j,pedrmsv/nped);
 	    ped_i_nofit->Fill(20*layer+chip,100*isca+j,pediv/nnoise);
 	    ped_c1_nofit->Fill(20*layer+chip,100*isca+j,pedc1v/nnoise);
 	    ped_c2_nofit->Fill(20*layer+chip,100*isca+j,pedc2v/nnoise);
-	    fout_ped<<pedv/nped<< " " <<pediv/nnoise<< " " <<pedc1v/nnoise<< " " <<pedc2v/nnoise<<" "; //bad fits for all but with data for average
+	    fout_ped<<pedv/nped<< " " <<-5<< " " <<pedc1v/nnoise<< " " <<pedc2v/nnoise<<" "; //bad fits for all but with data for average
 	  } else {
 	    if(fitted[isca]==1 && pediv_[isca]>0 ) {
-	      fout_ped<<pedv_[isca]<< " " <<pediv_[isca]<< " " <<pedc1v_[isca]<< " " <<pedc2v_[isca]<<" "; //good fits for pedestal and noise
+	      fout_ped<<pedv_[isca]<< " " <<pedrmsv_[isca]<< " " <<pediv_[isca]<< " " <<pedc1v_[isca]<< " " <<pedc2v_[isca]<<" "; //good fits for pedestal and noise
 	      ped->Fill(20*layer+chip,100*isca+j,pedv_[isca]);
+	      ped_rms->Fill(20*layer+chip,100*isca+j,pedrmsv_[isca]);
 	      ped_i->Fill(20*layer+chip,100*isca+j,pediv_[isca]);
 	      ped_c1->Fill(20*layer+chip,100*isca+j,pedc1v_[isca]);
 	      ped_c2->Fill(20*layer+chip,100*isca+j,pedc2v_[isca]);
 	    }  else if(fitted[isca]==1 && pediv_[isca]==0 ) {
 	      if(nnoise>0) {
-		fout_ped<<pedv_[isca]<<" "<<pediv/nnoise<< " " <<pedc1v/nnoise<< " " <<pedc2v/nnoise<<" ";//bad fit of noise, but with data for average
+		fout_ped<<pedv_[isca]<< " " <<pedrmsv_[isca]<< " "<<pediv/nnoise<< " " <<pedc1v/nnoise<< " " <<pedc2v/nnoise<<" ";//bad fit of noise, but with data for average
 		ped_i->Fill(20*layer+chip,100*isca+j,pediv/nnoise);
+		ped_rms->Fill(20*layer+chip,100*isca+j,pedrmsv_[isca]);
 		ped_c1->Fill(20*layer+chip,100*isca+j,pedc1v/nnoise);
 		ped_c2->Fill(20*layer+chip,100*isca+j,pedc2v/nnoise);
 		ped_i_nofit->Fill(20*layer+chip,100*isca+j,pediv/nnoise);
 		ped_c1_nofit->Fill(20*layer+chip,100*isca+j,pedc1v/nnoise);
 		ped_c2_nofit->Fill(20*layer+chip,100*isca+j,pedc2v/nnoise);
 	      }
-	      else  fout_ped<<pedv_[isca]<< " " <<-5<< " " <<-5<< " " <<-5<<" "; //bad fits
-	    } else fout_ped<<pedv_[isca]<< " " <<-10<< " " <<-10<< " " <<-10<<" "; //no stat for fits
+	      else  fout_ped<<pedv_[isca]<< " " <<-5<< " " <<-5<< " " <<-5<< " " <<-5<<" "; //bad fits
+	    } else fout_ped<<pedv_[isca]<< " " <<-10<<" " <<-10<< " " <<-10<< " " <<-10<<" "; //no stat for fits
 	  }
 	}//isca
       	fout_ped<<endl;

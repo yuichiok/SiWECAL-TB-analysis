@@ -411,8 +411,23 @@ void ReadPedestalsProtoCovariance(TString filename)
   //#layer chip channel ped0 noise_incoherent_ped0 noise_coherent1_ped0 noise_coherent1_ped0 ...  ped14 noise_incoherent_ped14 noise_coherent1_ped14 noise_coherent2_ped14 (all SCA)
   TString tmpst;
   reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >>  tmpst >> tmpst >> tmpst  ;
-  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >>  tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
-  //cout<<tmpst<<endl;
+  reading_file >> tmpst >> tmpst >> tmpst    
+	       >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst
+    	       >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst
+	       >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst
+	       >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst
+	       >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst
+	       >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst
+	       >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst
+	       >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst
+	       >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst
+	       >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst
+	       >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst
+	       >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst
+	       >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst
+	       >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst
+    	       >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst;
+  cout<<tmpst<<endl;
   while(reading_file){
     reading_file >> tmp_layer >> tmp_chip >> tmp_channel >> tmp_ped[0] >> tmp_w_i[0] >> tmp_w_c1[0] >>tmp_w_c2[0] >> tmp_ped[1] >> tmp_w_i[1] >> tmp_w_c1[1] >>tmp_w_c2[1] >> tmp_ped[2] >> tmp_w_i[2] >> tmp_w_c1[2] >>tmp_w_c2[2] >> tmp_ped[3] >> tmp_w_i[3] >> tmp_w_c1[3] >>tmp_w_c2[3] >> tmp_ped[4] >> tmp_w_i[4] >> tmp_w_c1[4] >>tmp_w_c2[4] >> tmp_ped[5] >> tmp_w_i[5] >> tmp_w_c1[5] >>tmp_w_c2[5] >> tmp_ped[6] >> tmp_w_i[6] >> tmp_w_c1[6] >>tmp_w_c2[6] >> tmp_ped[7] >> tmp_w_i[7] >> tmp_w_c1[7] >>tmp_w_c2[7] >> tmp_ped[8] >> tmp_w_i[8] >> tmp_w_c1[8] >>tmp_w_c2[8] >> tmp_ped[9] >> tmp_w_i[9] >> tmp_w_c1[9] >>tmp_w_c2[9] >> tmp_ped[10] >> tmp_w_i[10] >> tmp_w_c1[10] >>tmp_w_c2[10] >> tmp_ped[11] >> tmp_w_i[11] >> tmp_w_c1[11] >>tmp_w_c2[11] >> tmp_ped[12] >> tmp_w_i[12] >> tmp_w_c1[12] >>tmp_w_c2[12] >> tmp_ped[13] >> tmp_w_i[13] >> tmp_w_c1[13] >>tmp_w_c2[13] >> tmp_ped[14] >> tmp_w_i[14] >> tmp_w_c1[14] >> tmp_w_c2[14];
     // cout<<tmp_layer <<" "<< tmp_chip <<" "<< tmp_channel <<" "<< tmp_ped[0]<<endl;
@@ -483,7 +498,22 @@ void ReadPedestalsProto(TString filename, bool invertedordering=false)
 
   TString tmpst;
   reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >>  tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst  >> tmpst >> tmpst ;
-  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >>  tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
+  reading_file >> tmpst >> tmpst >> tmpst
+    	       >> tmpst >> tmpst >> tmpst
+    	       >> tmpst >> tmpst >> tmpst 
+	       >> tmpst >> tmpst >> tmpst 
+	       >> tmpst >> tmpst >> tmpst 
+	       >> tmpst >> tmpst >> tmpst 
+	       >> tmpst >> tmpst >> tmpst 
+	       >> tmpst >> tmpst >> tmpst 
+	       >> tmpst >> tmpst >> tmpst 
+	       >> tmpst >> tmpst >> tmpst 
+	       >> tmpst >> tmpst >> tmpst 
+	       >> tmpst >> tmpst >> tmpst 
+	       >> tmpst >> tmpst >> tmpst 
+	       >> tmpst >> tmpst >> tmpst 
+	       >> tmpst >> tmpst >> tmpst
+    	       >> tmpst >> tmpst >> tmpst;
 
   while(reading_file){
     reading_file >> tmp_layer >> tmp_chip >> tmp_channel >> tmp_ped[0] >> tmp_error[0] >> tmp_width[0] >> tmp_ped[1] >> tmp_error[1] >> tmp_width[1] >> tmp_ped[2] >> tmp_error[2] >> tmp_width[2] >> tmp_ped[3] >> tmp_error[3] >> tmp_width[3] >> tmp_ped[4] >> tmp_error[4] >> tmp_width[4] >> tmp_ped[5] >> tmp_error[5] >> tmp_width[5] >> tmp_ped[6] >> tmp_error[6] >> tmp_width[6] >> tmp_ped[7] >> tmp_error[7] >> tmp_width[7] >> tmp_ped[8] >> tmp_error[8] >> tmp_width[8] >> tmp_ped[9] >> tmp_error[9] >> tmp_width[9] >> tmp_ped[10] >> tmp_error[10] >> tmp_width[10] >> tmp_ped[11] >> tmp_error[11] >> tmp_width[11] >> tmp_ped[12] >> tmp_error[12] >> tmp_width[12] >> tmp_ped[13] >> tmp_error[13] >> tmp_width[13] >> tmp_ped[14] >> tmp_error[14] >> tmp_width[14];

@@ -123,7 +123,9 @@ void pedanalysis(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
 
   ofstream fout_ped(TString::Format("../../pedestals/Pedestal_%s_%sgain.txt",run.Data(),gain.Data()).Data(),ios::out);
   fout_ped<<"#pedestal results (fit to a gaussian) remove channels/sca with two pedestals peaks from the analysis : PROTO15"<<endl;
-  fout_ped<<"#layer chip channel ped0 eped0 widthped0 ped1 eped1 widthped1... ped14 eped14 widhtped14 (all SCA)"<<endl;
+  fout_ped<<"#layer chip channel";
+  for(int isca=0; isca<15; isca++) fout_ped<<TString::Format(" ped_mean%i ped_error%i ped_width%i",isca,isca,isca);
+  fout_ped<<endl;
 
   for(int layer=0; layer<nlayers; layer++) {
    
@@ -301,14 +303,14 @@ void pedanalysis(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
   TH2F* width_all=new TH2F("width_all","width of Landau ; Layer*20+Chip  ; chn",300,-0.5,299.5,64,-0.5,63.5);
   TH2F* nentries_all=new TH2F("nentries_all","N entries; Layer*20+Chip  ; chn",300,-0.5,299.5,64,-0.5,63.5);
 
-  ofstream fout_mip(TString::Format("../../mip_calib/MIP_%s_%sgain_method2.txt",run.Data(),gain.Data()).Data(),ios::out);
+  ofstream fout_mip(TString::Format("../../mip_calib/MIP_method2_%s_%sgain.txt",run.Data(),gain.Data()).Data(),ios::out);
   fout_mip<<"#mip results PROTO15-TB2021-11"<<endl;
   fout_mip<<"#layer chip channel mpv empv widthmpv chi2ndf nentries"<<endl;
 
   ReadPedestalsProto(TString::Format("../../pedestals/Pedestal_%s_%sgain.txt",run.Data(),gain.Data()).Data(),false);
   ReadPedestalsProtoCovariance(TString::Format("../../pedestals/Pedestal_method2_3GeVMIPscan_%sgain.txt",gain.Data()).Data());
 
-  TFile *_file1 = new TFile(TString::Format("../../mip_calib/%s_%sgain_MIPSummary_method2.root",run.Data(),gain.Data()),"RECREATE");
+  TFile *_file1 = new TFile(TString::Format("../../mip_calib/MIPSummary_method2_%s_%sgain.root",run.Data(),gain.Data()),"RECREATE");
   TDirectory *cdhisto[15];
   for(int ilayer=0; ilayer<nlayers; ilayer++) {
     cdhisto[ilayer] = _file1->mkdir(TString::Format("layer_%i",ilayer));
@@ -380,10 +382,10 @@ void pedanalysis(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
 	    mpv_all->Fill(20*layer+i,j,mpv);
 	    width_all->Fill(20*layer+i,j,wmpv);
 	    nentries_all->Fill(20*layer+i,j,hmips->GetEntries());
-	  } else fout_mip<<layer<<" "<<i<<" "<<j<<" "<<-5<<" "<<0<<" "<<0<<" "<<0<<" "<<0<<"\n";
+	  } else fout_mip<<layer<<" "<<i<<" "<<j<<" "<<0<<" "<<-5<<" "<<0<<" "<<0<<" "<<0<<"\n";
 
 	} else {
-	  fout_mip<<layer<<" "<<i<<" "<<j<<" "<<-10<<" "<<0<<" "<<0<<" "<<0<<" "<<0<<"\n";
+	  fout_mip<<layer<<" "<<i<<" "<<j<<" "<<0<<" "<<0<<" "<<0<<" "<<0<<" "<<0<<"\n";
 	}
 	_file1->cd();
 	cdhisto[layer]->cd();
