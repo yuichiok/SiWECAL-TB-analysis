@@ -3,7 +3,8 @@
 #include "DecodedSLBAnalysis.cc"
 #include "TROOT.h"
 #include "TFile.h"
-//#include "../conf_struct.h"
+
+#include "../conf_struct.h"
 #include "../scurves/fithistos.C"
 
 std::vector<std::vector<std::vector<int> > > mask;
