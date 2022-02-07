@@ -3,7 +3,8 @@
 
 # run="Run_ILC_10152020_3_cosmic_it19_Ascii"
 # run="Run_ILC_16062021_cosmiclong_it17_Ascii"
-run="run_050001_25062021_19h25min_Ascii"
+# run="run_050001_25062021_19h25min_Ascii"
+run="Run_ILC_01232022_masking_it0_0_Ascii"
 
 data_folder="/mnt/win2/Run_Data/"${run}"/"
 

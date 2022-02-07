@@ -10,6 +10,9 @@
 #include <iostream>
 #include <fstream>
 #include "TF1.h"
+
+#include "../conf_struct.h"
+
 #include "../scurves/savehistos.C"
 #include "../scurves/fithistos.C"
 

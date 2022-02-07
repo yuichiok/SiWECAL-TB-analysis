@@ -194,6 +194,26 @@ bool search_unixT_string(const std::string &line, const std::string &str, std::s
 
 }
 
+bool search_string_nocolon(const std::string &line, const std::string &str, int &par){
+
+  std::size_t found  = line.find(str);
+
+  if(found!=std::string::npos) {
+
+    std::size_t found1 = line.find_first_of("0123456789",found);
+    std::size_t found2 = line.find_first_of(' ',found1);
+
+    std::string result = line.substr(found1,found2-found1);
+    par = std::stoi(result);
+
+    return true;
+
+  }else{
+    return false;
+  }
+
+}
+
 void read_configuration_file(TString filename="Run_Settings.txt", bool debug=true) {
 
   std::ifstream reading_file(filename);
@@ -230,7 +250,13 @@ void read_configuration_file(TString filename="Run_Settings.txt", bool debug=tru
 
       search_string(line,"USB_SerNum:", detector.usb_sernum);
       search_string(line,"FPGA_Version:", detector.fpga_ver);
-      search_string(line,"NB_Of_Core_Daughters:", detector.n_core_daughters);
+    
+      if(detector.isCore){
+	search_string(line,"NB_Of_Core_Daughters:", detector.n_core_daughters);
+      }else{
+	search_string(line,"Nb_Of_Connected_ASUs:", detector.slab[0][0].nb_asus);
+      }
+    
       search_string(line,"EXT_CLOCK:", detector.external_clock);
 
       search_string(line,"TriggerType:", detector.trigger_type);
@@ -292,9 +318,6 @@ void read_configuration_file(TString filename="Run_Settings.txt", bool debug=tru
 
   }else{
     
-    getline(reading_file, line);
-    search_string(line,"Nb_Of_Connected_ASUs:",detector.slab[0][0].nb_asus);
-    
     detector.n_core_daughters         = 1;
     detector.core_daughter_n_slabs[0] = 1;
 
@@ -328,6 +351,7 @@ void read_configuration_file(TString filename="Run_Settings.txt", bool debug=tru
         for (int ichip = 0; ichip < detector.slab[i][j].asu[k].n_chips; ichip++) {
 
           getline(reading_file,line);
+
           search_string(line,"ChipIndex:",detector.slab[i][j].asu[k].skiroc[ichip].idx);
           search_string(line,"ChipId:",detector.slab[i][j].asu[k].skiroc[ichip].id);
           search_string(line,"FeedbackCap:",detector.slab[i][j].asu[k].skiroc[ichip].feedback_cap);
@@ -443,43 +467,43 @@ TString ext_sig_edge_string(int i) {
 void write_configuration_file(TString filename="Run_Settings_2.txt") {
 
   //===== Daughter: 0 SlabIdx: 0 SlabAdd: 1 SL_Board_SerNum: -1 FPGA_Version: V2.3.7  Nb_Of_Connected_ASUs: 1 =====
-ofstream fout(filename,ios::out);
+  ofstream fout(filename,ios::out);
 
 //fout<<"== SETTINGS FILE SAVED WITH ILC SL-SOFTWARE VERSION: "<<detector.sl_soft_v<<"  == DATE OF RUN: UnixTime = "<<detector.date_run_unix<<" date = "<<detector.date_run_date<<" time = "<<detector.date_run_time<<"  ==="<<endl;
 //fout<<"== SYSTEM_TYPE: SL_COREMODULE_INTERFACE USB_SerNum: "<<detector.usb_sernum<<" FPGA_Version: "<<detector.fpga_ver<<"  NB_Of_Core_Daughters: "<<detector.n_core_daughters<<" =="<<endl;
 //fout<<"== TriggerType: "<<detector.trigger_type<<"  ('0' = FORCE_TRIGGER, '1' = SELF_TRIGGER) ACQWindowSource: "<<detector.acq_window_source <<" ('0' = AUTO, '1'= SOFT_CMD, '2' = EXT_SIG) ACQWindow: "<< detector.acq_window <<" (ms) DelayBetweenCycle: "<< detector.acq_delay <<" (ms) ExtSigLevel: "<< detector.ext_sig_level  <<" ('0' = TTL, '1' = NIM, '-1' = NA) ExtSigEdge: "<< detector.ext_sig_edge <<" ('0' = RISING_EDGE, '1' = FALLING_EDGE, '-1' = NA) =="<<endl;
 
- fout<<"# AcqParams TrigType ' "<<trigger_type_string(detector.trigger_type)<<" ' AcqWindowSource ' "<<acq_window_source_string(detector.acq_window_source) <<" ' ACQWindow "<< detector.acq_window <<" DelayBetweenCycles "<< detector.acq_delay <<" DelayForStartAcq 0 ExtSigLvel ' "<< ext_sig_level_string(detector.ext_sig_level)  <<" ' ExtSigEdge ' "<< ext_sig_edge_string(detector.ext_sig_edge) <<" '"<<endl;
+  fout<<"# AcqParams TrigType ' "<<trigger_type_string(detector.trigger_type)<<" ' AcqWindowSource ' "<<acq_window_source_string(detector.acq_window_source) <<" ' ACQWindow "<< detector.acq_window <<" DelayBetweenCycles "<< detector.acq_delay <<" DelayForStartAcq 0 ExtSigLvel ' "<< ext_sig_level_string(detector.ext_sig_level)  <<" ' ExtSigEdge ' "<< ext_sig_edge_string(detector.ext_sig_edge) <<" '"<<endl;
 
  //CRP 14/12/20 This is a terrible hack!!!  
  //It is to make use of the current organisation of the code
  //This clearly has to be rewritten soon the more since the code that fills the detector struct also tacitly supposed only
  //one CORE Daughter and will thus collapse as sonn as a second CORE Daughter will be added!!!!
- if(!detector.isCore) {
+  if(!detector.isCore) {
    std::cout << "No CORE Module present" << std::endl;
    detector.n_core_daughters = 1;
  }
  //
  //----------------------
   //=== CORE_DAUGHTER: 0 FPGA_Version: V1.3.1 Nb_Of_Connected_Slabs: 6 ===
-   for(int i=0; i<detector.n_core_daughters; i++) {
+ for(int i=0; i<detector.n_core_daughters; i++) {
      //  fout<<"=== CORE_DAUGHTER: "<<i<<" FPGA_Version: "<<detector.core_daughter_fpga_ver[i]<<" Nb_Of_Connected_Slabs: "<<detector.core_daughter_n_slabs[i]<<" ==="<<endl;
-     std::cout << "In writing loop" << std::endl;
-     for(int j=0; j<detector.core_daughter_n_slabs[i]; j++) {
+   std::cout << "In writing loop" << std::endl;
+   for(int j=0; j<detector.core_daughter_n_slabs[i]; j++) {
      std::cout << "In writing loop 2" << std::endl;
-       for(int k=0; k<detector.slab[i][j].nb_asus; k++) {
-     std::cout << "In writing loop 3" << std::endl;
+     for(int k=0; k<detector.slab[i][j].nb_asus; k++) {
+       std::cout << "In writing loop 3" << std::endl;
 	 //	fout<<"# SlabSerNum "<<detector.slab[i][j].ser_num<<" SlabAdd "<< detector.slab[i][j].add <<" Asu "<<detector.slab[i][j].asu[k].idx<<endl;
-	 fout<<"# SlabSerNum 0.0 SlabAdd "<< detector.slab[i][j].add <<" Asu "<<detector.slab[i][j].asu[k].idx<<endl;
-	 for(int ichip=0; ichip<detector.slab[i][j].asu[k].n_chips; ichip++) {
-	   fout<<"## ChipIndex "<< detector.slab[i][j].asu[k].skiroc[ichip].idx<<" FeedbackCap "<<detector.slab[i][j].asu[k].skiroc[ichip].feedback_cap<<" ThresholdDAC "<<detector.slab[i][j].asu[k].skiroc[ichip].threshold_dac <<" HoldDelay "<<  detector.slab[i][j].asu[k].skiroc[ichip].hold_delay <<" FSPeakTime "<< detector.slab[i][j].asu[k].skiroc[ichip].fs_peak_time <<" GainSelectionThreshold "<< detector.slab[i][j].asu[k].skiroc[ichip].gain_selection_threshold <<" DefaultChThreshold "<<detector.slab[i][j].asu[k].skiroc[ichip].default_ch_threshold <<" DefaultTrigMask "<<detector.slab[i][j].asu[k].skiroc[ichip].default_trig_mask<<" DefaultPAMask "<< detector.slab[i][j].asu[k].skiroc[ichip].default_pa_mask <<endl;
-	  
-	   for(int ichn=0; ichn<detector.slab[i][j].asu[k].skiroc[ichip].n_channels; ichn++) {
-	     fout<<"### Ch "<<ichn<<" TrigMask "<<detector.slab[i][j].asu[k].skiroc[ichip].mask[ichn]<<" ChThreshold "<< detector.slab[i][j].asu[k].skiroc[ichip].chn_threshold_adj[ichn] <<" PAMask "<< detector.slab[i][j].asu[k].skiroc[ichip].preamplifier_mask[ichn] <<" "<<endl;
-	   }
-	 }
-       }
+       fout<<"# SlabSerNum 0.0 SlabAdd "<< detector.slab[i][j].add <<" Asu "<<detector.slab[i][j].asu[k].idx<<endl;
+       for(int ichip=0; ichip<detector.slab[i][j].asu[k].n_chips; ichip++) {
+        fout<<"## ChipIndex "<< detector.slab[i][j].asu[k].skiroc[ichip].idx<<" FeedbackCap "<<detector.slab[i][j].asu[k].skiroc[ichip].feedback_cap<<" ThresholdDAC "<<detector.slab[i][j].asu[k].skiroc[ichip].threshold_dac <<" HoldDelay "<<  detector.slab[i][j].asu[k].skiroc[ichip].hold_delay <<" FSPeakTime "<< detector.slab[i][j].asu[k].skiroc[ichip].fs_peak_time <<" GainSelectionThreshold "<< detector.slab[i][j].asu[k].skiroc[ichip].gain_selection_threshold <<" DefaultChThreshold "<<detector.slab[i][j].asu[k].skiroc[ichip].default_ch_threshold <<" DefaultTrigMask "<<detector.slab[i][j].asu[k].skiroc[ichip].default_trig_mask<<" DefaultPAMask "<< detector.slab[i][j].asu[k].skiroc[ichip].default_pa_mask <<endl;
+
+        for(int ichn=0; ichn<detector.slab[i][j].asu[k].skiroc[ichip].n_channels; ichn++) {
+          fout<<"### Ch "<<ichn<<" TrigMask "<<detector.slab[i][j].asu[k].skiroc[ichip].mask[ichn]<<" ChThreshold "<< detector.slab[i][j].asu[k].skiroc[ichip].chn_threshold_adj[ichn] <<" PAMask "<< detector.slab[i][j].asu[k].skiroc[ichip].preamplifier_mask[ichn] <<" "<<endl;
+        }
+      }
+    }
      }//loop over slabs
    }//loop over core daughters
 
-}
+ }
