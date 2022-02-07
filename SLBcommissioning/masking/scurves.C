@@ -10,6 +10,9 @@
 #include <iostream>
 #include <fstream>
 #include "TF1.h"
+
+#include "../conf_struct.h"
+
 #include "../scurves/savehistos.C"
 #include "../scurves/fithistos.C"
 
@@ -17,7 +20,12 @@ void scurves(TString date, int iteration) {
 
   savehistos(date);
   std::vector<int> nslboards;
-  for(int i=0; i<15; i++)  nslboards.push_back(i);
+  // stack
+  // for(int i=0; i<15; i++)  nslboards.push_back(i);
+  
+  // test bench
+  nslboards.push_back(0);
+  
   //first  found slboard
   // nslboards.push_back(1);
   // nslboards.push_back(2);
@@ -37,6 +45,9 @@ void scurves(TString date, int iteration) {
 
   // nslboards.push_back(3);
 
+
+
+  // debug (TURN ON LATER)
   fithistos(date,nslboards,iteration);
   
 }

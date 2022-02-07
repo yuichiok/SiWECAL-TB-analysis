@@ -3,9 +3,9 @@
 #include "conf_struct.h"
 
 
-void test_read_thresholds(TString filename="14102021/Run_Settings_it8.txt", bool debug=true) {
+void test_read_thresholds(TString filename="14102021/Run_Settings_it8", bool debug=true) {
 
-  read_configuration_file(filename,false);
+  read_configuration_file(filename+".txt",false);
 
   TH2F* threshold_chip_chn[15];
   TH2F* threshold_x_y[15];
@@ -70,7 +70,8 @@ void test_read_thresholds(TString filename="14102021/Run_Settings_it8.txt", bool
     threshold_x_y_2[islab]->GetZaxis()->SetRangeUser(220,280);
     threshold_x_y_2[islab]->Draw("colz");
     threshold_x_y[islab]->Draw("text0same");
-    canvas->Print(TString::Format("thresholds_slbAdd%i.eps",islab));
+    //canvas->Print(TString::Format("thresholds_slbAdd%i.eps",islab));
+    canvas->Print(TString::Format("thresholds_slbAdd%i.png",islab));
 
 
   }
