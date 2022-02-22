@@ -21,10 +21,10 @@ void scurves(TString date, int iteration) {
   savehistos(date);
   std::vector<int> nslboards;
   // stack
-  // for(int i=0; i<15; i++)  nslboards.push_back(i);
+  for(int i=0; i<15; i++)  nslboards.push_back(i);
   
   // test bench
-  nslboards.push_back(0);
+  // nslboards.push_back(0);
   
   //first  found slboard
   // nslboards.push_back(1);

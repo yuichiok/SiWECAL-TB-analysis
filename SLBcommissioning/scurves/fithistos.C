@@ -230,7 +230,8 @@ void fithistos(TString filename, std::vector<int> slboards , int iteration=0, bo
 if(write ==true) {
   for(int i=0; i<slboards.size(); i++) {
     TString type="SK2";
-    if(detector.slab[0][i].add==4 || detector.slab[0][i].add==5 || detector.slab[0][i].add==6 || detector.slab[0][i].add==7 ){type = "SK2a";}
+    // if(detector.slab[0][i].add==4 || detector.slab[0][i].add==5 || detector.slab[0][i].add==6 || detector.slab[0][i].add==7 ){type = "SK2a";}
+    if(detector.slab[0][i].add==4 || detector.slab[0][i].add==5 || detector.slab[0][i].add==6 || detector.slab[0][i].add==7 || detector.slab[0][i].add==14 ){type = "SK2a";}
     //if(detector.slab[0][i].add==0 ){ type = "SK2a"; }
 
    for(int iasic=0; iasic<16; iasic++) {
