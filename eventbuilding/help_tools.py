@@ -21,18 +21,15 @@ class EcalNumbers:
             self.cob_slabs = sorted(set(cob_slabs))
         self.n_slabs = len(self.slabs)
 
+        self.w_config_options = {}  # abs thickness of Tungsten/W plates.
         w_conf_1 = np.full(self.n_slabs, 2.1)
         w_conf_1[-3:] = 4.2
-        self.w_config_options = {  # abs thickness of Tungsten/W plates.
-            1: w_conf_1,
-        }
+        self.w_config_options[1] = w_conf_1
         # TB2021_11 scenario: https://llrelog.in2p3.fr/calice/2207
         w_conf_2 = np.copy(w_conf_1)
         if len(w_conf_2) > 0:
             w_conf_2[0] = 0
-        self.w_config_options = {
-            2: w_conf_2,
-        }
+        self.w_config_options[2] = w_conf_2
 
         self.bcid_skip_noisy_acquisition_start = 50
         self.bcid_bad_value = -999
@@ -46,6 +43,7 @@ class EcalNumbers:
         self.pedestal_min_scas = 3
         self.pedestal_min_value = 10
         self.mip_cutoff = 0.5
+        self.mip_malfunctioning_chip = 1000
         self.validate_ecal_numbers(self)
 
 
@@ -73,6 +71,7 @@ class EcalNumbers:
         assert type(n.pedestal_min_scas) == int
         assert type(n.pedestal_min_value) == int
         assert type(n.mip_cutoff) == float and n.mip_cutoff <= 1
+        assert type(n.mip_malfunctioning_chip) in [int, float]  and n.mip_malfunctioning_chip != 0
 
 
 class EventBuildingException(Exception):
@@ -154,10 +153,9 @@ class EcalConfig:
                 self.is_commissioned_map = np.logical_and(
                     self.is_commissioned_map, lg_is_commissioned
                 )
-            except EventbuildingException as e:
+            except EventBuildingException as e:
                 print("To run without the lowgain information, use --no_lg.")
                 raise e
-
 
 
     def _get_x_y(self, mapping_file, mapping_file_cob):
@@ -349,11 +347,13 @@ class EcalConfig:
         # Handle MIPs
         has_bad_mip = mip_map < self._N.mip_cutoff
         if np.any(has_bad_mip):
-            channel_is_used_for_average = mip_map > self._N.mip_cutoff
+            channel_is_used_for_average = mip_map >= self._N.mip_cutoff
+            per_chip_average = channel_is_used_for_average.mean(axis=-1)
+            per_chip_average[per_chip_average == 0] = self._N.mip_malfunctioning_chip
             mip_average_on_chip = np.empty_like(mip_map)
             mip_average_on_chip[:] = np.expand_dims(
-                channel_is_used_for_average.mean(axis=-1),
-                channel_is_used_for_average.ndim - 1,
+                per_chip_average,
+                per_chip_average.ndim,
             )
             mip_average_on_chip[np.isnan(mip_average_on_chip)] = -1
             is_commissioned_map[has_bad_mip] = 0
