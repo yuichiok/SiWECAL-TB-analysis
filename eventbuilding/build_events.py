@@ -43,6 +43,13 @@ except ImportError:
         print("\n# Final time:", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 
+def get_tree_spills_no_progress_info(tree, max_entries):
+    for i, spill in enumerate(tree):
+        if i > max_entries:
+            break
+        yield i, spill
+
+
 class BCIDHandler:
     def __init__(self, bcid_numbers, min_slabs_hit=1):
         self._N = bcid_numbers
@@ -308,6 +315,7 @@ class BuildEvents:
         no_zero_suppress=False,
         no_lg=False,
         redo_config=False,
+        no_progress_info=False,
         **config_file_kws
     ):
         self.file_name = file_name
@@ -327,6 +335,7 @@ class BuildEvents:
             assert ecal_numbers.slabs == slabs
             assert ecal_numbers.cob_slabs == cob_slabs
 
+        self._no_progress_info = no_progress_info
         speed_warning_if_python2()
         self.ecal_config = EcalConfig(
             commissioning_folder=commissioning_folder,
@@ -431,11 +440,16 @@ class BuildEvents:
         if max_entries < 0:
             max_entries = self.in_tree.GetEntries()
 
+        if self._no_progress_info:
+            _get_tree_spills = get_tree_spills_no_progress_info
+        else:
+            _get_tree_spills = get_tree_spills
+
         if self.redo_config:
-            for _, event in get_tree_spills(self.in_tree, max_entries):
+            for _, event in _get_tree_spills(self.in_tree, max_entries):
                 self._redo_fill_event(event)
         else:
-            for i_spill, entry in get_tree_spills(self.in_tree, max_entries):
+            for i_spill, entry in _get_tree_spills(self.in_tree, max_entries):
                 self._fill_spill(i_spill, entry)
         self._write_and_close()
 
@@ -605,7 +619,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Build an event-level rootfile (smaller) from the raw rootfile.",
     )
-    parser.add_argument("file_name", help="The raw rootfile from converter_SLB")
+    parser.add_argument("file_name", help="The raw rootfile from converter_SLB.")
     parser.add_argument("-n", "--max_entries", default=-1, type=int)
     parser.add_argument("-w", "--w_config", default=-1, type=int)
     parser.add_argument("-o", "--out_file_name", default=None)
@@ -613,10 +627,11 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--min_slabs_hit", default=4, type=int)
     parser.add_argument("--cob_positions_string", default="")
     parser.add_argument("--no_zero_suppress", action="store_true", help="Store all channels on hit chip.")
-    parser.add_argument("--no_lg", action="store_true", help="Ignore low gain")
-    parser.add_argument("--redo_config", action="store_true",
-        help="Do not (re)-build the events but only change the configuration options. Then file_name should be a build.root file already."
-    )
+    parser.add_argument("--no_lg", action="store_true", help="Ignore low gain.")
+    _help = _help="Do not (re)-build the events but only change the configuration options. Then file_name should be a build.root file already."
+    parser.add_argument("--redo_config", action="store_true", help=_help)
+    _help = "Less verbose output, especially for batch processing."
+    parser.add_argument("--no_progress_info", action="store_true", help=_help)
     # Run ./build_events.py --help to see all options.
     for config_option, config_value in dummy_config.items():
         parser.add_argument("--" + config_option, default=config_value)
