@@ -267,6 +267,8 @@ class BuildEvents:
             "bcid_merge_end/I",
             "bcid_prev/I",
             "bcid_next/I",
+            "id_run/I",
+            "id_dat/I",
         # "hit summary":
             "nhit_slab/I",
             "nhit_chip/I",
@@ -316,6 +318,8 @@ class BuildEvents:
         no_lg=False,
         redo_config=False,
         no_progress_info=False,
+        id_dat=-1,
+        id_run=-1,
         **config_file_kws
     ):
         self.file_name = file_name
@@ -336,6 +340,8 @@ class BuildEvents:
             assert ecal_numbers.cob_slabs == cob_slabs
 
         self._no_progress_info = no_progress_info
+        self._id_dat = id_dat
+        self._id_run = id_run
         speed_warning_if_python2()
         self.ecal_config = EcalConfig(
             commissioning_folder=commissioning_folder,
@@ -589,6 +595,8 @@ class BuildEvents:
             b["bcid_merge_end"][0] = bcid_merge_end[bcid]
             b["bcid_prev"][0] = bcid_handler.previous_bcid(bcid)
             b["bcid_next"][0] = bcid_handler.next_bcid(bcid)
+            b["id_run"][0] = self._id_run
+            b["id_dat"][0] = self._id_dat
 
             # count hits per slab/chan/chip
             b["nhit_slab"][0] = nhit_slab
@@ -632,6 +640,8 @@ if __name__ == "__main__":
     parser.add_argument("--redo_config", action="store_true", help=_help)
     _help = "Less verbose output, especially for batch processing."
     parser.add_argument("--no_progress_info", action="store_true", help=_help)
+    parser.add_argument("--id_run", default=-1, type=int, help="Integer ID of the run within the testbeam campaign.")
+    parser.add_argument("--id_dat", default=-1, type=int, help="Integer ID for piece-by-piece eventbuilding within a run.")
     # Run ./build_events.py --help to see all options.
     for config_option, config_value in dummy_config.items():
         parser.add_argument("--" + config_option, default=config_value)
