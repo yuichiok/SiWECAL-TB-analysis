@@ -270,7 +270,7 @@ int DecodedSLBAnalysis::NSlabsAnalysis_checks(TString outputname="")
   TFile *pedfile = new TFile("results_calib/TestCoincidences_"+outputname+".root" , "RECREATE");
   pedfile->cd();
 
-  for(int i=0; i<4; i++)  nslabs_hit[i]->Write();
+  for(int i=0; i<10; i++)  nslabs_hit[i]->Write();
   //  nslabs_hit_forcing_hits_first_4slabs->Write();
   //nslabs_hit_forcing_hits_first_4slabs_loose->Write();
   /*for(int ichip=0; ichip<16; ichip++) {
@@ -392,7 +392,9 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=1, int
 	    }*/
 	  // if(triggers==0 || triggers>1) continue;
 
+
 	  for(int ichn=0; ichn<64; ichn++) {
+
 	    if(gain_hit_low[ilayer][ichip][isca][ichn]==0) 
 	      ped_low_sca.at(ilayer).at(ichip).at(ichn).at(isca)->Fill(charge_lowGain[ilayer][ichip][isca][ichn]);
 	    if(gain_hit_high[ilayer][ichip][isca][ichn]==0) 
