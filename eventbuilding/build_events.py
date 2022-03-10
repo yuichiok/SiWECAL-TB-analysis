@@ -562,6 +562,10 @@ class BuildEvents:
                 val = np.sum(self.out_arrays["hit_energy"][:event.nhit_len][np.array(event.hit_isHit, dtype=bool)])
             elif branch_name == "sum_energy_lg":
                 val = np.sum(self.out_arrays["hit_energy_lg"][:event.nhit_len][np.array(event.hit_isHit, dtype=bool)])
+            elif branch_name == "id_dat" and self._id_dat != -1:
+                val = self._id_dat
+            elif branch_name == "id_run" and self._id_run != -1:
+                val = self._id_run
             else:
                 val = getattr(event, branch_name)
             self.out_arrays[branch_name][0] = val
