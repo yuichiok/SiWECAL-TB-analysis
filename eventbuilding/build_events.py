@@ -534,6 +534,8 @@ class BuildEvents:
 
 
     def _redo_fill_event(self, event):
+        if event.nhit_slab < self.min_slabs_hit:
+            return
         for branch_name in self._hit_branches:
             branch_name = "hit_"+ branch_name
             if branch_name == "hit_energy":
@@ -566,6 +568,9 @@ class BuildEvents:
                 val = self._id_dat
             elif branch_name == "id_run" and self._id_run != -1:
                 val = self._id_run
+            elif branch_name == "event":
+                self.event_counter += 1
+                val = self.event_counter
             else:
                 val = getattr(event, branch_name)
             self.out_arrays[branch_name][0] = val
