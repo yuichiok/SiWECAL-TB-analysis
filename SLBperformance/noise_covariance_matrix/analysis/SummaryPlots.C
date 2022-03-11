@@ -8,7 +8,7 @@ void SummaryNoise(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 
 
   TString gain="";
-  for(int igain=0; igain<15; igain++) {
+  for(int igain=0; igain<3; igain++) {
 
     gain=TString::Format("%s_sca%i",st_gain.Data(),igain);
 
@@ -24,6 +24,8 @@ void SummaryNoise(TString name_="3GeVMIPscan",TString st_gain="highgain"){
       sigma_c1[layer]=new TH1F(TString::Format("sigma_c1_layer%i",layer),TString::Format("sigma_c1_layer%i",layer),100,0.05,10.);
       sigma_c2[layer]=new TH1F(TString::Format("sigma_c2_layer%i",layer),TString::Format("sigma_c2_layer%i",layer),100,0.05,10.);
 
+      TH2F * h2_acc_i_temp=(TH2F*)file->Get("2d noise-incoherent Bad");
+
       TH2F * h2_i=(TH2F*)file->Get(TString::Format("2d noise-incoherent layer%i",layer));
       TH2F * h2_c1=(TH2F*)file->Get(TString::Format("2d noise-coherent-1 layer%i",layer));
       TH2F * h2_c2=(TH2F*)file->Get(TString::Format("2d noise-coherent-2 layer%i",layer));
@@ -33,6 +35,7 @@ void SummaryNoise(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 	  sigma_i[layer]->Fill(h2_i->GetBinContent(chip+1,j+1));
 	  sigma_c1[layer]->Fill(h2_c1->GetBinContent(chip+1,j+1));
 	  sigma_c2[layer]->Fill(h2_c2->GetBinContent(chip+1,j+1));
+	  //	  if(h2_i->GetBinContent(chip+1,j+1)>4.8 && h2_acc_i_temp->GetBinContent(chip+1,j+1)>4) cout<<"Layer: "<<layer<<" chip:"<<chip<<" chn:"<<j<<endl;
 	}
       }
     }
@@ -325,10 +328,10 @@ void SummaryPedestal(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 
 void SummaryPlots(){
 
-  //  SummaryNoise("3GeVMIPscan","highgain");
-  //SummaryNoise("3GeVMIPscan","lowgain");
-  SummaryPedestal("3GeVMIPscan","highgain");
-  SummaryPedestal("3GeVMIPscan","lowgain");
+  // SummaryNoise("3GeVMIPscan","highgain");
+  SummaryNoise("3GeVMIPscan","lowgain");
+  //SummaryPedestal("3GeVMIPscan","highgain");
+  //SummaryPedestal("3GeVMIPscan","lowgain");
   
 }
 

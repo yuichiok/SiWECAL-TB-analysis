@@ -22,6 +22,7 @@
 #include "../../../include/utils.h"
 
 double cov_data[64][64]={0};
+double n_data[64][64]={0};
 double sigma_i[64]={0};
 double sigma_c1[64]={0};
 double sigma_c2[64]={0};
@@ -48,10 +49,10 @@ Double_t func(int i,int j, Double_t *par)
 
   //if(i==j) value=(par[i]*par[j]+par[i+64]*par[j+64]+par[i+128]*par[j+128]);
   //else value=(par[i+64]*par[j+64]+par[i+128]*par[j+128]);
-  //if(i==j) value=par[i]*par[j]+par[i+64]*par[j+64]+par[i+128]*par[j+128];
-  //else value=par[i+64]*par[j+64]+par[i+128]*par[j+128];
-  if(i==j) value=(par[i]*par[j]+par[i+64]*par[j+64]+par[i+128]*par[j+128]+par[i+192]*par[j+192]);
-  else value=(par[i+64]*par[j+64]+par[i+128]*par[j+128]+par[i+192]*par[j+192]);
+  // if(i==j) value=par[i]*par[j]+par[i+64]*par[j+64]+par[i+128]*par[j+128];
+  // else value=par[i+64]*par[j+64]+par[i+128]*par[j+128];
+  if(i==j) value=(par[i]*par[j]+par[i+64]*par[j+64]+par[i+128]*par[j+128]);//+par[i+192]*par[j+192]+par[i+256]*par[j+256]);
+  else value=(par[i+64]*par[j+64]+par[i+128]*par[j+128]);//+par[i+192]*par[j+192]+par[i+256]*par[j+256]);
   return value;
  
 }
@@ -79,9 +80,8 @@ void fcn(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t iflag)
 TH2F* OpenCovMatrix(TString filename="3GeVMIPscan_scagt0",TString gain="highgain", int layer=5, int chip=0)
 {
 
-
-  TFile * file = TFile::Open("../results_calib3/NoiseCovariance_"+filename+".root");
-  cout<<"../results_calib3/NoiseCovariance_"+filename+".root"<<endl;
+  TFile * file = TFile::Open("../../results_noise/NoiseCovariance_"+filename+".root");
+  cout<<"../../results_noise/NoiseCovariance_"+filename+".root"<<endl;
   TH2F* cov_temp=(TH2F*)file->Get(TString::Format("layer_%i/cov_unnorm_layer%i_chip%i",layer,layer,chip));
   cout<<TString::Format("layer_%i/cov_unnorm_layer%i_chip%i",layer,layer,chip)<<endl;
   TH2F* norm_temp=(TH2F*)file->Get(TString::Format("layer_%i/nevents_layer%i_chip%i",layer,layer,chip));
@@ -90,6 +90,7 @@ TH2F* OpenCovMatrix(TString filename="3GeVMIPscan_scagt0",TString gain="highgain
   
   
   if(cov_temp==NULL || norm_temp==NULL){//|| norm_temp==NULL) {
+    cout<< "cov_temp==NULL || norm_temp==NULL"<<endl;
     file->Close();
     return NULL;
   }
@@ -98,27 +99,37 @@ TH2F* OpenCovMatrix(TString filename="3GeVMIPscan_scagt0",TString gain="highgain
   for (int i=0; i<64; i++) {
     integral+=norm_temp->GetBinContent(i+1,i+1);
   }
-  if ( integral/64. <500) {
-    file->Close();
+  if ( integral/64. <100) {
+    delete file;
+    cout<< "integral/64. <500, integral="<< integral/64.<<endl;
     return NULL;
   }
   
   for (int i=0; i<64; i++) {
     TH1F* htemp=(TH1F*)file->Get(TString::Format("layer_%i/h_ped_layer%i_chip%i_chn%i",layer,layer,chip,i));
-    if(htemp==NULL) continue;
+    if(htemp==NULL) {
+      cout<<"htemp == NUL"<<endl;
+      continue;
+    }
     if(htemp->GetEntries()>100) {
       htemp->GetXaxis()->SetRangeUser(htemp->GetMean()-20,htemp->GetMean()+20);
       pedestal[i]=htemp->GetMean();
       epedestal[i]=htemp->GetRMS();
-    }
-    for (int j=0; j<64; j++) {
-      if(norm_temp->GetBinContent(i+1,j+1)>0  ) cov->SetBinContent(i+1,j+1,cov_temp->GetBinContent(i+1,j+1)/norm_temp->GetBinContent(i+1,j+1));
-      else cov->SetBinContent(i+1,j+1,0);
-      cov_data[i][j]=cov->GetBinContent(i+1,j+1);
-      //  if(chip==15) cout<<"TEST "<<i<<" "<<j<<" "<<norm_temp->GetBinContent(i+1,j+1)<<endl;
+    
+      for (int j=0; j<64; j++) {
+	if(norm_temp->GetBinContent(i+1,j+1)>0  ) {
+	  cov->SetBinContent(i+1,j+1,cov_temp->GetBinContent(i+1,j+1)/norm_temp->GetBinContent(i+1,j+1));
+	  n_data[i][j]=norm_temp->GetBinContent(i+1,j+1);
+	}
+	else {
+	  cov->SetBinContent(i+1,j+1,0);
+	  n_data[i][j]=0;
+	}
+	cov_data[i][j]=cov->GetBinContent(i+1,j+1);
+      }
     }
   }
-  file->Close();
+  delete file;
   return cov;
 }
 
@@ -127,16 +138,16 @@ TH2F* OpenCovMatrix(TString filename="3GeVMIPscan_scagt0",TString gain="highgain
 int Fit(TString name="3GeVMIPscan", TString gain="highgain", int layer=0, int chip=0){
   TH2F* cov_matrix = OpenCovMatrix(name,gain,layer,chip);
   if(cov_matrix==NULL) return 0;
-
+  // RooFit::Offset(true);
   //for(int i=0; i<4; i++) std::cout<<z[i]<<" "<<rho[i]<<"    ....     "<<std::endl;
-  Int_t nparameters=256;
+  Int_t nparameters=192;
   TMinuit *gMinuit = new TMinuit(nparameters);  //initialize TMinuit with a maximm of 5 params
   gMinuit->SetFCN(fcn);
 
   //gMinuit->SetFCN(fcn_cov);
 
   gMinuit->mnhelp("*");
-  gMinuit->mnhelp("MINImize");
+  gMinuit->mnhelp("MIGRAD");
   //m.mnhelp("MIGrad")
   Double_t arglist[nparameters];
   Int_t ierflg = 0;
@@ -148,17 +159,17 @@ int Fit(TString name="3GeVMIPscan", TString gain="highgain", int layer=0, int ch
   Double_t step[nparameters];
   for(int i=0; i<nparameters; i++) {
     if(i<64) {
-      vstart[i]=3.5;
+      vstart[i]=3.0;
       step[i]=0.001;
-      gMinuit->mnparm(i, TString::Format("I_%i",i), vstart[i], step[i], 0.5,25,ierflg);
+      gMinuit->mnparm(i, TString::Format("I_%i",i), vstart[i], step[i], 1.0,100,ierflg);
     } else if(i<128) {
-      vstart[i]=1.1;
-      step[i]=0.001;
-      gMinuit->mnparm(i, TString::Format("C1_%i",i-64), vstart[i], step[i], 0,25,ierflg);
-    } else if(i<192) {
       vstart[i]=0.5;
       step[i]=0.001;
-      gMinuit->mnparm(i, TString::Format("C2_%i",i-128), vstart[i], step[i], 0.,20,ierflg);
+      gMinuit->mnparm(i, TString::Format("C1_%i",i-64), vstart[i], step[i], 0.0,5,ierflg);
+    } else if(i<192) {
+      vstart[i]=0.1;
+      step[i]=0.001;
+      gMinuit->mnparm(i, TString::Format("C2_%i",i-128), vstart[i], step[i], 0.0,05,ierflg);
     } else if(i<256)  {
       vstart[i]=0.05;
       step[i]=0.0001;
@@ -171,12 +182,12 @@ int Fit(TString name="3GeVMIPscan", TString gain="highgain", int layer=0, int ch
   }
 
   // Now data for minimization step
-  arglist[0] = 2000;//1000;//10000; //2000 for the HG
-  //  arglist[1] = 0.01;
-  gMinuit->mnexcm("MINImize", arglist ,1,ierflg);
-  gMinuit->mnmnos();
+  arglist[0] = 20000;//1000;//10000; //2000 for the HG
+  arglist[1] = 1;
+  gMinuit->SetErrorDef(1);
+  gMinuit->mnexcm("MIGRAD", arglist ,1,ierflg);
 
-  // Print results
+  //    Print results
   Double_t amin,edm,errdef;
   Int_t nvpar,nparx,icstat;
   gMinuit->mnstat(amin,edm,errdef,nvpar,nparx,icstat); 
@@ -196,7 +207,7 @@ int Fit(TString name="3GeVMIPscan", TString gain="highgain", int layer=0, int ch
     //    double temp_c[2]={0};
     gMinuit->GetParameter(i+64,sigma_c1[i],esigma_c1[i]);
     gMinuit->GetParameter(i+128,sigma_c2[i],esigma_c2[i]);
-    gMinuit->GetParameter(i+192,sigma_c3[i],esigma_c3[i]);
+    // gMinuit->GetParameter(i+192,sigma_c3[i],esigma_c3[i]);
     //gMinuit->GetParameter(i+256,temp_c[3],esigma_c4[i]);
     //int n = sizeof(temp_c)/sizeof(temp_c[0]); 
     //sort(temp_c, temp_c+n);
