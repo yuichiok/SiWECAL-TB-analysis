@@ -58,18 +58,18 @@ void DecodedSLBAnalysis::HitMonitoring(TString outputname="", int maxnhit=5, int
       printProgress(100.*jentry/nentries) ;
     for(int ilayer=0; ilayer<n_slboards; ilayer++) {
 
-      hit_monitoring_norettrains_layer->Fill(3,(14-ilayer));
-      event_monitoring_norettrains_layer->Fill(3,(14-ilayer));
+      hit_monitoring_norettrains_layer->Fill(3,(ilayer));
+      event_monitoring_norettrains_layer->Fill(3,(ilayer));
 	
-      hit_monitoring_layer->Fill(3,(14-ilayer));
-      event_monitoring_layer->Fill(3,(14-ilayer));
+      hit_monitoring_layer->Fill(3,(ilayer));
+      event_monitoring_layer->Fill(3,(ilayer));
 
       for(int ichip=0; ichip<16; ichip++) {
-	hit_monitoring->Fill(3,(14-ilayer)*20. +ichip);
-        event_monitoring->Fill(3,(14-ilayer)*20. +ichip);
+	hit_monitoring->Fill(3,(ilayer)*20. +ichip);
+        event_monitoring->Fill(3,(ilayer)*20. +ichip);
 
-	hit_monitoring_norettrains->Fill(3,(14-ilayer)*20. +ichip);
-        event_monitoring_norettrains->Fill(3,(14-ilayer)*20. +ichip);
+	hit_monitoring_norettrains->Fill(3,(ilayer)*20. +ichip);
+        event_monitoring_norettrains->Fill(3,(ilayer)*20. +ichip);
 	
 	int last_sca=0;
 	bool retrigger=false;
@@ -81,20 +81,20 @@ void DecodedSLBAnalysis::HitMonitoring(TString outputname="", int maxnhit=5, int
 	  
 	  int bcid_seen = SimpleCoincidenceTagger(ilayer,maxnhit,bcid[ilayer][ichip][isca]);
 	  if(bcid_seen>nslabshit ) {
-	    event_monitoring->Fill(1,(14-ilayer)*20 +ichip);
-	    event_monitoring_layer->Fill(1,(14-ilayer));
+	    event_monitoring->Fill(1,(ilayer)*20 +ichip);
+	    event_monitoring_layer->Fill(1,(ilayer));
 	  } else {
-	    event_monitoring->Fill(2,(14-ilayer)*20 +ichip);
-	    event_monitoring_layer->Fill(2,(14-ilayer));
+	    event_monitoring->Fill(2,(ilayer)*20 +ichip);
+	    event_monitoring_layer->Fill(2,(ilayer));
 	  }
 
 	  if(bcid_seen>nslabshit && (badbcid[ilayer][ichip][isca]!=3 || retrigger==false) ) {
-            event_monitoring_norettrains->Fill(1,(14-ilayer)*20 +ichip);
-            event_monitoring_norettrains_layer->Fill(1,(14-ilayer));
+            event_monitoring_norettrains->Fill(1,(ilayer)*20 +ichip);
+            event_monitoring_norettrains_layer->Fill(1,(ilayer));
 	  }
 	  if(bcid_seen<(nslabshit+1) && (badbcid[ilayer][ichip][isca]!=3 || retrigger==false) ) {
-            event_monitoring_norettrains->Fill(2,(14-ilayer)*20 +ichip);
-            event_monitoring_norettrains_layer->Fill(2,(14-ilayer));
+            event_monitoring_norettrains->Fill(2,(ilayer)*20 +ichip);
+            event_monitoring_norettrains_layer->Fill(2,(ilayer));
           }
  
 	  // int ntaggedasbad = 0;
@@ -110,20 +110,20 @@ void DecodedSLBAnalysis::HitMonitoring(TString outputname="", int maxnhit=5, int
 	  for(int ichn=0; ichn<64; ichn++) {
 	    if(gain_hit_high[ilayer][ichip][isca][ichn]==1) {
 	      if(bcid_seen>nslabshit ) { 
-		hit_monitoring->Fill(1,(14-ilayer)*20 +ichip);
-		hit_monitoring_layer->Fill(1,(14-ilayer));
+		hit_monitoring->Fill(1,(ilayer)*20 +ichip);
+		hit_monitoring_layer->Fill(1,(ilayer));
 	      } else {
-		hit_monitoring->Fill(2,(14-ilayer)*20 +ichip);
-		hit_monitoring_layer->Fill(2,(14-ilayer));
+		hit_monitoring->Fill(2,(ilayer)*20 +ichip);
+		hit_monitoring_layer->Fill(2,(ilayer));
 	      }
 	      
 	      if(bcid_seen>nslabshit && (badbcid[ilayer][ichip][isca]!=3 || retrigger==false)) {
-		hit_monitoring_norettrains->Fill(1,(14-ilayer)*20 +ichip);
-                hit_monitoring_norettrains_layer->Fill(1,(14-ilayer));
+		hit_monitoring_norettrains->Fill(1,(ilayer)*20 +ichip);
+                hit_monitoring_norettrains_layer->Fill(1,(ilayer));
               }
 	      if(bcid_seen<(nslabshit+1) && (badbcid[ilayer][ichip][isca]!=3 || retrigger==false) ) {
-                hit_monitoring_norettrains->Fill(2,(14-ilayer)*20 +ichip);
-                hit_monitoring_norettrains_layer->Fill(2,(14-ilayer));
+                hit_monitoring_norettrains->Fill(2,(ilayer)*20 +ichip);
+                hit_monitoring_norettrains_layer->Fill(2,(ilayer));
               }
 	    }
 	  }
@@ -132,10 +132,10 @@ void DecodedSLBAnalysis::HitMonitoring(TString outputname="", int maxnhit=5, int
 
 	}//isca
 	if(last_sca>0) {
-	  hit_monitoring->Fill(3+last_sca,(14-ilayer)*20 +ichip);
-	  hit_monitoring_layer->Fill(3+last_sca,(14-ilayer));
-	  hit_monitoring_norettrains->Fill(3+last_sca,(14-ilayer)*20 +ichip);
-          hit_monitoring_norettrains_layer->Fill(3+last_sca,(14-ilayer));
+	  hit_monitoring->Fill(3+last_sca,(ilayer)*20 +ichip);
+	  hit_monitoring_layer->Fill(3+last_sca,(ilayer));
+	  hit_monitoring_norettrains->Fill(3+last_sca,(ilayer)*20 +ichip);
+          hit_monitoring_norettrains_layer->Fill(3+last_sca,(ilayer));
 	}
       }//ichip 
       
@@ -202,10 +202,10 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=1, int
 	std::vector<TH1F*> mip_hightemp_sca2;
 	
 	for(int isca=0; isca<15; isca++) {
-	  TH1F *ped_low_sca2 = new TH1F(TString::Format("ped_low_layer%i_chip%i_chn%i_sca%i",14-ilayer,ichip,ichn,isca),TString::Format("ped_low_layer%i_chip%i_chn%i_sca%i",14-ilayer,ichip,ichn,isca),400,100.5,500.5);
-	  TH1F *ped_high_sca2 = new TH1F(TString::Format("ped_high_layer%i_chip%i_chn%i_sca%i",14-ilayer,ichip,ichn,isca),TString::Format("ped_high_layer%i_chip%i_chn%i_sca%i",14-ilayer,ichip,ichn,isca),400,100.5,500.5);
-	  TH1F *mip_low_sca2 = new TH1F(TString::Format("mip_low_layer%i_chip%i_chn%i_sca%i",14-ilayer,ichip,ichn,isca),TString::Format("mip_low_layer%i_chip%i_chn%i_sca%i",14-ilayer,ichip,ichn,isca),500,100.5,600.5);
-	  TH1F *mip_high_sca2 = new TH1F(TString::Format("mip_high_layer%i_chip%i_chn%i_sca%i",14-ilayer,ichip,ichn,isca),TString::Format("mip_high_layer%i_chip%i_chn%i_sca%i",14-ilayer,ichip,ichn,isca),500,100.5,600.5);
+	  TH1F *ped_low_sca2 = new TH1F(TString::Format("ped_low_layer%i_chip%i_chn%i_sca%i",ilayer,ichip,ichn,isca),TString::Format("ped_low_layer%i_chip%i_chn%i_sca%i",ilayer,ichip,ichn,isca),400,100.5,500.5);
+	  TH1F *ped_high_sca2 = new TH1F(TString::Format("ped_high_layer%i_chip%i_chn%i_sca%i",ilayer,ichip,ichn,isca),TString::Format("ped_high_layer%i_chip%i_chn%i_sca%i",ilayer,ichip,ichn,isca),400,100.5,500.5);
+	  TH1F *mip_low_sca2 = new TH1F(TString::Format("mip_low_layer%i_chip%i_chn%i_sca%i",ilayer,ichip,ichn,isca),TString::Format("mip_low_layer%i_chip%i_chn%i_sca%i",ilayer,ichip,ichn,isca),500,100.5,600.5);
+	  TH1F *mip_high_sca2 = new TH1F(TString::Format("mip_high_layer%i_chip%i_chn%i_sca%i",ilayer,ichip,ichn,isca),TString::Format("mip_high_layer%i_chip%i_chn%i_sca%i",ilayer,ichip,ichn,isca),500,100.5,600.5);
 	  ped_lowtemp_sca2.push_back(ped_low_sca2);
 	  ped_hightemp_sca2.push_back(ped_high_sca2);
 	  mip_lowtemp_sca2.push_back(mip_low_sca2);
@@ -292,7 +292,7 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=1, int
   pedfile->cd();
   TDirectory *cdhisto[nSLB];
   for(int ilayer=0; ilayer<nSLB; ilayer++) {
-    cdhisto[ilayer] = pedfile->mkdir(TString::Format("layer_%i",14-ilayer));
+    cdhisto[ilayer] = pedfile->mkdir(TString::Format("layer_%i",ilayer));
   }
     
 
@@ -361,14 +361,14 @@ int DecodedSLBAnalysis::NSlabsAnalysisNoise(TString outputname="", int gain=1, i
     std::vector<std::vector<TH1F* > > h_ped1;
     std::vector<std::vector<double > > ped1;
     for(int i=0; i<16; i++) {                                                                                                                                                                             
-      TH2F * cov2 = new TH2F(TString::Format("cov_unnorm_layer%i_chip%i",14-ilayer,i),TString::Format("cov_unnorm_layer%i_chip%i",14-ilayer,i),64,-0.5,63.5,64,-0.5,63.5);
-      TH2F * nevents2 = new TH2F(TString::Format("nevents_layer%i_chip%i",14-ilayer,i),TString::Format("nevents_layer%i_chip%i",14-ilayer,i),64,-0.5,63.5,64,-0.5,63.5);
+      TH2F * cov2 = new TH2F(TString::Format("cov_unnorm_layer%i_chip%i",ilayer,i),TString::Format("cov_unnorm_layer%i_chip%i",ilayer,i),64,-0.5,63.5,64,-0.5,63.5);
+      TH2F * nevents2 = new TH2F(TString::Format("nevents_layer%i_chip%i",ilayer,i),TString::Format("nevents_layer%i_chip%i",ilayer,i),64,-0.5,63.5,64,-0.5,63.5);
       cov1.push_back(cov2);
       nevents1.push_back(nevents2);
       std::vector<TH1F* > h_ped2;
       std::vector<double > ped2;
       for(int j=0; j<64; j++) {
-	TH1F * h_ped3 = new TH1F(TString::Format("h_ped_layer%i_chip%i_chn%i",14-ilayer,i,j),TString::Format("h_ped_layer%i_chip%i_chn%i",14-ilayer,i,j),300,150.5,450.5);
+	TH1F * h_ped3 = new TH1F(TString::Format("h_ped_layer%i_chip%i_chn%i",ilayer,i,j),TString::Format("h_ped_layer%i_chip%i_chn%i",ilayer,i,j),300,150.5,450.5);
 	h_ped2.push_back(h_ped3);
 	ped2.push_back(0);
       }
@@ -486,7 +486,7 @@ int DecodedSLBAnalysis::NSlabsAnalysisNoise(TString outputname="", int gain=1, i
   pedfile->cd();
   TDirectory *cdhisto[nSLB];
   for(int ilayer=0; ilayer<nSLB; ilayer++) {
-    cdhisto[ilayer] = pedfile->mkdir(TString::Format("layer_%i",14-ilayer));
+    cdhisto[ilayer] = pedfile->mkdir(TString::Format("layer_%i",ilayer));
   }
  
   // do pedestal (layer/chip/channel/sca based) analysis
