@@ -4,63 +4,6 @@
 
 //#include <bits/stdc++.h>
 
-std::vector<int> SimpleCoincidenceGlobal(int maxnhit=5, int bcid_ref=0){
-
-  int bcid_seen=0;
-  int bcid_seen_withfirsts=0;
-  int bcid_seen_slb[30]={0};
-  for(int islboard=0; islboard<n_slboards; islboard++) {
-    //    if(islboard==3) continue;
-    for(int ichip=0; ichip<16; ichip++) {
-
-    for(int isca=0; isca<15; isca++) {
-      if( bcid[islboard][ichip][isca]<10 || nhits[islboard][ichip][isca]>maxnhit || ( bcid[islboard][ichip][isca]<1000 && bcid[islboard][ichip][isca]>950) )
-	  continue;
-      if(badbcid[islboard][ichip][isca]!=0)
-      	continue;
-      
-      if(isca>0) if(bcid[islboard][ichip][isca]-bcid[islboard][ichip][isca-1]<2) continue;
-      if(isca<14) if(bcid[islboard][ichip][isca+1]-bcid[islboard][ichip][isca]<2) continue;
-      
-      if( fabs(bcid[islboard][ichip][isca]-bcid_ref)<5)
-	bcid_seen_slb[islboard]++;
-      
-    }//end isca
-    }
-  }
-  
-  for(int islboard=0; islboard<n_slboards; islboard++) {
-    if(bcid_seen_slb[islboard]>0) bcid_seen++;
-  }
-  std::vector<int> bcid_seen_vec;
-  bcid_seen_vec.push_back(bcid_seen);
-   
-  int nslabs_beginning=0;
-  for(int islboard=12; islboard<n_slboards; islboard++) {
-    if(bcid_seen_slb[islboard]>0) nslabs_beginning++;
-  }
-  if(nslabs_beginning>2) bcid_seen_vec.push_back(bcid_seen);
-  else bcid_seen_vec.push_back(-1);
-
-  nslabs_beginning=0;
-  for(int islboard=12; islboard<n_slboards; islboard++) {
-    if(bcid_seen_slb[islboard]>0) nslabs_beginning++;
-  }
-  if(nslabs_beginning>1) bcid_seen_vec.push_back(bcid_seen);
-  else bcid_seen_vec.push_back(-1);
-  
-  nslabs_beginning=0;
-  for(int islboard=12;islboard<n_slboards; islboard++) {
-    if(bcid_seen_slb[islboard]>0 ) nslabs_beginning++;
-  }
-  if(nslabs_beginning>1 && (bcid_seen_slb[0]>0 || bcid_seen_slb[1]>0)) bcid_seen_vec.push_back(bcid_seen);
-  else bcid_seen_vec.push_back(-1);
-
-  
-  return bcid_seen_vec;
-
-}
-
 
 int SimpleCoincidenceTagger(int ilayer, int maxnhit=5, int bcid_ref=0){
   
@@ -85,13 +28,7 @@ int SimpleCoincidenceTagger(int ilayer, int maxnhit=5, int bcid_ref=0){
     if(bcid_seen_slb[islboard]>0) bcid_seen++;
   }
 
-  int first_slabs=0;
-  for(int islboard=12;islboard<n_slboards; islboard++) {
-    if(bcid_seen_slb[islboard]>0) first_slabs++;
-  }
-
-  if(first_slabs>0 && (bcid_seen_slb[14-7]>0 || bcid_seen_slb[14-8]>0)) return bcid_seen;
-  else return -bcid_seen;
+  return bcid_seen;
 }
 
 
