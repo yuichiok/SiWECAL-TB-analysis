@@ -307,9 +307,9 @@ void pedanalysis(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
   fout_mip<<"#mip results PROTO15-TB2021-11"<<endl;
   fout_mip<<"#layer chip channel mpv empv widthmpv chi2ndf nentries"<<endl;
 
-  ReadPedestalsProto(TString::Format("../../pedestals/Pedestal_3GeVMIPscan_%sgain.txt",gain.Data()).Data(),false);
-  //  ReadPedestalsProtoCovariance(TString::Format("../../pedestals/Pedestal_method2_3GeVMIPscan_%sgain.txt",gain.Data()).Data());
-  cout<<TString::Format("../../pedestals/Pedestal_method2_3GeVMIPscan_%sgain.txt",gain.Data())<<endl;
+  // ReadPedestalsProto(TString::Format("../../pedestals/Pedestal_3GeVMIPscan_%sgain.txt",gain.Data()).Data(),false);
+  ReadPedestalsProtoCovariance(TString::Format("../../pedestals/Pedestal_method2_%s_%sgain.txt",run.Data(),gain.Data()).Data());
+  cout<<TString::Format("../../pedestals/Pedestal_method2_%s_%sgain.txt",run.Data(),gain.Data())<<endl;
 
   TFile *_file1 = new TFile(TString::Format("../../mip_calib/MIPSummary_method2_%s_%sgain.root",run.Data(),gain.Data()),"RECREATE");
   TDirectory *cdhisto[15];
