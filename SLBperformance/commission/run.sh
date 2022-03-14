@@ -6,4 +6,6 @@
 run=$1
 output=${PWD}"/../../converter_SLB/convertedfiles/"
 
-root -l -q Proto.cc\(\"${output}${run}\",\"${run}\"\)
+cd ../
+root -l -q Proto.cc\(\"${output}${run}\",\"${run}\",0\)
+cd -
