@@ -1,140 +1,5 @@
 #include "Fit.h"
 
-void SummaryNoise(TString name_="3GeVMIPscan",TString st_gain="highgain"){
-
-  TString map="../../mapping/fev10_chip_channel_x_y_mapping.txt";
-  //  if(layer==0 || layer==2)  map="../../mapping/fev11_cob_chip_channel_x_y_mapping.txt";
-  ReadMap(map,0);
-
-
-  TString gain="";
-  for(int igain=0; igain<15; igain++) {
-
-    gain=TString::Format("%s_sca%i",st_gain.Data(),igain);
-
-    TFile *file = TFile::Open(TString::Format("%s_mean_c3/Summary_%s_%s.root",st_gain.Data(),name_.Data(),gain.Data()));
-    //    cout<<TString::Format("../%s_mean_c3/Summary_%s_%s.root",st_gain.Data(),name_.Data(),gain.Data())<<endl;
-    //  gStyle->SetOptStat(0);
-
-    TH1F * sigma_i[15];
-    TH1F * sigma_c1[15];
-    TH1F * sigma_c2[15];
-    for(int layer=0; layer<15; layer++) {
-      sigma_i[layer]=new TH1F(TString::Format("sigma_i_layer%i",layer),TString::Format("sigma_i_layer%i",layer),100,0.05,10.);
-      sigma_c1[layer]=new TH1F(TString::Format("sigma_c1_layer%i",layer),TString::Format("sigma_c1_layer%i",layer),100,0.05,10.);
-      sigma_c2[layer]=new TH1F(TString::Format("sigma_c2_layer%i",layer),TString::Format("sigma_c2_layer%i",layer),100,0.05,10.);
-
-      TH2F * h2_i=(TH2F*)file->Get(TString::Format("2d noise-incoherent layer%i",layer));
-      TH2F * h2_c1=(TH2F*)file->Get(TString::Format("2d noise-coherent-1 layer%i",layer));
-      TH2F * h2_c2=(TH2F*)file->Get(TString::Format("2d noise-coherent-2 layer%i",layer));
-
-      for(int chip=0; chip<16; chip++) {
-	for(int j=0; j<64; j++) {
-	  sigma_i[layer]->Fill(h2_i->GetBinContent(chip+1,j+1));
-	  sigma_c1[layer]->Fill(h2_c1->GetBinContent(chip+1,j+1));
-	  sigma_c2[layer]->Fill(h2_c2->GetBinContent(chip+1,j+1));
-	}
-      }
-    }
-
-    TH2F * h2_i_0=(TH2F*)file->Get(TString::Format("2d noise-incoherent layer%i - xy",0));
-    TH2F * h2_i_7=(TH2F*)file->Get(TString::Format("2d noise-incoherent layer%i - xy",7));
-    TH2F * h2_i_9=(TH2F*)file->Get(TString::Format("2d noise-incoherent layer%i - xy",9));
-
-    TH2F * h2_c1_0=(TH2F*)file->Get(TString::Format("2d noise-coherent-1 layer%i -xy",0));
-    TH2F * h2_c1_7=(TH2F*)file->Get(TString::Format("2d noise-coherent-1 layer%i -xy",7));
-    TH2F * h2_c1_9=(TH2F*)file->Get(TString::Format("2d noise-coherent-1 layer%i -xy",9));
-
-    TCanvas *canvas = new TCanvas(TString::Format("SummaryPlots1_%s_%s",name_.Data(),gain.Data()),TString::Format("SummaryPlots1_%s_%s",name_.Data(),gain.Data()),1900,800);
-    canvas->Divide(3,2);
-    canvas->cd(1);
-    h2_i_0->GetZaxis()->SetRangeUser(2,6);
-    h2_i_0->Draw("colz");
-    canvas->cd(2);
-    h2_i_7->GetZaxis()->SetRangeUser(2,6);
-    h2_i_7->Draw("colz");
-    canvas->cd(3);
-    h2_i_9->GetZaxis()->SetRangeUser(2,6);
-    h2_i_9->Draw("colz");
-
-    canvas->cd(4);
-    h2_c1_0->GetZaxis()->SetRangeUser(0.1,2);
-    h2_c1_0->Draw("colz");
-    canvas->cd(5);
-    h2_c1_7->GetZaxis()->SetRangeUser(0.1,2);
-    h2_c1_7->Draw("colz");
-    canvas->cd(6);
-    h2_c1_9->GetZaxis()->SetRangeUser(0.1,2);
-    h2_c1_9->Draw("colz");
-    canvas->Print(TString::Format("SummaryPlots1_%s_%s.eps",name_.Data(),gain.Data()));
-
-    TH2F * h2_acc_i=(TH2F*)file->Get("2dxy noise-incoherent Bad");
-    TH2F * h2_acc_c1=(TH2F*)file->Get("2dxy noise-coherent-1 Bad");
-    TH2F * h2_acc_c2=(TH2F*)file->Get("2dxy noise-coherent-2 Bad");
-
-    TH2F * h2_masked=(TH2F*)file->Get("masked-MIPs layer0 - xy");
-
-    gStyle->SetPalette(kLightTemperature);
-
-    TCanvas *canvas2 = new TCanvas(TString::Format("SummaryPlots2_%s_%s",name_.Data(),gain.Data()),TString::Format("SummaryPlots2_%s_%s",name_.Data(),gain.Data()),2100,500);
-    canvas2->Divide(3,1);
-    canvas2->cd(1);
-    h2_acc_i->GetZaxis()->SetRangeUser(3.5,15.5);
-    h2_acc_i->Draw("colz");
-    canvas2->cd(2);
-    h2_acc_c1->GetZaxis()->SetRangeUser(3.5,15.5);
-    h2_acc_c1->Draw("colz");
-    canvas2->cd(3);
-    h2_acc_c2->GetZaxis()->SetRangeUser(3.5,15.5);
-    h2_acc_c2->Draw("colz");
-    canvas2->Print(TString::Format("SummaryPlots2_%s_%s.eps",name_.Data(),gain.Data()));
-
-
-    TCanvas *canvas3 = new TCanvas(TString::Format("SummaryPlots3_%s_%s",name_.Data(),gain.Data()),TString::Format("SummaryPlots3_%s_%s",name_.Data(),gain.Data()),2100,500);
-    canvas3->Divide(3,1);
-    canvas3->cd(1);
-    h2_acc_i->GetZaxis()->SetRangeUser(3.5,15.5);
-    h2_acc_i->Draw("colz");
-    h2_masked->SetMarkerStyle(6);
-    h2_masked->SetMarkerSize(0.6);
-    h2_masked->SetMarkerColor(2);
-    h2_masked->Draw("psame");
-    canvas3->cd(2);
-    h2_acc_c1->GetZaxis()->SetRangeUser(3.5,15.5);
-    h2_acc_c1->Draw("colz");
-    h2_masked->Draw("psame");
-    canvas3->cd(3);
-    h2_acc_c2->GetZaxis()->SetRangeUser(3.5,15.5);
-    h2_acc_c2->Draw("colz");
-    h2_masked->Draw("psame");
-    canvas3->Print(TString::Format("SummaryPlots3_%s_%s.eps",name_.Data(),gain.Data()));
-
-
-    TCanvas *canvas4 = new TCanvas(TString::Format("SummaryPlots4_%s_%s",name_.Data(),gain.Data()),TString::Format("SummaryPlots4_%s_%s",name_.Data(),gain.Data()),1900,600);
-    gStyle->SetOptStat(1);
-    canvas4->Divide(4,4);
-    for(int layer=0; layer<15; layer++) {
-      canvas4->cd(1+layer);
-      sigma_i[layer]->SetLineColor(1);
-      sigma_i[layer]->SetLineWidth(2);
-      sigma_i[layer]->Draw("histosame");
-      sigma_c1[layer]->SetLineColor(2);
-      sigma_c1[layer]->SetLineWidth(2);
-      sigma_c1[layer]->SetLineStyle(2);
-      sigma_c1[layer]->Draw("histosame");
-      sigma_c2[layer]->SetLineColor(4);
-      sigma_c2[layer]->SetLineWidth(2);
-      sigma_c2[layer]->SetLineStyle(1);
-      sigma_c2[layer]->Draw("histosame");
-    }
-    canvas4->Print(TString::Format("SummaryPlots4_%s_%s.eps",name_.Data(),gain.Data()));
-
-
-
-  }//iname
-  
-}
-
 void SummaryPedestal(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 
   TString map="../../mapping/fev10_chip_channel_x_y_mapping.txt";
@@ -189,10 +54,9 @@ void SummaryPedestal(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 
 	for(int isca=0; isca<15; isca++) {
 	  sca=TString::Format("%s_sca%i",st_gain.Data(),isca);
-	  TFile *file = TFile::Open(TString::Format("%s_mean_c3/Summary_%s_%s.root",st_gain.Data(),name_.Data(),sca.Data()));
-	  //	  cout<<layer<<" "<<chip<<" "<<j<<" "<<TString::Format("../%s_mean_c3/Summary_%s_%s.root",st_gain.Data(),name_.Data(),sca.Data())<<endl;
+	  TFile *file = TFile::Open(TString::Format("Summary_%s_%s.root",name_.Data(),sca.Data()));
 	  TH2F * h2_ped=(TH2F*)file->Get(TString::Format("pedestal_layer%i",layer));
-	  TH2F * h2_eped=(TH2F*)file->Get(TString::Format("rms_pedestal_layer%i",layer));
+	  TH2F * h2_eped=(TH2F*)file->Get(TString::Format("error_pedestal_layer%i",layer));
 
 	  TH2F * h2_i=(TH2F*)file->Get(TString::Format("2d noise-incoherent layer%i",layer));
 	  TH2F * h2_c1=(TH2F*)file->Get(TString::Format("2d noise-coherent-1 layer%i",layer));
@@ -235,7 +99,7 @@ void SummaryPedestal(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 	    ped_i_nofit->Fill(20*layer+chip,100*isca+j,pediv/nnoise);
 	    ped_c1_nofit->Fill(20*layer+chip,100*isca+j,pedc1v/nnoise);
 	    ped_c2_nofit->Fill(20*layer+chip,100*isca+j,pedc2v/nnoise);
-	    fout_ped<<pedv/nped<< " " <<-5<< " " <<pedc1v/nnoise<< " " <<pedc2v/nnoise<<" "; //bad fits for all but with data for average
+	    fout_ped<<pedv/nped<< " " <<-5<< " " <<pediv/nnoise<<" "<<pedc1v/nnoise<< " " <<pedc2v/nnoise<<" "; //bad fits for all but with data for average
 	  } else {
 	    if(fitted[isca]==1 && pediv_[isca]>0 ) {
 	      fout_ped<<pedv_[isca]<< " " <<pedrmsv_[isca]<< " " <<pediv_[isca]<< " " <<pedc1v_[isca]<< " " <<pedc2v_[isca]<<" "; //good fits for pedestal and noise
@@ -324,11 +188,8 @@ void SummaryPedestal(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 }
 
 void SummaryPlots(){
-
-  //  SummaryNoise("3GeVMIPscan","highgain");
-  //SummaryNoise("3GeVMIPscan","lowgain");
-  SummaryPedestal("3GeVMIPscan","highgain");
-  SummaryPedestal("3GeVMIPscan","lowgain");
-  
+  TString runname="03102022_pedestal_13slabs";
+  SummaryPedestal(runname,"highgain");
+  SummaryPedestal(runname,"lowgain");
 }
 

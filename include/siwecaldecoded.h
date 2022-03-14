@@ -18,7 +18,7 @@ std::vector<std::vector<std::vector<std::vector<Double_t> > > > ped_mean_slboard
 std::vector<std::vector<std::vector<std::vector<Double_t> > > > ped_error_slboard;
 std::vector<std::vector<std::vector<std::vector<Double_t> > > > ped_width_slboard;
 
-std::vector<std::vector<std::vector<std::vector<Double_t> > > > ped_mean_cov_slboard;
+
 std::vector<std::vector<std::vector<std::vector<Double_t> > > > ped_w_i_slboard;
 std::vector<std::vector<std::vector<std::vector<Double_t> > > > ped_w_c1_slboard;
 std::vector<std::vector<std::vector<std::vector<Double_t> > > > ped_w_c2_slboard;

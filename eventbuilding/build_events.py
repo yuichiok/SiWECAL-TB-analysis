@@ -307,6 +307,7 @@ class BuildEvents:
         ecal_numbers=None,  # Not provided in CLI. Mainly useful for debugging/changing.
         no_zero_suppress=False,
         no_lg=False,
+        redo_config=False,
         **config_file_kws
     ):
         self.file_name = file_name
@@ -316,6 +317,7 @@ class BuildEvents:
         self.min_slabs_hit = min_slabs_hit
         self.event_counter = 0
 
+        self.redo_config = redo_config
         self.in_tree = self._get_tree(file_name)
         slabs = self._get_slabs(self.in_tree)
         cob_slabs = set(map(int, filter(None, cob_positions_string.split(" "))))
@@ -336,25 +338,39 @@ class BuildEvents:
 
     def _get_tree(self, file_name):
         self.in_file = rt.TFile(file_name,"read")
-        self.tree = self.in_file.Get(self._in_tree_name)
+        if self.redo_config:
+            tree_name = self._out_tree_name
+        else:
+            tree_name = self._in_tree_name
+        self.tree = self.in_file.Get(tree_name)
         if not self.tree:
             trees_available = [k.GetName() for k in self.in_file.GetListOfKeys()]
             print("Found tree names:", trees_available)
-            ex_txt = "Tree %s not found in %s" %(self._in_tree_name, file_name)
+            ex_txt = "Tree %s not found in %s" %(tree_name, file_name)
             raise EventBuildingException(ex_txt)
         return self.tree
 
 
     def _get_slabs(self, tree):
+        if self.redo_config:
+            return self._get_slabs_from_buildfile()
         tree.Draw("slot >> slot_hist", "", "goff")
         hist = rt.gDirectory.Get("slot_hist")
         slabs = []
-        for i in range(1, hist.GetNbinsX() + 1):  # 0 is undeflow bin.
+        for i in range(1, hist.GetNbinsX() + 1):  # 0 is underflow bin.
             if hist.GetBinContent(i) > 0:
                 slabs.append(int(np.ceil(hist.GetBinLowEdge(i))))
         if -1 in slabs:
             slabs.remove(-1)  # Used to indicate dummy entries.
         assert len(set(slabs)) == len(slabs)
+        return slabs
+
+
+    def _get_slabs_from_buildfile(self):
+        hist = self.in_file.Get("config").Get("w_in_front")
+        slabs = []
+        for i in range(1, hist.GetNbinsX() + 1):  # 0 is underflow bin.
+            slabs.append(int(np.ceil(hist.GetBinLowEdge(i))))
         return slabs
 
 
@@ -389,6 +405,7 @@ class BuildEvents:
                     continue
             self._add_branch(branch_tag)
         self._hit_branches = _get_hit_branches(self.out_arrays)
+        self._other_branches = sorted(set(self.out_arrays.keys()) - set(["hit_" + x for x in self._hit_branches]))
         return self.out_tree
 
 
@@ -414,8 +431,12 @@ class BuildEvents:
         if max_entries < 0:
             max_entries = self.in_tree.GetEntries()
 
-        for i_spill, entry in get_tree_spills(self.in_tree, max_entries):
-            self._fill_spill(i_spill, entry)
+        if self.redo_config:
+            for _, event in get_tree_spills(self.in_tree, max_entries):
+                self._redo_fill_event(event)
+        else:
+            for i_spill, entry in get_tree_spills(self.in_tree, max_entries):
+                self._fill_spill(i_spill, entry)
         self._write_and_close()
 
 
@@ -492,6 +513,41 @@ class BuildEvents:
         hist.Write()
 
 
+    def _redo_fill_event(self, event):
+        for branch_name in self._hit_branches:
+            branch_name = "hit_"+ branch_name
+            if branch_name == "hit_energy":
+                mip = self.ecal_config.mip_map[event.hit_slab, event.hit_chip, event.hit_chan]
+                pedestal = self.ecal_config.pedestal_map[event.hit_slab, event.hit_chip, event.hit_chan, event.hit_sca]
+                arr = (event.hit_hg - pedestal) + mip
+            elif branch_name == "hit_energy_lg":
+                mip = self.ecal_config.mip_lg_map[event.hit_slab, event.hit_chip, event.hit_chan]
+                pedestal = self.ecal_config.pedestal_lg_map[event.hit_slab, event.hit_chip, event.hit_chan, event.hit_sca]
+                arr = (event.hit_lg - pedestal) + mip
+            elif branch_name == "hit_isCommissioned":
+                arr = self.ecal_config.is_commissioned_map[event.hit_slab, event.hit_chip, event.hit_chan, event.hit_sca]
+            elif branch_name == "hit_isMasked":
+                arr = self.ecal_config.masked_map[event.hit_slab, event.hit_chip, event.hit_chan]
+            elif branch_name == "hit_x":
+                arr = self.ecal_config.x[event.hit_slab, event.hit_chip, event.hit_chan]
+            elif branch_name == "hit_y":
+                arr = self.ecal_config.y[event.hit_slab, event.hit_chip, event.hit_chan]
+            elif branch_name == "hit_z":
+                arr = self.ecal_config.z[event.hit_slab, event.hit_chip, event.hit_chan]
+            else:
+                arr = getattr(event, branch_name)
+            self.out_arrays[branch_name][:len(arr)] = arr
+        for branch_name in self._other_branches:
+            if branch_name == "sum_energy":
+                val = np.sum(self.out_arrays["hit_energy"][:event.nhit_len][np.array(event.hit_isHit, dtype=bool)])
+            elif branch_name == "sum_energy_lg":
+                val = np.sum(self.out_arrays["hit_energy_lg"][:event.nhit_len][np.array(event.hit_isHit, dtype=bool)])
+            else:
+                val = getattr(event, branch_name)
+            self.out_arrays[branch_name][0] = val
+        self.out_tree.Fill()
+
+
     def _fill_spill(self, spill, entry):
         b = self.out_arrays
         b["spill"][0] = spill
@@ -558,6 +614,9 @@ if __name__ == "__main__":
     parser.add_argument("--cob_positions_string", default="")
     parser.add_argument("--no_zero_suppress", action="store_true", help="Store all channels on hit chip.")
     parser.add_argument("--no_lg", action="store_true", help="Ignore low gain")
+    parser.add_argument("--redo_config", action="store_true",
+        help="Do not (re)-build the events but only change the configuration options. Then file_name should be a build.root file already."
+    )
     # Run ./build_events.py --help to see all options.
     for config_option, config_value in dummy_config.items():
         parser.add_argument("--" + config_option, default=config_value)
