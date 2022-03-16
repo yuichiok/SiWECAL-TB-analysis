@@ -507,3 +507,31 @@ void write_configuration_file(TString filename="Run_Settings_2.txt") {
    }//loop over core daughters
 
  }
+
+void disable_PA_mask(){
+
+  for(int idaughter=0; idaughter < detector.n_core_daughters; idaughter++) {
+
+    for(int islab=0; islab<detector.core_daughter_n_slabs[idaughter]; islab++) {
+
+      for (int iasu = 0; iasu < detector.slab[idaughter][islab].nb_asus; ++iasu) {
+
+        for (int ichip = 0; ichip < detector.slab[idaughter][islab].asu[iasu].n_chips; ++ichip) {
+
+          for(int ichn=0; ichn<detector.slab[idaughter][islab].asu[iasu].skiroc[ichip].n_channels; ichn++) {
+
+            if( detector.slab[idaughter][islab].asu[iasu].skiroc[ichip].mask[ichn]==1 ) {
+              detector.slab[idaughter][islab].asu[iasu].skiroc[ichip].preamplifier_mask[ichn] = 1;
+            }
+
+          } // channel
+
+        }   // chip
+
+      }     // asu
+
+    }       // slab
+
+  }         // daughter
+
+}
