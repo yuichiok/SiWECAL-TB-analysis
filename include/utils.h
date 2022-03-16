@@ -5,6 +5,7 @@
 //#include <bits/stdc++.h>
 
 
+
 int SimpleCoincidenceTagger(int ilayer, int maxnhit=5, int bcid_ref=0){
   
   int bcid_seen=0;
@@ -13,15 +14,12 @@ int SimpleCoincidenceTagger(int ilayer, int maxnhit=5, int bcid_ref=0){
     if(islboard==ilayer) continue;
     for(int isca=0; isca<15; isca++) {
       for(int ichip=0; ichip<16; ichip++) {
-	if( bcid[islboard][ichip][isca]<10 || nhits[islboard][ichip][isca]>maxnhit || ( bcid[islboard][ichip][isca]<1000 && bcid[islboard][ichip][isca]>950) )
-	  continue;
-	//	if(badbcid[islboard][ichip][isca]!=0)
+	//	if( bcid[islboard][ichip][isca]<10 || nhits[islboard][ichip][isca]>maxnhit || ( bcid[islboard][ichip][isca]<1000 && bcid[islboard][ichip][isca]>950) )
 	//  continue;
+       	if(badbcid[islboard][ichip][isca]!=0 || bcid[islboard][ichip][isca]<0)
+	  continue;
 	
-	if(isca>0) if(bcid[islboard][ichip][isca]-bcid[islboard][ichip][isca-1]<3) continue;
-	if(isca<14) if(bcid[islboard][ichip][isca+1]-bcid[islboard][ichip][isca]<3) continue;
-	
-	if( fabs(bcid[islboard][ichip][isca]-bcid_ref)<4)
+	if( fabs(bcid[islboard][ichip][isca]-bcid_ref)<2)
 	  bcid_seen_slb[islboard]++;
       }//ichip
     }//isca
