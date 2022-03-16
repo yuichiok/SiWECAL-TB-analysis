@@ -440,7 +440,7 @@ void mipanalysis_summary(TString run="3GeVMIPscan", TString gain="high", int ped
     canvassummary->Divide(4,4);
     for(int i=0; i<nchips; i++) {
       canvassummary->cd(i+1);
-      hmip_chip[i]->GetXaxis()->SetRangeUser(200,500);
+      hmip_chip[i]->GetXaxis()->SetRangeUser(0,300);
       hmip_chip[i]->Draw();
     }
     canvassummary->Write();
