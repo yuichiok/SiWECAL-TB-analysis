@@ -1,7 +1,7 @@
 #include "analysis.h"
 
  
-void analysis(TString run="3GeVMIPscan", TString gain="high", bool pedestal=true, bool mip=true) {
+void analysis(TString run="3GeVMIPscan", TString gain="high", bool pedestal=false, bool mip=true, int pedestal_mode=0) {
 
   gROOT->Reset();
   //SetIrlesStyle();
@@ -19,8 +19,8 @@ void analysis(TString run="3GeVMIPscan", TString gain="high", bool pedestal=true
   
   if(pedestal==true)  pedanalysis(run,gain);
   else {
-    if(mip==true) mipanalysis_summary(run,gain);
-    else s_n_analysis_summary(run,gain);
+    if(mip==true) mipanalysis_summary(run,gain,pedestal_mode);
+    //    else s_n_analysis_summary(run,gain);
   }
 
   gSystem->Exit(0);

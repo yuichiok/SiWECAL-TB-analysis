@@ -42,7 +42,7 @@ std::vector<double> resultfit (TH1F* hmips, TString gain) {
   Double_t chisqr;
   Int_t    ndf;
   
-  if(gain=="high") hmips->Rebin(2);
+  // if(gain=="high") hmips->Rebin(2);
   
   if(gain=="high")  hmips->GetXaxis()->SetRangeUser(10, 500);
   else hmips->GetXaxis()->SetRangeUser(2., 100);
@@ -274,8 +274,13 @@ void pedanalysis(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
 }
 
 
- void mipanalysis_summary(TString run="3GeVMIPscan", TString gain="high"){
-  
+void mipanalysis_summary(TString run="3GeVMIPscan", TString gain="high", int pedestal_mode=0){
+
+
+  // pedestal_mode==0 --> no subtraction
+  // pedestal_mode==1 --> on-the-fly subtraction
+  // pedestal_mode==2 --> subtraction from covariance file
+
   gROOT->Reset();
   //SetIrlesStyle();
   //  gROOT->LoadMacro("Labels.C");
@@ -296,32 +301,31 @@ void pedanalysis(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
   TH2F* MIPrms_all=new TH2F("MIPrms_all","rms  of MPVs ; Layer  ; Chip; ADC",15,-0.5,14.5,16,-0.5,15.5);
 
   TH2F* MIPM2_all=new TH2F("MIPM2_all","average of MPVs ; Layer  ; Chip; ADC",15,-0.5,14.5,16,-0.5,15.5);
-  TH2F* MIPN2_all=new TH2F("MIPN2_all","channels fitted ; Layer  ; Chip; ADC",15,-0.5,14.5,16,-0.5,15.5);
+  TH2F* MIPN2_all=new TH2F("MIPN2_all","total entries per chip ; Layer  ; Chip; ADC",15,-0.5,14.5,16,-0.5,15.5);
   TH2F* MIPrms2_all=new TH2F("MIPrms2_all","rms  of MPVs ; Layer  ; Chip; ADC",15,-0.5,14.5,16,-0.5,15.5);
 
   TH2F* mpv_all=new TH2F("mpv_all","mpv pos. ; Layer*20+Chip  ; chn",300,-0.5,299.5,64,-0.5,63.5);
   TH2F* width_all=new TH2F("width_all","width of Landau ; Layer*20+Chip  ; chn",300,-0.5,299.5,64,-0.5,63.5);
   TH2F* nentries_all=new TH2F("nentries_all","N entries; Layer*20+Chip  ; chn",300,-0.5,299.5,64,-0.5,63.5);
 
-  ofstream fout_mip(TString::Format("../../mip_calib/MIP_method2_%s_%sgain.txt",run.Data(),gain.Data()).Data(),ios::out);
+  ofstream fout_mip(TString::Format("../../mip_calib/MIP_pedestalsubmode%i_%s_%sgain.txt",pedestal_mode,run.Data(),gain.Data()).Data(),ios::out);
   fout_mip<<"#mip results PROTO15-TB2021-11"<<endl;
   fout_mip<<"#layer chip channel mpv empv widthmpv chi2ndf nentries"<<endl;
 
-  // ReadPedestalsProto(TString::Format("../../pedestals/Pedestal_3GeVMIPscan_%sgain.txt",gain.Data()).Data(),false);
-  ReadPedestalsProtoCovariance(TString::Format("../../pedestals/Pedestal_method2_%s_%sgain.txt",run.Data(),gain.Data()).Data());
-  cout<<TString::Format("../../pedestals/Pedestal_method2_%s_%sgain.txt",run.Data(),gain.Data())<<endl;
-
-  TFile *_file1 = new TFile(TString::Format("../../mip_calib/MIPSummary_method2_%s_%sgain.root",run.Data(),gain.Data()),"RECREATE");
+  if(pedestal_mode==2) {
+    TString pedfilename=TString::Format("../../pedestals/Pedestal_method2_%s_%sgain.txt",run.Data(),gain.Data());
+    ReadPedestalsProtoCovariance(pedfilename.Data());
+    cout<<pedfilename<<endl;
+  }
+  TFile *_file1 = new TFile(TString::Format("../../mip_calib/MIPSummary_pedestalsubmode%i_%s_%sgain.root",pedestal_mode,run.Data(),gain.Data()),"RECREATE");
   TDirectory *cdhisto[15];
   for(int ilayer=0; ilayer<nlayers; ilayer++) {
     cdhisto[ilayer] = _file1->mkdir(TString::Format("layer_%i",ilayer));
   }
-    
-
+  
+  
   for(int layer=0; layer<nlayers; layer++) {
 
-    TFile *_file0 = TFile::Open(TString::Format("../results_calib/PedestalMIP_%s.root",run.Data()));
-     
     float avmpv[16]={0};
     float nmpv[16]={0};
     float rmsmpv[16]={0};
@@ -329,48 +333,60 @@ void pedanalysis(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
     float nmpv2[16]={0};
 
     cout<<"   LAYER : "<<layer<<endl;
+    TFile *_file0 = TFile::Open(TString::Format("../results_calib/PedestalMIP_%s.root",run.Data()));
 
+    TH1F *hmip_chip[16];
     for(int i=0;i<nchips;i++){
+    cout<<"       -  chip : "<<i<<endl;
 
-      TH1F *hmip_chip = new TH1F(TString::Format("mip_%s_layer%i_chip%i",gain.Data(),layer,i),TString::Format("mip_%s_layer%i_chip%i",gain.Data(),layer,i),600,-199.5,400.5);
+      hmip_chip[i] = new TH1F(TString::Format("mip_%s_layer%i_chip%i",gain.Data(),layer,i),TString::Format("mip_%s_layer%i_chip%i",gain.Data(),layer,i),600,-100.5,499.5);//600,-199.5,400.5);
 
       for(int j=0; j<64; j++) {
-	TH1F *hmips = new TH1F("hmips","hmips",600,-199.5,400.5);
+	TH1F *hmips = new TH1F("hmips","hmips",600,-100.5,499.5);//600,-199.5,400.5);
 	hmips->Sumw2();
 	for(int isca=0; isca<15; isca++) {
 	  _file0->cd();
-	  //TCanvas* canvashmips= new TCanvas("canvashmips","canvashmips",100,100);
-	  //canvashmips->cd();
-	  TH1F *temp=(TH1F*)_file0->Get(TString::Format("layer_%i/mip_%s_chip%i_chn%i_sca%i",14-layer,gain.Data(),i,j,isca));
+	  // TCanvas* canvashmips=new TCanvas;
 	  
-	  if(temp==NULL) continue;
-	  //cout<<layer<<" "<<i<<" "<<j<<" "<<isca<<" "<<ped_mean_slboard.at(layer).at(i).at(j).at(isca)<<" "<<temp->GetEntries()<<endl;
-	  double ped_mean=ped_mean_slboard.at(layer).at(i).at(j).at(isca);
-	  if(ped_mean<100) ped_mean=ped_mean_slboard.at(layer).at(i).at(j).at(isca);
-	  for (int k=1;k<500;k++) {
+	  TH1F *temp=(TH1F*)_file0->Get(TString::Format("layer_%i/mip_%s_chip%i_chn%i_sca%i",layer,gain.Data(),i,j,isca));
+	  TH1F *temp2=(TH1F*)_file0->Get(TString::Format("layer_%i/ped_%s_chip%i_chn%i_sca%i",layer,gain.Data(),i,j,isca));
+
+	  if(temp==NULL || temp2==NULL) continue;
+	  //	  cout<<layer<<" "<<i<<" "<<j<<" "<<isca<<" "<<temp->GetEntries()<<endl;
+	  double ped_mean=0;
+	  if(pedestal_mode==1) {
+	    temp2->GetXaxis()->SetRangeUser(temp2->GetMean()-20,temp2->GetMean()+20);
+	    ped_mean=temp2->GetMean();
+	    //cout<<ped_mean<<endl;
+	  }
+	  if(pedestal_mode==2) ped_mean=ped_mean_slboard.at(layer).at(i).at(j).at(isca);
+	  for (int k=0;k<500;k++) {
 	    double y = temp->GetBinContent(k);
-	    double x = temp->GetXaxis()->GetBinCenter(k) -  ped_mean;
-	    if(y>0 && ped_mean_slboard.at(layer).at(i).at(j).at(isca)>0) hmips->Fill(int(x),y);
+	    if(y>0 && pedestal_mode==0) hmips->Fill(int(temp->GetXaxis()->GetBinCenter(k)),y);
+	    if(y>0 && pedestal_mode>0 && ped_mean>0) {
+	      hmips->Fill(int(temp->GetXaxis()->GetBinCenter(k)-ped_mean),y);
+	    }
 	  }
 	  delete temp;
-	  // delete canvashmips;
+	  delete temp2;
+	  //  delete canvashmips;
 	}
 	
-	for(int k=0; k<600; k++) {
+	for(int k=0; k<500; k++) {
 	  hmips->SetBinError(k,sqrt(hmips->GetBinContent(k)));
-	  hmip_chip->SetBinContent(k,hmip_chip->GetBinContent(k)+hmips->GetBinContent(k));
+	  hmip_chip[i]->SetBinContent(k,hmip_chip[i]->GetBinContent(k)+hmips->GetBinContent(k));
 	}
 
+	MIPN2_all->Fill(layer,i,hmip_chip[i]->Integral());
 
-	if(hmips->GetEntries()>0) {
-
+	if(hmips->Integral()>100) {
 	  std::vector<double> result=resultfit(hmips,gain);
 	  double mpv=result.at(0);
 	  double empv=result.at(1);
 	  double wmpv=result.at(2);
 	  double chi2ndf=result.at(3);
 	  
-	  //	MIPN->Fill(map_pointX[i][j],map_pointY[i][j],hmips->GetEntries());
+	  //	MIPN->Fill(map_pointX[i][j],map_pointY[i][j],hmips->Integral());
 
 	  float mpvmin=20.;
 	  if(gain=="low") mpvmin=0.8;
@@ -380,10 +396,10 @@ void pedanalysis(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
 	    avmpv[i]+=mpv/empv;
 	    rmsmpv[i]+=1./(empv);
 	    nmpv[i]++;
-	    fout_mip<<layer<<" "<<i<<" "<<j<<" "<<mpv<<" "<<empv<<" "<<wmpv<<" "<<chi2ndf<<" "<<hmips->GetEntries()<<"\n";
+	    fout_mip<<layer<<" "<<i<<" "<<j<<" "<<mpv<<" "<<empv<<" "<<wmpv<<" "<<chi2ndf<<" "<<hmips->Integral()<<"\n";
 	    mpv_all->Fill(20*layer+i,j,mpv);
 	    width_all->Fill(20*layer+i,j,wmpv);
-	    nentries_all->Fill(20*layer+i,j,hmips->GetEntries());
+	    nentries_all->Fill(20*layer+i,j,hmips->Integral());
 	  } else fout_mip<<layer<<" "<<i<<" "<<j<<" "<<0<<" "<<-5<<" "<<0<<" "<<0<<" "<<0<<"\n";
 
 	} else {
@@ -398,16 +414,15 @@ void pedanalysis(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
 	delete hmips;
       }
       cdhisto[layer]->cd();
-      for(int k=0; k<600; k++) {
-	hmip_chip->SetBinError(k,sqrt(hmip_chip->GetBinContent(k)));
+      for(int k=0; k<500; k++) {
+	hmip_chip[i]->SetBinError(k,sqrt(hmip_chip[i]->GetBinContent(k)));
       }
-      std::vector<double> resultchip=resultfit(hmip_chip,gain);
-      avmpv2[i]=resultchip.at(0);
-      hmip_chip->Write();
-      //  file->cd();
-      //canvas_mip->Print(TString::Format("plots/%s_layer_%i_chip%i.png",run.Data(),layer,i));
-      //  canvas_mip->Write();
-      //delete canvas_mip;
+      if(hmip_chip[i]->Integral()>500) {
+	std::vector<double> resultchip=resultfit(hmip_chip[i],gain);
+	avmpv2[i]=resultchip.at(0);
+      } else avmpv2[i]=0;
+      hmip_chip[i]->Write();
+
     }
     for(int i=0;i<nchips;i++){
       if(nmpv[i]>0. ) {
@@ -419,13 +434,26 @@ void pedanalysis(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
       MIPM2_all->Fill(layer,i,avmpv2[i]);
         
     }
+    _file1->cd();
 
+    TCanvas* canvassummary= new TCanvas(TString::Format("MIPSummary_layer%i",layer),TString::Format("MIPSummary_layer%i",layer),800,800);
+    canvassummary->Divide(4,4);
+    for(int i=0; i<nchips; i++) {
+      canvassummary->cd(i+1);
+      hmip_chip[i]->GetXaxis()->SetRangeUser(200,500);
+      hmip_chip[i]->Draw();
+    }
+    canvassummary->Write();
+    delete canvassummary;
 
+    delete _file0;
   }
 
   gStyle->SetPalette(kInvertedDarkBodyRadiator);
-  TCanvas* canvassummary= new TCanvas("MIPAna","MIPAna",1600,800);
-  canvassummary->Divide(3,1);
+
+
+  TCanvas* canvassummary= new TCanvas("MIPAna","MIPAna",1400,600);
+  canvassummary->Divide(2,2);
     
   canvassummary->cd(1);
   // MIPM_all->GetXaxis()->SetTitle("x");
@@ -454,7 +482,11 @@ void pedanalysis(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
   // MIPN_all->GetYaxis()->SetTitle("y");
   MIPN_all->GetZaxis()->SetRangeUser(0,64.5);
   MIPN_all->Draw("COLZ");
-  
+
+  canvassummary->cd(4);
+  //MIPN_all->GetZaxis()->SetRangeUser(0,64.5);
+  MIPN2_all->Draw("COLZ");
+
   _file1->cd();
   canvassummary->Write();
   //  hmips->Draw();
