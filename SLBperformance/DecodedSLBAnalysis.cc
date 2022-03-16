@@ -169,7 +169,7 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=1, int
   //Read the channel/chip -- x/y mapping
   //  ReadMap(map_filename);
 
-  int nSLB=1;// get it as argument or read it from ntuple or somethng ? 
+  int nSLB=15;// get it as argument or read it from ntuple or somethng ? 
   if (fChain == 0) return -1;
 
   Long64_t nentries = fChain->GetEntriesFast();
@@ -252,11 +252,13 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=1, int
 
         for(int isca=0; isca<15; isca++) {
 
-          if( badbcid[ilayer][ichip][isca]!=0 )  continue;
+	  if( badbcid[ilayer][ichip][isca]!=0 )  continue;
           if( bcid[ilayer][ichip][isca]<10 ) continue;
           if( bcid[ilayer][ichip][isca]>950 && bcid[ilayer][ichip][isca]<1000 )  continue;
           if( nhits[ilayer][ichip][isca]>maxnhit ) continue;
-          int bcid_seen = SimpleCoincidenceTagger(ilayer,maxnhit,bcid[ilayer][ichip][isca]);
+	  int bcid_seen = SimpleCoincidenceTagger(ilayer,maxnhit,bcid[ilayer][ichip][isca]);
+	  if(bcid[ilayer][ichip][isca]>10 && badbcid[ilayer][ichip][isca]==0 && bcid_seen>5) cout<<badbcid[ilayer][ichip][isca]<<" "<<ilayer<<" "<<ichip<<" "<<isca<<" "<<bcid[ilayer][ichip][isca]<<" "<<maxnhit<<" "<<bcid_seen<<endl;
+	  
           if(bcid_seen<(nslabshit-1)) continue;
 
             /*int triggers=0;

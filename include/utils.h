@@ -6,7 +6,7 @@
 
 
 int SimpleCoincidenceTagger(int ilayer, int maxnhit=5, int bcid_ref=0){
-  
+
   int bcid_seen=0;
   int bcid_seen_slb[30]={0};
   for(int islboard=0; islboard<n_slboards; islboard++) {

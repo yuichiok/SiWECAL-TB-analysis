@@ -109,13 +109,14 @@ void apply_mask(bool global_threshold=false) {
       }
 
       if(global_threshold==true && detector.slab[0][i].asu[0].skiroc[j].threshold_dac<275 && float(channels_to_mask+channels_masked)/float(channels_notmasked+channels_to_mask+channels_masked)>0.2) {
-	cout<<" WARNING!! TOO MANY CHANNELS TO BE MASKED ("<<channels_to_mask <<") + already masked: "<<channels_masked <<" in  Slboard:"<<detector.slab[0][i].add<<" skiroc:"<<j<<endl;
-      	cout<<" instead we increase the global thershold, from"<<detector.slab[0][i].asu[0].skiroc[j].threshold_dac<<" to: "<<detector.slab[0][i].asu[0].skiroc[j].threshold_dac+5<<endl;
-	detector.slab[0][i].asu[0].skiroc[j].threshold_dac+=5;
+	// cout<<" WARNING!! TOO MANY CHANNELS TO BE MASKED ("<<channels_to_mask <<") + already masked: "<<channels_masked <<" in  Slboard:"<<detector.slab[0][i].add<<" skiroc:"<<j<<endl;
+ //      	cout<<" instead we increase the global thershold, from"<<detector.slab[0][i].asu[0].skiroc[j].threshold_dac<<" to: "<<detector.slab[0][i].asu[0].skiroc[j].threshold_dac+5<<endl;
+	// detector.slab[0][i].asu[0].skiroc[j].threshold_dac+=5;
       } else {
 	for(int k=0; k<64; k++) {
 	  if(detector.slab[0][i].asu[0].skiroc[j].mask[k]==0 && mask.at(i).at(j).at(k)==1) {
 	    detector.slab[0][i].asu[0].skiroc[j].mask[k]=1;
+      detector.slab[0][i].asu[0].skiroc[j].preamplifier_mask[k]=1;
 	    cout<<" Masking:  Slboard idx"<<i<< " add:"<< detector.slab[0][i].add <<"  skiroc:"<<j<<" chn:"<<k<<endl;
 	  }
 	}
