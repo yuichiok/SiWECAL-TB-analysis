@@ -3,7 +3,7 @@
 #include "conf_struct.h"
 
 //void test_read_masked_channels_summary(TString filename="15102021/Run_Settings_DataTaking_TB2021_15102021_WRITENbyDAQ", bool debug=true) {
-void test_read_masked_channels_summary(TString filename="/mnt/HardDrive/beamData/ascii/1.4GeV_W_run_050163/Run_Settings", bool debug=true) {
+void test_read_masked_channels_summary(TString filename="/mnt/win2/Run_Data/Run_ILC_03112022_cosmic_it16_Ascii/Run_Settings", bool debug=true) {
   //void test_read_masked_channels_summary(TString filename="run_150014/Run_Settings", bool debug=true) {  
 
   read_configuration_file(filename+".txt",true);
@@ -30,7 +30,7 @@ void test_read_masked_channels_summary(TString filename="/mnt/HardDrive/beamData
   TH2F* mask_chip_chn = new TH2F("mask_chip_chn","mask_chip_chn",16,-0.5,15.5,64,-0.5,63.5);
   TH2F* mask_x_y = new TH2F("mask_x_y","mask_x_y",32,-90,90,32,-90,90);
 
-  TH2F* mask_layer_chip = new TH2F("mask_chip_chn","mask_chip_chn",23,12.5,35.5,16,-0.5,15.5);
+  TH2F* mask_layer_chip = new TH2F("mask_chip_chn","mask_chip_chn",15,-0.5,14.5,16,-0.5,15.5);
 
   float totalmasked[15];
   float totalmasked_chip[15][16];
@@ -69,7 +69,7 @@ void test_read_masked_channels_summary(TString filename="/mnt/HardDrive/beamData
       }
       fout<<endl;
       cout<< "Skiroc idx:"<<ichip<<"  Masked cells:"<<100.*totalmasked_chip[islab][ichip]/64.<<"%"<<endl;
-      mask_layer_chip->Fill(mapping_slab[islab],ichip,totalmasked_chip[islab][ichip]+0.01);
+      mask_layer_chip->Fill(islab,ichip,totalmasked_chip[islab][ichip]+0.01);
 
     }
     cout<< "TOTAL Masked cells:"<<100.*totalmasked[islab]/1024.<<"%"<<endl;
