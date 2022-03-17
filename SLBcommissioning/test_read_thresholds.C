@@ -71,7 +71,7 @@ void test_read_thresholds(TString filename="14102021/Run_Settings_it8", bool deb
     threshold_x_y_2[islab]->Draw("colz");
     threshold_x_y[islab]->Draw("text0same");
     //canvas->Print(TString::Format("thresholds_slbAdd%i.eps",islab));
-    canvas->Print(TString::Format("thresholds_slbAdd%i.png",islab));
+    canvas->Print(TString::Format("plots/thresholds_slbAdd%i.png",islab));
 
 
   }

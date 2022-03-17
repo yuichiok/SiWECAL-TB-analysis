@@ -1,8 +1,13 @@
 #include "analysis.h"
 
  
-void analysis(TString run="3GeVMIPscan", TString gain="high", bool pedestal=true, bool mip=true) {
+void analysis(TString run="3GeVMIPscan", TString gain="high", bool pedestal=false, bool mip=true, int pedestal_mode=0) {
 
+
+  // pedestal_mode==0 --> no subtraction
+  // pedestal_mode==1 --> on-the-fly subtraction
+  // pedestal_mode==2 --> subtraction from covariance txt file
+  
   gROOT->Reset();
   //SetIrlesStyle();
   //  gROOT->LoadMacro("Labels.C");
@@ -20,7 +25,7 @@ void analysis(TString run="3GeVMIPscan", TString gain="high", bool pedestal=true
   if(pedestal==true)  pedanalysis(run,gain);
   else {
     if(mip==true) mipanalysis_summary(run,gain);
-    // else s_n_analysis_summary(run,gain);
+    //    else s_n_analysis_summary(run,gain);
   }
 
   gSystem->Exit(0);

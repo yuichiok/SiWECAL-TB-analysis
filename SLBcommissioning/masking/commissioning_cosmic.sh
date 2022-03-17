@@ -23,7 +23,6 @@ if [[ $3 == "" ]]
  (exit 33)
 fi
 
-
 softw_path=$PWD"/../../"
 if [ ! -d "${softw_path}/SLBcommissioning/${date}" ]; then
     mkdir ${softw_path}/SLBcommissioning/${date}  
