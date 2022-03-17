@@ -43,6 +43,13 @@ except ImportError:
         print("\n# Final time:", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 
+def get_tree_spills_no_progress_info(tree, max_entries):
+    for i, spill in enumerate(tree):
+        if i > max_entries:
+            break
+        yield i, spill
+
+
 class BCIDHandler:
     def __init__(self, bcid_numbers, min_slabs_hit=1):
         self._N = bcid_numbers
@@ -260,6 +267,8 @@ class BuildEvents:
             "bcid_merge_end/I",
             "bcid_prev/I",
             "bcid_next/I",
+            "id_run/I",
+            "id_dat/I",
         # "hit summary":
             "nhit_slab/I",
             "nhit_chip/I",
@@ -308,6 +317,9 @@ class BuildEvents:
         no_zero_suppress=False,
         no_lg=False,
         redo_config=False,
+        no_progress_info=False,
+        id_dat=-1,
+        id_run=-1,
         **config_file_kws
     ):
         self.file_name = file_name
@@ -327,6 +339,9 @@ class BuildEvents:
             assert ecal_numbers.slabs == slabs
             assert ecal_numbers.cob_slabs == cob_slabs
 
+        self._no_progress_info = no_progress_info
+        self._id_dat = id_dat
+        self._id_run = id_run
         speed_warning_if_python2()
         self.ecal_config = EcalConfig(
             commissioning_folder=commissioning_folder,
@@ -431,11 +446,16 @@ class BuildEvents:
         if max_entries < 0:
             max_entries = self.in_tree.GetEntries()
 
+        if self._no_progress_info:
+            _get_tree_spills = get_tree_spills_no_progress_info
+        else:
+            _get_tree_spills = get_tree_spills
+
         if self.redo_config:
-            for _, event in get_tree_spills(self.in_tree, max_entries):
+            for _, event in _get_tree_spills(self.in_tree, max_entries):
                 self._redo_fill_event(event)
         else:
-            for i_spill, entry in get_tree_spills(self.in_tree, max_entries):
+            for i_spill, entry in _get_tree_spills(self.in_tree, max_entries):
                 self._fill_spill(i_spill, entry)
         self._write_and_close()
 
@@ -514,6 +534,8 @@ class BuildEvents:
 
 
     def _redo_fill_event(self, event):
+        if event.nhit_slab < self.min_slabs_hit:
+            return
         for branch_name in self._hit_branches:
             branch_name = "hit_"+ branch_name
             if branch_name == "hit_energy":
@@ -542,6 +564,13 @@ class BuildEvents:
                 val = np.sum(self.out_arrays["hit_energy"][:event.nhit_len][np.array(event.hit_isHit, dtype=bool)])
             elif branch_name == "sum_energy_lg":
                 val = np.sum(self.out_arrays["hit_energy_lg"][:event.nhit_len][np.array(event.hit_isHit, dtype=bool)])
+            elif branch_name == "id_dat" and self._id_dat != -1:
+                val = self._id_dat
+            elif branch_name == "id_run" and self._id_run != -1:
+                val = self._id_run
+            elif branch_name == "event":
+                self.event_counter += 1
+                val = self.event_counter
             else:
                 val = getattr(event, branch_name)
             self.out_arrays[branch_name][0] = val
@@ -575,6 +604,8 @@ class BuildEvents:
             b["bcid_merge_end"][0] = bcid_merge_end[bcid]
             b["bcid_prev"][0] = bcid_handler.previous_bcid(bcid)
             b["bcid_next"][0] = bcid_handler.next_bcid(bcid)
+            b["id_run"][0] = self._id_run
+            b["id_dat"][0] = self._id_dat
 
             # count hits per slab/chan/chip
             b["nhit_slab"][0] = nhit_slab
@@ -605,7 +636,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Build an event-level rootfile (smaller) from the raw rootfile.",
     )
-    parser.add_argument("file_name", help="The raw rootfile from converter_SLB")
+    parser.add_argument("file_name", help="The raw rootfile from converter_SLB.")
     parser.add_argument("-n", "--max_entries", default=-1, type=int)
     parser.add_argument("-w", "--w_config", default=-1, type=int)
     parser.add_argument("-o", "--out_file_name", default=None)
@@ -613,10 +644,13 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--min_slabs_hit", default=4, type=int)
     parser.add_argument("--cob_positions_string", default="")
     parser.add_argument("--no_zero_suppress", action="store_true", help="Store all channels on hit chip.")
-    parser.add_argument("--no_lg", action="store_true", help="Ignore low gain")
-    parser.add_argument("--redo_config", action="store_true",
-        help="Do not (re)-build the events but only change the configuration options. Then file_name should be a build.root file already."
-    )
+    parser.add_argument("--no_lg", action="store_true", help="Ignore low gain.")
+    _help = _help="Do not (re)-build the events but only change the configuration options. Then file_name should be a build.root file already."
+    parser.add_argument("--redo_config", action="store_true", help=_help)
+    _help = "Less verbose output, especially for batch processing."
+    parser.add_argument("--no_progress_info", action="store_true", help=_help)
+    parser.add_argument("--id_run", default=-1, type=int, help="Integer ID of the run within the testbeam campaign.")
+    parser.add_argument("--id_dat", default=-1, type=int, help="Integer ID for piece-by-piece eventbuilding within a run.")
     # Run ./build_events.py --help to see all options.
     for config_option, config_value in dummy_config.items():
         parser.add_argument("--" + config_option, default=config_value)

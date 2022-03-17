@@ -24,7 +24,7 @@ void analysis(TString run="3GeVMIPscan", TString gain="high", bool pedestal=fals
   
   if(pedestal==true)  pedanalysis(run,gain);
   else {
-    if(mip==true) mipanalysis_summary(run,gain);
+    if(mip==true) mipanalysis_summary(run,gain,pedestal_mode);
     //    else s_n_analysis_summary(run,gain);
   }
 

@@ -30,6 +30,10 @@ class EcalNumbers:
         if len(w_conf_2) > 0:
             w_conf_2[0] = 0
         self.w_config_options[2] = w_conf_2
+        # TB2022_03 scenario: https://github.com/fabriciojm/SiWECAL-Sim/issues/11
+        w_conf_3 = np.full(self.n_slabs, 2.8)
+        w_conf_3[-8:] = 4.2
+        self.w_config_options[3] = w_conf_3
 
         self.bcid_skip_noisy_acquisition_start = 50
         self.bcid_bad_value = -999

@@ -50,7 +50,7 @@ protected:
     NCHANNELS=64,
     NCHIP=16,
     NEGDATA_THR=11, //event with data below are tagged badbcid+=32
-    BCIDTHRES=2
+    BCIDTHRES=4
   };
 
   int R2Rstate;
@@ -300,80 +300,7 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
   
   // int bcid_cycle[20][16][15];
 
-  int mapping_slboard[100];
-
-  //FTDI
-  if( readout_type=="COREMODULE") {
-    //MAPPING_Z:
-    // The CORE MODULE find first the slab with smaller slboard-ID reference number, independently of the position.
-    // this slab will be saved in the dimension [0] of the arrays
-    // with slot info (or z info) = mapping_z[slabidx]=z
-
-    // second one
-    // with slot info (or z info) = mapping_z[slabidx2]=z2
-    // for(int i=0; i<15; i++) mapping_z[i]=i;
-    //2020 10 15
-    // cosmic mode
-    //    slot 14 is the upper one, i.e. the first one seen by cosmics
-    // array_idx=7, slot 12, slboard 10, slab13
-    // array_idx=4, slot 11, slboard 5, slab14 
-    // array_idx=0, slot 10, slboard 1, slab15 
-    // array_idx=9, slot 9, slboard 13, slab19 
-    // array_idx=8 slot 8, slboard 11, slab20 
-    // array_idx=6,  slot 7, slboard 7, slab24 
-    // array_idx=10,  slot 6, slboard 14, slab21 
-    // array_idx=3, slot 5, slboard 4, slab22 
-    // array_idx=5, slot 4, slboard 6, slab23 
-    // array_idx=2, slot 3, slboard 3, slab26 
-    // array_idx=1, slot 1, slboard 2, slab18
-
-    //2021 July
-    //15 slabs, we modified the slabb address to fit the position (0 is the one closest to the sky, 14 the one in the bottom)
-    //the original SLB-ID (slboard ID, sorted by production time) is:
-    // now slboard_add = slabidx = slot
-
-    /*mapping_slboard[0]=17;
-    mapping_slboard[1]=8;
-    mapping_slboard[2]=10;
-    mapping_slboard[3]=5;
-    mapping_slboard[4]=1;
-    mapping_slboard[5]=13;
-    mapping_slboard[6]=11;
-    mapping_slboard[7]=7;
-    mapping_slboard[8]=14;
-    mapping_slboard[9]=3;
-    mapping_slboard[10]=4;
-    mapping_slboard[11]=6;
-    mapping_slboard[12]=9;
-    mapping_slboard[13]=2;
-    mapping_slboard[14]=0;
-    */
-
-    //Setup of 15 slabs for TB2021-11
-    // Last update 14/10/2021
-    // The addresses of the slabs correspond to the core-kapton.
-    // The slab closest to the beam pipe is the 14.  --> this inversion is done using the slot[] variable (slot 0= first one wrt the beam)
-    // For the technical identification we use the slab number, not the slboard.
-    mapping_slboard[14]=16;
-    mapping_slboard[13]=13;
-    mapping_slboard[12]=14;
-    mapping_slboard[11]=15;
-    mapping_slboard[10]=19;
-    mapping_slboard[9]=20;
-    mapping_slboard[8]=21;
-    mapping_slboard[7]=30;
-    mapping_slboard[6]=31;
-    mapping_slboard[5]=24;
-    mapping_slboard[4]=25;
-    mapping_slboard[3]=22;
-    mapping_slboard[2]=17;
-    mapping_slboard[1]=23;
-    mapping_slboard[0]=18;
-
-  } else {
-    mapping_slboard[0]=0;
-  }
-  
+ 
 
   while (reading_file) {
     // output the line
@@ -418,16 +345,16 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
     int previousBCID=-1000;
     int loopBCID=0;
 
-    startACQ[slabidx]=start_acq;
-    rawTSD[slabidx]=raw_tsd;
-    TSD[slabidx]=_tsd;
-    rawAVDD0[slabidx]=raw_avdd0;
-    rawAVDD1[slabidx]=raw_avdd1;
-    AVDD0[slabidx]=raw_avdd0;
-    AVDD1[slabidx]=raw_avdd1;
+    startACQ[slabadd]=start_acq;
+    rawTSD[slabadd]=raw_tsd;
+    TSD[slabadd]=_tsd;
+    rawAVDD0[slabadd]=raw_avdd0;
+    rawAVDD1[slabadd]=raw_avdd1;
+    AVDD0[slabadd]=raw_avdd0;
+    AVDD1[slabadd]=raw_avdd1;
 
-    slot[slabidx]=14-slabadd;
-    slboard_id[slabidx]=mapping_slboard[slabidx];
+    slot[slabadd]=-1;//we don't know this information... the DQ only provides addresses.
+    slboard_id[slabadd]=slabadd;
 
     
     for(int i=0; i<size; i++) {
@@ -438,16 +365,16 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
       reading_file >> tmpst >> tmpst >> bcid_tmp >> tmpst >> sca >>  tmpst  >>  nhits_tmp ;
       //cout<<bcid_tmp<<" "<<sca<<" "<<nhits_tmp<<" "<<endl;
       sca=size-(sca+1);
-      bcid[slabidx][chip][sca]=bcid_tmp;
-      nhits[slabidx][chip][sca]=nhits_tmp;
-      numCol[slabidx][chip]++;
+      bcid[slabadd][chip][sca]=bcid_tmp;
+      nhits[slabadd][chip][sca]=nhits_tmp;
+      numCol[slabadd][chip]++;
       
-      if(bcid[slabidx][chip][sca] > 0 && bcid[slabidx][chip][sca]-previousBCID < 0) loopBCID++;
-      if(bcid[slabidx][chip][sca] > 0 ) corrected_bcid[slabidx][chip][sca] = bcid[slabidx][chip][sca]+loopBCID*4096;
+      if(bcid[slabadd][chip][sca] > 0 && bcid[slabadd][chip][sca]-previousBCID < 0) loopBCID++;
+      if(bcid[slabadd][chip][sca] > 0 ) corrected_bcid[slabadd][chip][sca] = bcid[slabadd][chip][sca]+loopBCID*4096;
       previousBCID=bcid_tmp;
       
       if(chip>-1 && chip<16) {
-	chipID[slabidx][chip]=chip;
+	chipID[slabadd][chip]=chip;
       } else {
 	cout<<"Wrong chipID = "<<chip<<endl;
 	break;
@@ -466,10 +393,10 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
 	reading_file >> tmpst >> chn >> tmpst >> lg >>  lg_bit >> tmpst >>  tmpst >> hg >> hg_bit >> tmpst;
 	//cout << chn << " "<< hg <<" " <<hg_bit<<endl;
 	//	if(slabid==slboard_index) {
-	  charge_low[slabidx][chip][sca][chn]=lg;
-	  gain_hit_low[slabidx][chip][sca][chn]=lg_bit;
-	  charge_high[slabidx][chip][sca][chn]=hg;
-	  gain_hit_high[slabidx][chip][sca][chn]=hg_bit;
+	  charge_low[slabadd][chip][sca][chn]=lg;
+	  gain_hit_low[slabadd][chip][sca][chn]=lg_bit;
+	  charge_high[slabadd][chip][sca][chn]=hg;
+	  gain_hit_high[slabadd][chip][sca][chn]=hg_bit;
 	  //}
       }//end channel  
     }//end events of the chi
