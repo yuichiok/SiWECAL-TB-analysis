@@ -215,7 +215,7 @@ def get_hits_per_event(entry, bcid_handler, ecal_config):
 
         if bcid not in event:
             event[bcid] = collections.defaultdict(list)
-        slab = entry.slot[(i // n_scas // n_chips)]
+        slab = entry.slboard_id[(i // n_scas // n_chips)]
         slab_id = ecal_config._N.slabs.index(slab)
         chip = entry.chipid[i // n_scas]
         sca = i % n_scas
@@ -385,7 +385,7 @@ class BuildEvents:
     def _get_slabs(self, tree):
         if self.redo_config:
             return self._get_slabs_from_buildfile()
-        tree.Draw("slot >> slot_hist", "", "goff")
+        tree.Draw("slboard_id >> slot_hist", "", "goff")
         hist = rt.gDirectory.Get("slot_hist")
         slabs = []
         for i in range(1, hist.GetNbinsX() + 1):  # 0 is underflow bin.
