@@ -6,8 +6,11 @@ import sys
 import numpy as np
 
 
+asu_types = ["10", "11", "12" , "13", "COB"]
+
+
 class EcalNumbers:
-    def __init__(self, slabs=None, cob_slabs=None):
+    def __init__(self, slabs=None, asu_version=None):
         self.n_chips = 16
         self.n_scas = 15
         self.n_channels = 64
@@ -15,10 +18,11 @@ class EcalNumbers:
             self.slabs = []
         else:
             self.slabs = sorted(set(slabs))
-        if cob_slabs is None:
-            self.cob_slabs = []
-        else:
-            self.cob_slabs = sorted(set(cob_slabs))
+        if asu_version is None or asu_version == "":
+            asu_version = ["12" for s in self.slabs]
+        elif type(asu_version) == str:
+            asu_version = asu_version.split(",")
+        self.asu_version = [asu_v.strip() for asu_v in asu_version]
         self.n_slabs = len(self.slabs)
 
         self.w_config_options = {}  # abs thickness of Tungsten/W plates.
@@ -59,7 +63,8 @@ class EcalNumbers:
         assert type(n.n_slabs) == int
         assert len(n.slabs) == n.n_slabs
         assert all((type(i_slab) == int for i_slab in n.slabs))
-        assert all((i_cob in n.slabs for i_cob in n.cob_slabs))
+        assert len(n.asu_version) == len(n.slabs), n.asu_version + n.slabs
+        assert all((asu_v in asu_types for asu_v in n.asu_version)), n.asu_version
 
         assert all(type(w_conf) == np.ndarray for w_conf in n.w_config_options.values())
         assert all(len(w_conf) == n.n_slabs for w_conf in n.w_config_options.values())
@@ -165,9 +170,27 @@ class EcalConfig:
     def _get_x_y(self, mapping_file, mapping_file_cob):
         _x, _y = self._read_mapping_xy(mapping_file)
         _x_cob, _y_cob = self._read_mapping_xy(mapping_file_cob)
-
-        x = np.stack([_x_cob if slab in self._N.cob_slabs else _x for slab in self._N.slabs])
-        y = np.stack([_y_cob if slab in self._N.cob_slabs else _y for slab in self._N.slabs])
+        
+        xs, ys = [], []
+        for slab in self._N.slabs:
+            asu_version = self._N.asu_version[self._N.slabs.index(slab)]
+            if asu_version == "COB":
+                _xi = _x_cob
+                _yi = _y_cob
+            elif asu_version in ["10", "11", "12", "13"]:
+                _xi = _x
+                _yi = _y
+            else:
+                raise EventBuildingException(
+                    "Asu version not recognized: " + str(asu_version)
+                )
+            if asu_version == "13":
+                _xi = _xi + 60
+            xs.append(_xi)
+            ys.append(_yi)
+        x = np.stack(xs)
+        y = np.stack(ys)
+        x, y = -x, -y
         return x, y
 
 

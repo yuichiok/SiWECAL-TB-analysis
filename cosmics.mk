@@ -3,8 +3,7 @@ RUN=run_050016_10192021_21h49min_Ascii
 COMMISSIONING_TAG=PROTO15_run_050016
 WOLFRAM_CONFIG=0
 SLABS=0 1 2 3 4 5 6 7 8 9 10 11 12 13 14
-# COBS=1 11 5 8
-COBS=
+ASU_VERSION=FEV13 FEV13 COB COB FEV12 FEV12 FEV12 FEV12 FEV12 FEV12 FEV12 FEV12 FEV12 FEV12 FEV12
 MAX_ENTRIES_BUILD=-1
 
 # Depending on your setup, you might have to change these as well.
@@ -59,7 +58,7 @@ ${DATA_CONVERTED} : ${CONVERTED_PARTS}
 ${CONVERTED_DIR}/${RUN}_build.root : ${DATA_CONVERTED} \
         $(PEDESTALS) $(MIP_CALIB) $(MASKED)
 	cd eventbuilding; ./build_events.py $(word 1,$^)\
-		--w_config ${WOLFRAM_CONFIG} --cob_positions_string "${COBS}"\
+		--w_config ${WOLFRAM_CONFIG} --asu_version "${ASU_VERSION}"\
 		--out_file_name $@\
 		--pedestals_file $(word 2,$^)\
 		--mip_calibration_file $(word 3,$^)\
@@ -72,7 +71,7 @@ ${TMP_BUILD_PARTS}/build.%.root : ${TMP_CONVERTED_PARTS}/converted.%.root \
         $(PEDESTALS) $(MIP_CALIB) $(MASKED)
 	@mkdir -p ${TMP_BUILD_PARTS}
 	cd eventbuilding; ./build_events.py $(word 1,$^)\
-		--w_config ${WOLFRAM_CONFIG} --cob_positions_string "${COBS}"\
+		--w_config ${WOLFRAM_CONFIG} --asu_version "${ASU_VERSION}"\
 		--out_file_name $@\
 		--pedestals_file $(word 2,$^)\
 		--mip_calibration_file $(word 3,$^)\

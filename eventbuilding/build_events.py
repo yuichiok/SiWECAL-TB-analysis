@@ -328,7 +328,7 @@ class BuildEvents:
         out_file_name=None,
         commissioning_folder=None,
         min_slabs_hit=4,
-        cob_positions_string="",
+        asu_version="",
         ecal_numbers=None,  # Not provided in CLI. Mainly useful for debugging/changing.
         no_zero_suppress=False,
         no_lg=False,
@@ -348,12 +348,11 @@ class BuildEvents:
         self.redo_config = redo_config
         self.in_tree = self._get_tree(file_name)
         slabs = self._get_slabs(self.in_tree)
-        cob_slabs = set(map(int, filter(None, cob_positions_string.split(" "))))
         if ecal_numbers is None:
-           ecal_numbers = EcalNumbers(slabs=slabs, cob_slabs=cob_slabs)
+           ecal_numbers = EcalNumbers(slabs=slabs, asu_version=asu_version)
         else:
             assert ecal_numbers.slabs == slabs
-            assert ecal_numbers.cob_slabs == cob_slabs
+            assert ecal_numbers.asu_version == asu_version
 
         self._no_progress_info = no_progress_info
         self._id_dat = id_dat
@@ -651,6 +650,7 @@ class BuildEvents:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Build an event-level rootfile (smaller) from the raw rootfile.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("file_name", help="The raw rootfile from converter_SLB.")
     parser.add_argument("-n", "--max_entries", default=-1, type=int)
@@ -658,10 +658,12 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--out_file_name", default=None)
     parser.add_argument("-c", "--commissioning_folder", default=None)
     parser.add_argument("-s", "--min_slabs_hit", default=4, type=int)
-    parser.add_argument("--cob_positions_string", default="")
+    _help = "For each layer, one of 10,11,12,13,COB. Comma seperated list. "
+    _help += "When left empty, all layers are assumed to be 12 (FEV12)."
+    parser.add_argument("-a", "--asu_version", default="", help=_help)
     parser.add_argument("--no_zero_suppress", action="store_true", help="Store all channels on hit chip.")
     parser.add_argument("--no_lg", action="store_true", help="Ignore low gain.")
-    _help = _help="Do not (re)-build the events but only change the configuration options. Then file_name should be a build.root file already."
+    _help ="Do not (re)-build the events but only change the configuration options. Then file_name should be a build.root file already."
     parser.add_argument("--redo_config", action="store_true", help=_help)
     _help = "Less verbose output, especially for batch processing."
     parser.add_argument("--no_progress_info", action="store_true", help=_help)
