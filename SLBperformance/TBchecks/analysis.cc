@@ -3,6 +3,11 @@
  
 void analysis(TString run="3GeVMIPscan", TString gain="high", bool pedestal=false, bool mip=true, int pedestal_mode=0) {
 
+
+  // pedestal_mode==0 --> no subtraction
+  // pedestal_mode==1 --> on-the-fly subtraction
+  // pedestal_mode==2 --> subtraction from covariance txt file
+  
   gROOT->Reset();
   //SetIrlesStyle();
   //  gROOT->LoadMacro("Labels.C");
