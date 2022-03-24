@@ -12,7 +12,7 @@ void test_read_write_disablePA(TString filename="Run_Settings.txt", bool debug=t
   read_configuration_file(filename,false);
   disable_PA_mask();
   // inverse_slab();
-  write_configuration_file("Run_Settings_comm_it12.txt");
+  write_configuration_file("Run_Settings_new.txt");
 }
 
 void inverse_slab(){
