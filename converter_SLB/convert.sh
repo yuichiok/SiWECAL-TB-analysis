@@ -49,3 +49,14 @@ then
 	root -l -q ConvertDirectorySL.cc\(\"${data_folder}\",false,\"${output}\"\)
 	hadd -f ${output}/../Run_ILC_${date}_${round}_ch${it}.root ${output}/*.root
 fi
+
+if [[ $round == "run" ]]
+then
+	run="run_"${it}
+	mkdir "./convertedfiles/"${run}
+	output="./convertedfiles/"${run}"/"
+
+	data_folder=${data_path}"/Run_Data/"${run}"/"
+	root -l -q ConvertDirectorySL.cc\(\"${data_folder}\",false,\"${output}\"\)
+	hadd -f ${output}/../${run}.root ${output}/*.root
+fi
