@@ -1,7 +1,7 @@
 import csv
 
 reader = csv.reader(open("fev11_cob_chip_channel_x_y_mapping.txt"), delimiter=" ")
-writer = csv.writer(open('cob_tmp.txt', 'w'), delimiter=" ")
+writer = csv.writer(open('cob_tmp2.txt', 'w'), delimiter=" ")
 
 chip=-1
 x0=9999
@@ -28,15 +28,14 @@ for i, line in enumerate(reader):
 	x       = float(line[4])
 	y       = float(line[5])
 
-	if chip == 12:
-		print(line[4])
+	if chip == 11:
 		x_tmp[channel] = x
 		y_tmp[channel] = y
 
 	if chip == 13:
 		# print(x_tmp[channel])
-		x = x_tmp[channel] - 46.1
-		x = -x
+		x = x_tmp[channel] + 46.1
+		# x = -x
 		x = "{:.1f}".format(x)
 		y = y_tmp[channel]
 
