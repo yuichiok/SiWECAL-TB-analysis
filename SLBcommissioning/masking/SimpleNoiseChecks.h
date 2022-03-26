@@ -116,6 +116,7 @@ void apply_mask(bool global_threshold=false) {
 	for(int k=0; k<64; k++) {
 	  if(detector.slab[0][i].asu[0].skiroc[j].mask[k]==0 && mask.at(i).at(j).at(k)==1) {
 	    detector.slab[0][i].asu[0].skiroc[j].mask[k]=1;
+      detector.slab[0][i].asu[0].skiroc[j].preamplifier_mask[k]=1;
 	    cout<<" Masking:  Slboard idx"<<i<< " add:"<< detector.slab[0][i].add <<"  skiroc:"<<j<<" chn:"<<k<<endl;
 	  }
 	}

@@ -76,16 +76,19 @@ void test_read_masked_channels(TString filename="15102021/Run_Settings_DataTakin
     //TColor::InvertPalette();
     canvas->Divide(1,2);
     canvas->cd(1);
-    mask_chip_chn[islab]->SetTitle(TString::Format("SLABd%i",mapping_slab[islab]));
+    // mask_chip_chn[islab]->SetTitle(TString::Format("SLABd%i",mapping_slab[islab]));
+    mask_chip_chn[islab]->SetTitle(TString::Format("slabAdd%i",islab));
     mask_chip_chn[islab]->GetXaxis()->SetTitle("CHIP");
     mask_chip_chn[islab]->GetYaxis()->SetTitle("CHANNEL");
     mask_chip_chn[islab]->Draw("col");
     canvas->cd(2);
-    mask_x_y[islab]->SetTitle(TString::Format("SLABd%i",mapping_slab[islab]));
+    // mask_x_y[islab]->SetTitle(TString::Format("SLABd%i",mapping_slab[islab]));
+    mask_x_y[islab]->SetTitle(TString::Format("slabAdd%i",islab));
     mask_x_y[islab]->GetXaxis()->SetTitle("x");
     mask_x_y[islab]->GetYaxis()->SetTitle("y");
     mask_x_y[islab]->Draw("col");
-    canvas->Print(TString::Format("masked_channels_SLAB%i.png",mapping_slab[islab]));
+    // canvas->Print(TString::Format("masked_channels_SLAB%i.png",mapping_slab[islab]));
+    canvas->Print(TString::Format("plots/masked_channels_slbAdd%i.png",islab));
 
   }
 
