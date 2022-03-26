@@ -37,7 +37,7 @@ void test_read_masked_channels(TString filename="15102021/Run_Settings_DataTakin
   for(int islab=0; islab<nslabs; islab++) {
     // TString map_name="../mapping/fev10_chip_channel_x_y_mapping.txt";
     // TString map_name="../mapping/fev11_cob_chip_channel_x_y_mapping.txt";
-    TString map_name="../mapping/cob_tmp.txt";
+    TString map_name="../mapping/cob_tmp2.txt";
 
     // the two cobs are equipped with slboards 2.08 and 2.12 (26th May 2020)
     //    if(detector.slab[0][islab].add==8 || detector.slab[0][islab].add==12)

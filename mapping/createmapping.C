@@ -84,7 +84,7 @@ void createmapping(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
 
 
   gStyle->SetOptStat(0);
-  TCanvas* canvas2= new TCanvas(TString::Format("IJmapping_type_%s_flipx%i_flipy%i.txt",name[iname].Data(),iflipx,iflipy),TString::Format("IJmapping_type_%s_flipx%i_flipy%i.txt",name[iname].Data(),iflipx,iflipy),1800,400);   
+  TCanvas* canvas2= new TCanvas(TString::Format("IJmapping/IJmapping_type_%s_flipx%i_flipy%i.txt",name[iname].Data(),iflipx,iflipy),TString::Format("IJmapping_type_%s_flipx%i_flipy%i.txt",name[iname].Data(),iflipx,iflipy),1800,400);   
   canvas2->Divide(3,1);
   canvas2->cd(1);
   map_chip->Draw("colz");
@@ -100,7 +100,7 @@ void createmapping(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
   mapIJ_chip->Draw("colz");
   mapIJ->Draw("textsame");
   canvas2->cd(2);
-  canvas2->Print(TString::Format("IJmapping_type_%s_flipx%i_flipy%i.pdf",name[iname].Data(),iflipx,iflipy));
+  canvas2->Print(TString::Format("IJmapping/IJmapping_type_%s_flipx%i_flipy%i.pdf",name[iname].Data(),iflipx,iflipy));
       }
     }
   }
