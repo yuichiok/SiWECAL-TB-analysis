@@ -79,13 +79,20 @@ class EventBuildingException(Exception):
     pass
 
 dummy_config = dict(
+    # mapping_file="mapping/fev10_chip_channel_x_y_mapping.txt",
+    # mapping_file_cob="mapping/fev11_cob_chip_channel_x_y_mapping.txt",
+    # pedestals_file="pedestals/pedestal_PROTO15_dummy.txt",
+    # mip_calibration_file="mip_calib/MIP_PROTO15_dummy.txt",
+    # pedestals_lg_file="pedestals/pedestal_PROTO15_dummy_lg.txt",
+    # mip_calibration_lg_file="mip_calib/MIP_PROTO15_dummy_lg.txt",
+    # masked_file="masked/masked_PROTO15_dummy.txt",
     mapping_file="mapping/fev10_chip_channel_x_y_mapping.txt",
     mapping_file_cob="mapping/fev11_cob_chip_channel_x_y_mapping.txt",
-    pedestals_file="pedestals/pedestal_PROTO15_dummy.txt",
-    mip_calibration_file="mip_calib/MIP_PROTO15_dummy.txt",
-    pedestals_lg_file="pedestals/pedestal_PROTO15_dummy_lg.txt",
-    mip_calibration_lg_file="mip_calib/MIP_PROTO15_dummy_lg.txt",
-    masked_file="masked/masked_PROTO15_dummy.txt",
+    pedestals_file="/eos/project/s/siw-ecal/TB2021-11/calibration/pedestals/Pedestal_method2_3GeVMIPscan_highgain.txt",
+    mip_calibration_file="/eos/project/s/siw-ecal/TB2021-11/calibration/mip_calib/MIP_3GeVMIPscan_highgain_method2.txt",
+    pedestals_lg_file="/eos/project/s/siw-ecal/TB2021-11/calibration/pedestals/Pedestal_method2_3GeVMIPscan_lowgain.txt",
+    mip_calibration_lg_file="/eos/project/s/siw-ecal/TB2021-11/calibration/mip_calib/MIP_3GeVMIPscan_lowgain_method2.txt",
+    masked_file="/eos/project/s/siw-ecal/TB2021-11/calibration/masked/masked_channels_3GeVMIPscan_run_050043.txt",
 )
 
 

@@ -1,6 +1,6 @@
 # These variables most likely will have to be changed in your run.
-RUN=run_050016_10192021_21h49min_Ascii
-COMMISSIONING_TAG=PROTO15_run_050016
+RUN=3GeVMIPscan_run_050043
+COMMISSIONING_TAG=3GeVMIPscan_highgain_method2
 WOLFRAM_CONFIG=0
 SLABS=0 1 2 3 4 5 6 7 8 9 10 11 12 13 14
 # COBS=1 11 5 8
@@ -8,13 +8,19 @@ COBS=
 MAX_ENTRIES_BUILD=-1
 
 # Depending on your setup, you might have to change these as well.
-RAW_DATA_DIR=/eos/project/s/siw-ecal/TB2021-11/commissioning/data/run_050XXX/${RUN}
+# RAW_DATA_DIR=/eos/project/s/siw-ecal/TB2021-11/commissioning/data/run_050XXX/${RUN}
+RAW_DATA_DIR=/eos/project/s/siw-ecal/TB2021-11/beamData/rootfiles/3GeVMIPscan/${RUN}
 # COMMISSIONING_FOLDER=/eos/project/s/siw-ecal/TB2021-11/commissioning/results_cosmics
-COMMISSIONING_FOLDER=${PWD}
+COMMISSIONING_FOLDER=/eos/project/s/siw-ecal/TB2021-11/calibration
+# COMMISSIONING_FOLDER=${PWD}
 
-PEDESTALS=${COMMISSIONING_FOLDER}/pedestals/pedestal_${COMMISSIONING_TAG}.txt
-MIP_CALIB=${COMMISSIONING_FOLDER}/mip_calib/MIP_${COMMISSIONING_TAG}.txt
-MASKED=${COMMISSIONING_FOLDER}/masked/masked_${COMMISSIONING_TAG}.txt
+# PEDESTALS=${COMMISSIONING_FOLDER}/pedestals/pedestal_${COMMISSIONING_TAG}.txt
+# MIP_CALIB=${COMMISSIONING_FOLDER}/mip_calib/MIP_${COMMISSIONING_TAG}.txt
+# MASKED=${COMMISSIONING_FOLDER}/masked/masked_${COMMISSIONING_TAG}.txt
+
+PEDESTALS=${COMMISSIONING_FOLDER}/pedestals/Pedestal_method2_3GeVMIPscan_highgain.txt
+MIP_CALIB=${COMMISSIONING_FOLDER}/mip_calib/MIP_3GeVMIPscan_highgain_method2.txt
+MASKED=${COMMISSIONING_FOLDER}/masked/masked_channels_3GeVMIPscan_run_050043.txt
 
 # There should be no need to change any of the code below.
 CONVERTED_DIR=${PWD}/converter_SLB/convertedfiles/${RUN}
