@@ -3,7 +3,7 @@ import numpy as np
 # import matplotlib.pyplot as plt
 import ROOT
 
-reader = csv.reader(open("fev11_cob_chip_channel_x_y_mapping.txt"), delimiter=" ")
+reader = csv.reader(open("backup/fev11_cob_chip_channel_x_y_mapping.txt"), delimiter=" ")
 writer = csv.writer(open('cob_tmp2.txt', 'w'), delimiter=" ")
 
 chip=-1
@@ -78,7 +78,7 @@ for ix, iy in np.ndindex(channel_13.shape):
 	mapxy_15_rot.Fill(cx2,cy2,ch2)
 
 
-reader = csv.reader(open("fev11_cob_chip_channel_x_y_mapping.txt"), delimiter=" ")
+reader = csv.reader(open("backup/fev11_cob_chip_channel_x_y_mapping.txt"), delimiter=" ")
 
 for i, line in enumerate(reader):
 
