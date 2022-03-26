@@ -402,7 +402,7 @@ int DecodedSLBAnalysis::NSlabsAnalysisNoise(TString outputname="", int gain=1, i
       for(int ichip=0; ichip<16; ichip++) {
         for(int isca=0; isca<15; isca++) {
           if(sca_test<15 && isca!=sca_test) continue;
-	  //if(badbcid[ilayer][ichip][isca]!=0) continue;
+	  if(bcid[ilayer][ichip][isca]<0) continue;
      	  for(int j=0; j<64; j++) {
 	    if(gain==1 && gain_hit_high[ilayer][ichip][isca][j]==0 ) h_ped.at(ilayer).at(ichip).at(j)->Fill(charge_hiGain[ilayer][ichip][isca][j]);
 	    if(gain==0 && gain_hit_low[ilayer][ichip][isca][j]==0 ) h_ped.at(ilayer).at(ichip).at(j)->Fill(charge_lowGain[ilayer][ichip][isca][j]);
@@ -416,7 +416,7 @@ int DecodedSLBAnalysis::NSlabsAnalysisNoise(TString outputname="", int gain=1, i
   for(int ilayer=0; ilayer<n_slboards; ilayer++) {
     for(int ichip=0; ichip<16; ichip++) {
       for(int ichn=0; ichn<64; ichn++) {
-	if(h_ped.at(ilayer).at(ichip).at(ichn)->GetEntries()>100) {
+	if(h_ped.at(ilayer).at(ichip).at(ichn)->GetEntries()>50) {
 	  h_ped.at(ilayer).at(ichip).at(ichn)->GetXaxis()->SetRangeUser(h_ped.at(ilayer).at(ichip).at(ichn)->GetMean()-20,h_ped.at(ilayer).at(ichip).at(ichn)->GetMean()+20);
 	  ped_value.at(ilayer).at(ichip).at(ichn)=h_ped.at(ilayer).at(ichip).at(ichn)->GetMean();
 	} else ped_value.at(ilayer).at(ichip).at(ichn)=0;
@@ -446,6 +446,7 @@ for (Long64_t jentry=0; jentry<nentries;jentry++) {
      for(int isca=0; isca<15; isca++) {
        if(sca_test<15 && isca!=sca_test) continue;
 	  //	  if(isca>0) if(badbcid[ilayer][ichip][isca]-) continue;
+          if(bcid[ilayer][ichip][isca]<0) continue;
 
        for(int ichn=0; ichn<64; ichn++) {                   
          if(ped_value.at(ilayer).at(ichip).at(ichn)<100 || gain_hit_high[ilayer][ichip][isca][ichn]==1 ) continue;

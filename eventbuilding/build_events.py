@@ -56,13 +56,19 @@ class BCIDHandler:
         self._min_slabs_hit = min_slabs_hit
 
 
-    def _apply_overflow_correction(self, arr):
+    def _calculate_overflow_correction(self, arr):
         """"Within a chips memory, the BCID must increase. A drop indicates overflow."""
         # assert np.max(arr) < self._N.bcid_overflow
         n_memory_cycles = np.cumsum(arr[:,1:] - arr[:,:-1] < 0, axis=1)
         is_filled = arr[:,1:] != self._N.bcid_bad_value
-        arr[:,1:] = arr[:,1:] + self._N.bcid_overflow * n_memory_cycles * is_filled
-        return arr
+        overflown_bcids = np.copy(arr)
+        overflown_bcids[:,1:] = arr[:,1:] + self._N.bcid_overflow * n_memory_cycles * is_filled
+        bcid_to_overflow_adjusted = {}
+        unique_overflow = np.unique(overflown_bcids)
+        unique_overflow = unique_overflow[unique_overflow >= self._N.bcid_overflow]
+        for of_bcid in np.unique(overflown_bcids):
+            bcid_to_overflow_adjusted[of_bcid % self._N.bcid_overflow] = of_bcid
+        return overflown_bcids, bcid_to_overflow_adjusted
 
 
     def _is_retrigger(self, arr):
@@ -87,7 +93,6 @@ class BCIDHandler:
             np.any(raw_bcids != self._N.bcid_bad_value, axis=1)
         )[0]
         bcids = np.copy(raw_bcids[chip_ids])
-        bcids = self._apply_overflow_correction(bcids)
         bcids[:,1:][self._is_retrigger(bcids)] = self._N.bcid_bad_value
         bcids[bcids < self._N.bcid_skip_noisy_acquisition_start] = self._N.bcid_bad_value
         for drop_bcid in self._N.bcid_drop:
@@ -129,40 +134,51 @@ class BCIDHandler:
             slabs_hit = pos // (self._N.n_chips * self._N.n_scas)
             if len(np.unique(slabs_hit)) >= self._min_slabs_hit:
                 pos_per_bcid[k] = pos
-        return pos_per_bcid, bcid_before_merge
+        return pos_per_bcid, bcid_before_merge, bcid_start_stop
 
 
     def load_spill(self, spill_entry):
         """False if the current spill is empty."""
         chip_ids, bcids = self._get_bcids(spill_entry.bcid)
-        self.bcid_first_sca_full = self._find_bcid_filling_last_sca(bcids)
-
-        self.pos_per_bcid, self._bcid_before_merge = \
+        overflown_bcids, self.bcid_to_overflow_adjusted = \
+            self._calculate_overflow_correction(bcids)
+        self.bcid_first_sca_full = self._find_bcid_filling_last_sca(overflown_bcids)
+        self.pos_per_bcid, self._bcid_before_merge, bcid_start_stop = \
             self._get_array_positions_per_bcid(chip_ids, bcids)
-        self.spill_bcids = sorted(self.pos_per_bcid.keys())
+        self.spill_bcids_overflown = []
+        for start_bcid in self.pos_per_bcid.keys():
+            n_memory_cycles = max([
+                self.bcid_to_overflow_adjusted.get(b, b)
+                for b in range(start_bcid, bcid_start_stop[start_bcid] + 1)
+            ]) // self._N.bcid_overflow
+            _overflown = start_bcid + n_memory_cycles * self._N.bcid_overflow
+            self.spill_bcids_overflown.append(_overflown)
+        self.spill_bcids_overflown = sorted(self.spill_bcids_overflown)
         return len(self.pos_per_bcid) > 0
 
 
     def yield_from_spill(self):
-        for bcid in self.spill_bcids:
+        for overflown_bcid in self.spill_bcids_overflown:
+            bcid = overflown_bcid % self._N.bcid_overflow
             before_merge = self._bcid_before_merge[bcid]
+            plus_overflow = (overflown_bcid // self._N.bcid_overflow) * self._N.bcid_overflow
             for i, pos in enumerate(self.pos_per_bcid[bcid]):
-                yield pos, bcid, before_merge[i]
+                yield pos, bcid + plus_overflow, before_merge[i] + plus_overflow
 
 
-    def previous_bcid(self, bcid):
-        i_bcid = self.spill_bcids.index(bcid)
+    def previous_bcid(self, overflown_bcid):
+        i_bcid = self.spill_bcids_overflown.index(overflown_bcid)
         if i_bcid == 0:
             return -1
         else:
-            return self.spill_bcids[i_bcid - 1]
+            return self.spill_bcids_overflown[i_bcid - 1]
 
-    def next_bcid(self, bcid):
-        i_bcid = self.spill_bcids.index(bcid)
-        if i_bcid == len(self.spill_bcids) - 1:
+    def next_bcid(self, overflown_bcid):
+        i_bcid = self.spill_bcids_overflown.index(overflown_bcid)
+        if i_bcid == len(self.spill_bcids_overflown) - 1:
             return -1
         else:
-            return self.spill_bcids[i_bcid + 1]
+            return self.spill_bcids_overflown[i_bcid + 1]
 
 
 def get_hits_per_event(entry, bcid_handler, ecal_config):
@@ -199,7 +215,7 @@ def get_hits_per_event(entry, bcid_handler, ecal_config):
 
         if bcid not in event:
             event[bcid] = collections.defaultdict(list)
-        slab = entry.slot[(i // n_scas // n_chips)]
+        slab = entry.slboard_id[(i // n_scas // n_chips)]
         slab_id = ecal_config._N.slabs.index(slab)
         chip = entry.chipid[i // n_scas]
         sca = i % n_scas
@@ -262,6 +278,7 @@ class BuildEvents:
         # "event info":
             "event/I",
             "spill/I",
+            "cycle/I",
             "bcid/I",
             "bcid_first_sca_full/I",
             "bcid_merge_end/I",
@@ -312,7 +329,7 @@ class BuildEvents:
         out_file_name=None,
         commissioning_folder=None,
         min_slabs_hit=4,
-        cob_positions_string="",
+        asu_version="",
         ecal_numbers=None,  # Not provided in CLI. Mainly useful for debugging/changing.
         no_zero_suppress=False,
         no_lg=False,
@@ -327,17 +344,17 @@ class BuildEvents:
         self.max_entries = max_entries
         self.out_file_name = out_file_name
         self.min_slabs_hit = min_slabs_hit
+        self._previous_cycle = 0
         self.event_counter = 0
 
         self.redo_config = redo_config
         self.in_tree = self._get_tree(file_name)
         slabs = self._get_slabs(self.in_tree)
-        cob_slabs = set(map(int, filter(None, cob_positions_string.split(" "))))
         if ecal_numbers is None:
-           ecal_numbers = EcalNumbers(slabs=slabs, cob_slabs=cob_slabs)
+           ecal_numbers = EcalNumbers(slabs=slabs, asu_version=asu_version)
         else:
             assert ecal_numbers.slabs == slabs
-            assert ecal_numbers.cob_slabs == cob_slabs
+            assert ecal_numbers.asu_version == asu_version
 
         self._no_progress_info = no_progress_info
         self._id_dat = id_dat
@@ -369,7 +386,7 @@ class BuildEvents:
     def _get_slabs(self, tree):
         if self.redo_config:
             return self._get_slabs_from_buildfile()
-        tree.Draw("slot >> slot_hist", "", "goff")
+        tree.Draw("slboard_id >> slot_hist", "", "goff")
         hist = rt.gDirectory.Get("slot_hist")
         slabs = []
         for i in range(1, hist.GetNbinsX() + 1):  # 0 is underflow bin.
@@ -568,9 +585,6 @@ class BuildEvents:
                 val = self._id_dat
             elif branch_name == "id_run" and self._id_run != -1:
                 val = self._id_run
-            elif branch_name == "event":
-                self.event_counter += 1
-                val = self.event_counter
             else:
                 val = getattr(event, branch_name)
             self.out_arrays[branch_name][0] = val
@@ -596,8 +610,13 @@ class BuildEvents:
                 # This check is not redundant: here we filter out cases were all
                 # channels in a chip/slab had isHit == False.
                 continue
-
-            self.event_counter += 1
+            cycle = entry.acqNumber
+            if self._previous_cycle < cycle:
+                self.event_counter = 0
+                self._previous_cycle = cycle
+            else:
+                self.event_counter += 1
+            b["cycle"][0] = cycle
             b["event"][0] = self.event_counter
             b["bcid"][0] = bcid
             b["bcid_first_sca_full"][0] = bcid_handler.bcid_first_sca_full
@@ -635,6 +654,7 @@ class BuildEvents:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Build an event-level rootfile (smaller) from the raw rootfile.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("file_name", help="The raw rootfile from converter_SLB.")
     parser.add_argument("-n", "--max_entries", default=-1, type=int)
@@ -642,10 +662,12 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--out_file_name", default=None)
     parser.add_argument("-c", "--commissioning_folder", default=None)
     parser.add_argument("-s", "--min_slabs_hit", default=4, type=int)
-    parser.add_argument("--cob_positions_string", default="")
+    _help = "For each layer, one of 10,11,12,13,COB. Comma seperated list. "
+    _help += "When left empty, all layers are assumed to be 12 (FEV12)."
+    parser.add_argument("-a", "--asu_version", default="", help=_help)
     parser.add_argument("--no_zero_suppress", action="store_true", help="Store all channels on hit chip.")
     parser.add_argument("--no_lg", action="store_true", help="Ignore low gain.")
-    _help = _help="Do not (re)-build the events but only change the configuration options. Then file_name should be a build.root file already."
+    _help ="Do not (re)-build the events but only change the configuration options. Then file_name should be a build.root file already."
     parser.add_argument("--redo_config", action="store_true", help=_help)
     _help = "Less verbose output, especially for batch processing."
     parser.add_argument("--no_progress_info", action="store_true", help=_help)
