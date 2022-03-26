@@ -401,7 +401,11 @@ void SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
   bool initfilefound=false;
 
   cout<<" Read File "<<inputFileName<<endl;
- 
+
+  int cycleswithdata=0;
+  int totalcycles=0;
+  int initialcycle=0;
+
   while(fin.is_open()) {
  
       if(_debug) std::cout<<" hex:"<<hex<<dataResult<<"  dec:"<<dec<<dataResult<<std::endl;
@@ -511,10 +515,13 @@ void SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
 	  
 	  // FILL trees
 	  if(_acqNumber==0) treeInit(zerosupression);
+	  if(_acqNumber==-1 && cycleID>0) initialcycle=cycleID;
 	  if(_acqNumber>0 && _acqNumber!=cycleID) {
 	    if(getbadbcid_bool==true) GetBadBCID();
+	    totalcycles=_acqNumber-initialcycle;
 	    tree->Fill();
 	    treeInit(zerosupression);
+	    cycleswithdata++;
 	  }
 	  _acqNumber=cycleID;
 	  _n_slboards=SLBDEPTH;
@@ -563,12 +570,11 @@ void SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
       trailerWord=0;
       if(initfilefound==true)
 	if(!fin.read((char *)&dataResult, sizeof(dataResult))) break;
-
-
       //}// no eudaq
 
       // fin.read((char *)&dataResult, sizeof(dataResult));
   }
+  cout<<" ## END OF SLBrawROOT.cc converter : file: "<<inputFileName<<" TOTAL cycles:"<<totalcycles<<" cycles with data:"<<cycleswithdata<<endl;
 
   fout->cd(); 
   fout->Write(0);

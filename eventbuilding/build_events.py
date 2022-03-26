@@ -278,6 +278,7 @@ class BuildEvents:
         # "event info":
             "event/I",
             "spill/I",
+            "cycle/I",
             "bcid/I",
             "bcid_first_sca_full/I",
             "bcid_merge_end/I",
@@ -343,6 +344,7 @@ class BuildEvents:
         self.max_entries = max_entries
         self.out_file_name = out_file_name
         self.min_slabs_hit = min_slabs_hit
+        self._previous_cycle = 0
         self.event_counter = 0
 
         self.redo_config = redo_config
@@ -583,9 +585,6 @@ class BuildEvents:
                 val = self._id_dat
             elif branch_name == "id_run" and self._id_run != -1:
                 val = self._id_run
-            elif branch_name == "event":
-                self.event_counter += 1
-                val = self.event_counter
             else:
                 val = getattr(event, branch_name)
             self.out_arrays[branch_name][0] = val
@@ -611,8 +610,13 @@ class BuildEvents:
                 # This check is not redundant: here we filter out cases were all
                 # channels in a chip/slab had isHit == False.
                 continue
-
-            self.event_counter += 1
+            cycle = entry.acqNumber
+            if self._previous_cycle < cycle:
+                self.event_counter = 0
+                self._previous_cycle = cycle
+            else:
+                self.event_counter += 1
+            b["cycle"][0] = cycle
             b["event"][0] = self.event_counter
             b["bcid"][0] = bcid
             b["bcid_first_sca_full"][0] = bcid_handler.bcid_first_sca_full
