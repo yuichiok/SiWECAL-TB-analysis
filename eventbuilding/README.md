@@ -35,3 +35,13 @@ before continuing to the next step.
 - Build events from the raw data using calibration information.
 - Apply a BCID merging of nearby, good BCIDs.
 - Change the configuration at any time through the `--redo-config` mode.
+
+## Dictionary
+
+- `cycle`: `acqNumber` in converted.root files. Counts the acquisitions done by the DAQ.
+- `spill`: Only counts those DAQ cycles where data was written.
+  If the event building is performed on parts of the run
+  (multiprocessing in [SiWECAL-TB-monitoring](https://github.com/SiWECAL-TestBeam/SiWECAL-TB-monitoring)),
+  then this counter will restart on each new run.
+- `event`: Event counter within a cycle.
+  (_new_. Previously, the counter was not reset for the next cycle)
