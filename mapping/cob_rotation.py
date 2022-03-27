@@ -4,7 +4,6 @@ import numpy as np
 import ROOT
 
 reader = csv.reader(open("backup/fev11_cob_chip_channel_x_y_mapping.txt"), delimiter=" ")
-writer = csv.writer(open('cob_tmp2.txt', 'w'), delimiter=" ")
 
 chip=-1
 x0=9999
@@ -57,14 +56,8 @@ for ix, iy in np.ndindex(channel_13.shape):
 	ch = int(mapxy_15.GetBinContent(ix+1,iy+1))
 	channel_15[ix,iy] = ch
 
-print(channel_13)
-print(channel_15)
-
 channel_13_rot180 = np.rot90(channel_13,2)
 channel_15_rot180 = np.rot90(channel_15,2)
-
-print(channel_13_rot180)
-print(channel_15_rot180)
 
 for ix, iy in np.ndindex(channel_13.shape):
 	cx = mapxy_13_rot.GetXaxis().GetBinCenter(ix+1)
@@ -80,103 +73,83 @@ for ix, iy in np.ndindex(channel_13.shape):
 
 reader = csv.reader(open("backup/fev11_cob_chip_channel_x_y_mapping.txt"), delimiter=" ")
 
-for i, line in enumerate(reader):
+# writer_tmp = csv.writer(open('cob_tmp1.txt', 'w'), delimiter=" ")
+with open('cob_tmp1.txt', 'w') as outfile1:
 
-	if i == 0:
-		writer.writerow(line)
-	else:
-		input_string = [None]*6
+	writer_tmp = csv.writer(outfile1, delimiter=" ")
 
-		chip = int(line[0])
-		x0   = float(line[1])
-		y0   = float(line[2])
-		chnl = int(line[3])
-		x    = float(line[4])
-		y    = float(line[5])
+	for i, line in enumerate(reader):
 
-		input_string[0] = str(chip)
-		input_string[1] = str(x0)
-		input_string[2] = str(y0)
-		# input_string[3] = str(channel)
-
-		if chip == 13:
-			binx = mapxy_13_rot.GetXaxis().FindBin(-x)
-			biny = mapxy_13_rot.GetYaxis().FindBin(-y)
-			ch = int(mapxy_13_rot.GetBinContent(binx,biny))
-			input_string[3] = str(ch)
-		elif chip == 15:
-			binx = mapxy_15_rot.GetXaxis().FindBin(-x)
-			biny = mapxy_15_rot.GetYaxis().FindBin(-y)
-			ch = int(mapxy_15_rot.GetBinContent(binx,biny))
-			print(binx,biny,ch)
-			input_string[3] = str(ch)
+		if i == 0:
+			writer_tmp.writerow(line)
 		else:
-			input_string[3] = str(chnl)
+			input_string = [None]*6
 
-		input_string[4] = str(x)
-		input_string[5] = str(y)
+			chip = int(line[0])
+			x0   = float(line[1])
+			y0   = float(line[2])
+			chnl = int(line[3])
+			x    = float(line[4])
+			y    = float(line[5])
 
-		writer.writerow(input_string)
+			input_string[0] = str(chip).zfill(2)
+			input_string[1] = str(x0)
+			input_string[2] = str(y0)
+
+			if chip == 13:
+				binx = mapxy_13_rot.GetXaxis().FindBin(-x)
+				biny = mapxy_13_rot.GetYaxis().FindBin(-y)
+				ch = int(mapxy_13_rot.GetBinContent(binx,biny))
+				input_string[3] = str(ch).zfill(2)
+			elif chip == 15:
+				binx = mapxy_15_rot.GetXaxis().FindBin(-x)
+				biny = mapxy_15_rot.GetYaxis().FindBin(-y)
+				ch = int(mapxy_15_rot.GetBinContent(binx,biny))
+				input_string[3] = str(ch).zfill(2)
+			else:
+				input_string[3] = str(chnl).zfill(2)
+
+			input_string[4] = str(x)
+			input_string[5] = str(y)
+
+			writer_tmp.writerow(input_string)
 
 
+txt = open("cob_tmp1.txt").readlines()
+# open("cob_tmp2.txt","w").write("\n".join(sorted(txt.split("\n"))))
+with open("cob_tmp2.txt","w") as f:
+	f.write("".join(sorted(txt)))
 
+reader = csv.reader(open("cob_tmp2.txt"), delimiter=" ")
+# writer = csv.writer(open('cob_tmp3.txt', 'w'), delimiter=" ")
 
-# c0 = ROOT.TCanvas("c0","c0",500,500)
-# mapxy_chip.Draw("col,text")
-# c0.Print("plots/map_chip.png")
+with open('cob_tmp3.txt', 'w') as outfile2:
 
-# c1 = ROOT.TCanvas("c1","c1",500,500)
-# mapxy_13.Draw("col,text")
-# c1.Print("plots/map_13.png")
+	writer = csv.writer(outfile2, delimiter=" ")
 
-# c2 = ROOT.TCanvas("c2","c2",500,500)
-# mapxy_15.Draw("col,text")
-# c2.Print("plots/map_15.png")
+	line0 = "chip x0 y0 channel x y"
+	writer.writerow(line0.split(" "))
 
-# c3 = ROOT.TCanvas("c3","c3",500,500)
-# mapxy_13_rot.Draw("col,text")
-# c3.Print("plots/map_rot_13.png")
+	for i, line in enumerate(reader):
 
-# c4 = ROOT.TCanvas("c4","c4",500,500)
-# mapxy_15_rot.Draw("col,text")
-# c4.Print("plots/map_rot_15.png")
+		if line[0]=='chip':
+			continue
+		else:
+			input_string = [None]*6
 
+			# print(line)
+			chip = int(line[0])
+			x0   = float(line[1])
+			y0   = float(line[2])
+			chnl = int(line[3])
+			x    = float(line[4])
+			y    = float(line[5])
 
+			input_string[0] = str(int(chip))
+			input_string[1] = str(x0)
+			input_string[2] = str(y0)
+			input_string[3] = str(int(chnl))
+			input_string[4] = str(x)
+			input_string[5] = str(y)
 
-
-'''
-for i, line in enumerate(reader):
-
-	input_string = [None]*6
-	
-	if i < 1:
-		continue
-
-	chip    = int(line[0])
-	x0      = float(line[1])
-	y0      = float(line[2])
-	# channel = int(line[3])
-	x       = float(line[4])
-	y       = float(line[5])
-
-	if chip == 11:
-		x_tmp[channel] = x
-		y_tmp[channel] = y
-
-	if chip == 13:
-		# print(x_tmp[channel])
-		x = x_tmp[channel] + 46.1
-		# x = -x
-		x = "{:.1f}".format(x)
-		y = y_tmp[channel]
-
-	input_string[0] = str(chip)
-	input_string[1] = str(x0)
-	input_string[2] = str(y0)
-	input_string[3] = str(channel)
-	input_string[4] = str(x)
-	input_string[5] = str(y)
-
-	writer.writerow(input_string)
-'''
-
+			writer.writerow(input_string)
