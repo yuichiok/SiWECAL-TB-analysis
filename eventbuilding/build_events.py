@@ -6,7 +6,7 @@ import sys
 
 import numpy as np
 import ROOT as rt
-from help_tools import *
+from ecal_config import *
 
 import bcid_handling
 import parse_config
