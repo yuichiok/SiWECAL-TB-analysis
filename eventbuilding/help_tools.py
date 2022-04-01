@@ -1,68 +1,12 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import os
 import sys
 
 import numpy as np
 
 
-asu_types = ["10", "11", "12" , "13", "COB"]
-
-
-class EcalNumbers:
-    def __init__(self, slabs=None, asu_version=None):
-        self.n_chips = 16
-        self.n_scas = 15
-        self.n_channels = 64
-        if slabs is None:
-            self.slabs = []
-        else:
-            self.slabs = sorted(set(slabs))
-        if asu_version is None or asu_version == "":
-            asu_version = ["12" for s in self.slabs]
-        elif type(asu_version) == str:
-            asu_version = asu_version.split(",")
-        self.asu_version = [asu_v.strip() for asu_v in asu_version]
-        self.n_slabs = len(self.slabs)
-
-        self.pedestal_min_average = 200
-        self.pedestal_min_scas = 3
-        self.pedestal_min_value = 10
-        self.mip_cutoff = 0.5
-        self.mip_malfunctioning_chip = 1000
-        self.validate_ecal_numbers(self)
-
-
-    @classmethod
-    def validate_ecal_numbers(cls, n):
-        assert type(n.n_chips) == int
-        assert type(n.n_scas) == int
-        assert type(n.n_channels) == int
-        assert type(n.n_slabs) == int
-        assert len(n.slabs) == n.n_slabs
-        assert all((type(i_slab) == int for i_slab in n.slabs))
-        assert len(n.asu_version) == len(n.slabs), n.asu_version + n.slabs
-        assert all((asu_v in asu_types for asu_v in n.asu_version)), n.asu_version
-
-        assert type(n.pedestal_min_average) == int
-        assert type(n.pedestal_min_scas) == int
-        assert type(n.pedestal_min_value) == int
-        assert type(n.mip_cutoff) == float and n.mip_cutoff <= 1
-        assert type(n.mip_malfunctioning_chip) in [int, float]  and n.mip_malfunctioning_chip != 0
-
-
 class EventBuildingException(Exception):
     pass
-
-dummy_config = dict(
-    mapping_file="mapping/fev10_chip_channel_x_y_mapping.txt",
-    mapping_file_cob="mapping/fev11_cob_chip_channel_x_y_mapping.txt",
-    pedestals_file="pedestals/pedestal_PROTO15_dummy.txt",
-    mip_calibration_file="mip_calib/MIP_PROTO15_dummy.txt",
-    pedestals_lg_file="pedestals/pedestal_PROTO15_dummy_lg.txt",
-    mip_calibration_lg_file="mip_calib/MIP_PROTO15_dummy_lg.txt",
-    masked_file="masked/masked_PROTO15_dummy.txt",
-)
 
 
 def aligned_path(text, path):
@@ -75,20 +19,30 @@ class EcalConfig:
 
     def __init__(
         self,
-        calibration_files=dummy_config,
-        numbers=None,
-        zero_suppress=True,
+        calibration_files,
+        slabs,
+        asu_versions,
+        geometry_config,
+        commissioning_config,
         no_lg=False,
         error_on_missing_config=True,
         verbose=False,
     ):
         self._verbose = verbose
         self._error_on_missing_config = error_on_missing_config
-        if numbers:
-            EcalNumbers.validate_ecal_numbers(numbers)  # Catch problems early on.
-            self._N = numbers
-        else:
-            self._N = EcalNumbers()
+
+        self._slabs = sorted(set(slabs))
+        self._n_slabs = len(self._slabs)
+        self._n_chips = int(geometry_config["n_chips"])
+        self._n_scas = int(geometry_config["n_scas"])
+        self._n_channels = int(geometry_config["n_channels"])
+
+        _asu_versions = asu_versions.split(",")
+        self._asu_versions = [asu_v.strip() for asu_v in _asu_versions]
+        assert len(self._asu_versions) == len(self._slabs), self._asu_versions + self._slabs
+        self._delta_x_fev13 = float(geometry_config["delta_x_fev13"])
+
+        self._commissioning_config = commissioning_config
 
         self.x, self.y = self._get_x_y(
             calibration_files["mapping_file"],
@@ -104,7 +58,6 @@ class EcalConfig:
             self.pedestal_map, self.mip_map, self.masked_map
         )
 
-        self.zero_suppress = zero_suppress
         self.no_lg = no_lg
         if self.no_lg:
             print("As requested with --no_lg, low gain will not be calibrated.")
@@ -129,20 +82,20 @@ class EcalConfig:
         _x_cob, _y_cob = self._read_mapping_xy(mapping_file_cob)
 
         xs, ys = [], []
-        for slab in self._N.slabs:
-            asu_version = self._N.asu_version[self._N.slabs.index(slab)]
-            if asu_version == "COB":
+        for slab in self._slabs:
+            asu_versions = self._asu_versions[self._slabs.index(slab)]
+            if asu_versions == "COB":
                 _xi = _x_cob
                 _yi = _y_cob
-            elif asu_version in ["10", "11", "12", "13"]:
+            elif asu_versions in ["10", "11", "12", "13"]:
                 _xi = _x
                 _yi = _y
             else:
                 raise EventBuildingException(
-                    "Asu version not recognized: " + str(asu_version)
+                    "Asu version not recognized: " + str(asu_versions)
                 )
-            if asu_version == "13":
-                _xi = _xi + 60
+            if asu_versions == "13":
+                _xi = _xi + self._delta_x_fev13
             xs.append(_xi)
             ys.append(_yi)
         x = np.stack(xs)
@@ -154,9 +107,9 @@ class EcalConfig:
     def _get_z(self):
         """15 mm distance between slabs in the prototype."""
         def z_val_layer(slab):
-            return np.full((self._N.n_chips, self._N.n_channels), 15 * slab)
+            return np.full((self._n_chips, self._n_channels), 15 * slab)
 
-        return np.stack([z_val_layer(slab) for slab in self._N.slabs])
+        return np.stack([z_val_layer(slab) for slab in self._slabs])
 
 
     def _get_lines(self, file_name):
@@ -184,8 +137,8 @@ class EcalConfig:
             pos = (float(v[i_x]), float(v[i_y]))
             channel_map[(int(v[i_chip]), int(v[i_channel]))] = pos
 
-        x = np.empty((self._N.n_chips, self._N.n_channels))
-        y = np.empty((self._N.n_chips, self._N.n_channels))
+        x = np.empty((self._n_chips, self._n_channels))
+        y = np.empty((self._n_chips, self._n_channels))
         assert len(channel_map) == x.size
         for (chip, channel), (x_i, y_i) in channel_map.items():
             x[chip][channel] = x_i
@@ -195,10 +148,10 @@ class EcalConfig:
 
     def _read_pedestals(self, file_name):
         ped_map = np.zeros((
-            self._N.n_slabs,
-            self._N.n_chips,
-            self._N.n_channels,
-            self._N.n_scas,
+            self._n_slabs,
+            self._n_chips,
+            self._n_channels,
+            self._n_scas,
         ))
         print(aligned_path("Reading pedestals from ", file_name))
         lines = self._get_lines(file_name)
@@ -221,7 +174,7 @@ class EcalConfig:
                 err_ped_val = float(v[4 + i_sca * n_entries_per_sca])
                 if err_ped_val < 0:
                     ped_val = 0
-                idx_slab = self._N.slabs.index(int(v[i_slab]))
+                idx_slab = self._slabs.index(int(v[i_slab]))
                 ped_map[idx_slab][int(v[i_chip])][int(v[i_channel])][i_sca] = ped_val
         if self._verbose:
             print("pedestal_map", ped_map)
@@ -230,9 +183,9 @@ class EcalConfig:
 
     def _read_mip_values(self, file_name):
         mip_map = np.ones((
-            self._N.n_slabs,
-            self._N.n_chips,
-            self._N.n_channels,
+            self._n_slabs,
+            self._n_chips,
+            self._n_channels,
         ))
         print(aligned_path("Reading MIP values from ", file_name))
         lines = self._get_lines(file_name)
@@ -251,7 +204,7 @@ class EcalConfig:
             mip_val = float(v[i_mpv])
             if float(v[i_error_mpv]) < 0:
                 mip_val = 0
-            idx_slab = self._N.slabs.index(int(v[i_slab]))
+            idx_slab = self._slabs.index(int(v[i_slab]))
             mip_map[idx_slab][int(v[i_chip])][int(v[i_channel])] = mip_val
         if self._verbose:
             print("mip_map", mip_map)
@@ -260,9 +213,9 @@ class EcalConfig:
 
     def _read_masked(self, file_name):
         masked_map = np.zeros((
-            self._N.n_slabs,
-            self._N.n_chips,
-            self._N.n_channels,
+            self._n_slabs,
+            self._n_chips,
+            self._n_channels,
         ), dtype=int)
         print(aligned_path("Reading masked channels from ", file_name))
         lines = self._get_lines(file_name)
@@ -277,8 +230,8 @@ class EcalConfig:
 
         for line in lines[1:]:
             v = line.split()
-            assert len(v) == self._N.n_channels + 2
-            idx_slab = self._N.slabs.index(int(v[0]))
+            assert len(v) == self._n_channels + 2
+            idx_slab = self._slabs.index(int(v[0]))
             chip = int(v[1])
             for channel, mask_val in enumerate(v[2:]):
                 masked_map[idx_slab][chip][channel] = mask_val
@@ -293,11 +246,14 @@ class EcalConfig:
         is_commissioned_map[masked_map == 1] = 0
 
         # Handle pedestals
-        sca_has_bad_pedestal = pedestal_map < self._N.pedestal_min_value
+        min_for_valid_pedestal = float(self._commissioning_config["pedestal_min_value"])
+        sca_has_bad_pedestal = pedestal_map < min_for_valid_pedestal
         if np.any(sca_has_bad_pedestal):
-            sca_is_used_for_average = pedestal_map > self._N.pedestal_min_average
+            val_min_av = float(self._commissioning_config["pedestal_min_average"])
+            n_scas_min = int(self._commissioning_config["pedestal_min_scas"])
+            sca_is_used_for_average = pedestal_map > val_min_av
             channel_can_provide_average = np.expand_dims(
-                sca_is_used_for_average.sum(axis=-1) >= self._N.pedestal_min_scas,
+                sca_is_used_for_average.sum(axis=-1) >= n_scas_min,
                 sca_is_used_for_average.ndim - 1,
             )
             pedestal_has_no_fix = np.logical_and(
@@ -324,11 +280,14 @@ class EcalConfig:
             print("corrected pedestal_map", pedestal_map)
 
         # Handle MIPs
-        has_bad_mip = mip_map < self._N.mip_cutoff
+        mip_cutoff = float(self._commissioning_config["mip_cutoff"])
+        assert mip_cutoff < 1
+        has_bad_mip = mip_map < mip_cutoff
         if np.any(has_bad_mip):
-            channel_is_used_for_average = mip_map >= self._N.mip_cutoff
+            mip_malfunctioning_chip = float(self._commissioning_config["mip_malfunctioning_chip"])
+            channel_is_used_for_average = mip_map >= mip_cutoff
             per_chip_average = channel_is_used_for_average.mean(axis=-1)
-            per_chip_average[per_chip_average == 0] = self._N.mip_malfunctioning_chip
+            per_chip_average[per_chip_average == 0] = mip_malfunctioning_chip
             mip_average_on_chip = np.empty_like(mip_map)
             mip_average_on_chip[:] = np.expand_dims(
                 per_chip_average,
@@ -357,5 +316,14 @@ def speed_warning_if_python2():
 
 
 if __name__ == "__main__":
-    numbers = EcalNumbers(slabs=np.arange(15).tolist())
-    EcalConfig(verbose=True, numbers=numbers)
+    import parse_config
+    parser = parse_config.create_cli_from_default_config()
+    slabs = np.arange(15).tolist()
+    EcalConfig(
+        parser["eventbuilding"],
+        slabs,
+        parser["eventbuilding"]["asu_versions"],
+        parser["geometry"],
+        parser["commissioning"],
+        verbose=True,
+    )

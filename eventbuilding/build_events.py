@@ -52,12 +52,12 @@ def get_tree_spills_no_progress_info(tree, max_entries):
         yield i, spill
 
 
-def get_hits_per_event(entry, bcid_handler, ecal_config):
+def get_hits_per_event(entry, bcid_handler, ecal_config, zero_suppress=True):
     event = {}
     bcid_merge_end = collections.defaultdict(int)
-    n_chips = ecal_config._N.n_chips
-    n_channels = ecal_config._N.n_channels
-    n_scas = ecal_config._N.n_scas
+    n_chips = ecal_config._n_chips
+    n_channels = ecal_config._n_channels
+    n_scas = ecal_config._n_scas
 
     # It is faster to fill the arrays once outside the loop.
     all_gain_hit = np.array(entry.gain_hit_high)
@@ -72,7 +72,7 @@ def get_hits_per_event(entry, bcid_handler, ecal_config):
             continue
         # gain_hit_high == gain_hit_low (up to tiny errors), confirmed by Stephane Callier.
         is_hit = np.array(gain_hit_high > 0)
-        if ecal_config.zero_suppress:
+        if zero_suppress:
             if is_hit.sum() == 0:
                 # It is not clear to me why chips with no hit-bit for any of their channels
                 # are ever written to memory, but the DAQ writes such lines.
@@ -87,7 +87,7 @@ def get_hits_per_event(entry, bcid_handler, ecal_config):
         if bcid not in event:
             event[bcid] = collections.defaultdict(list)
         slab = entry.slboard_id[(i // n_scas // n_chips)]
-        slab_id = ecal_config._N.slabs.index(slab)
+        slab_id = ecal_config._slabs.index(slab)
         chip = entry.chipid[i // n_scas]
         sca = i % n_scas
 
@@ -203,19 +203,13 @@ class BuildEvents:
         self.max_entries = int(eb_config["max_entries"])
         self.out_file_name = eb_config["build_path"]
         self.min_slabs_hit = int(eb_config["min_slabs_hit"])
+        self._zero_suppress = not eb_config.getboolean("no_zero_suppress")
         self._previous_cycle = -1
         self.event_counter = 0
 
         self.redo_config = eb_config.getboolean("redo_config")
         self.in_tree = self._get_tree(self.file_name)
         slabs = self._get_slabs(self.in_tree)
-        asu_version = eb_config["asu_version"]
-        ecal_numbers = None
-        if ecal_numbers is None:
-           ecal_numbers = EcalNumbers(slabs=slabs, asu_version=asu_version)
-        else:
-            assert ecal_numbers.slabs == slabs
-            assert ecal_numbers.asu_version == asu_version
 
         self._no_progress_info = eb_config.getboolean("no_progress_info")
         self._id_dat = int(eb_config["id_dat"])
@@ -223,9 +217,11 @@ class BuildEvents:
         speed_warning_if_python2()
         self.ecal_config = EcalConfig(
             calibration_files=eb_config,
-            numbers=ecal_numbers,
+            slabs=slabs,
+            asu_versions=eb_config["asu_versions"],
+            geometry_config = self._config_parser["geometry"],
+            commissioning_config = self._config_parser["commissioning"],
             no_lg=eb_config.getboolean("no_lg"),
-            zero_suppress=not eb_config.getboolean("no_zero_suppress"),
         )
 
     def _get_tree(self, file_name):
@@ -346,7 +342,7 @@ class BuildEvents:
 
 
     def _fill_w_config_hist(self):
-        slabs = self.ecal_config._N.slabs
+        slabs = self.ecal_config._slabs
         bin_centers = np.array(slabs, dtype="float64")
         bin_edge_candidates = np.concatenate([bin_centers - 0.5, bin_centers + 0.5])
         bin_edges = np.sort(np.unique(bin_edge_candidates))
@@ -380,29 +376,29 @@ class BuildEvents:
         # But at it is only run once (per config map), this should be ok.
         if len(config_map.shape) == 4:
             # There is no TH4. Instead, build a TH3 for each sca.
-            assert config_map.shape[3] == self.ecal_config._N.n_scas
+            assert config_map.shape[3] == self.ecal_config._n_scas
             for i in range(config_map.shape[3]):
                 new_name = name + "_sca{:02d}".format(i)
                 self._fill_config_map(config_map[:,:,:, i], new_name)
             return
         if len(config_map.shape) != 3:
             print("Warning: Storing of this config map is not implemented:", name)
-        assert config_map.shape[0] == self.ecal_config._N.n_slabs
-        assert config_map.shape[1] == self.ecal_config._N.n_chips
-        assert config_map.shape[2] == self.ecal_config._N.n_channels
+        assert config_map.shape[0] == self.ecal_config._n_slabs
+        assert config_map.shape[1] == self.ecal_config._n_chips
+        assert config_map.shape[2] == self.ecal_config._n_channels
         if config_map.dtype == int or config_map.dtype == bool:
             hist_fct = rt.TH3I
         else:
             hist_fct = rt.TH3F
         hist = hist_fct(
             name, name,
-            self.ecal_config._N.n_slabs, np.arange(-0.5, self.ecal_config._N.n_slabs),
-            self.ecal_config._N.n_chips, np.arange(-0.5, self.ecal_config._N.n_chips),
-            self.ecal_config._N.n_channels, np.arange(-0.5, self.ecal_config._N.n_channels),
+            self.ecal_config._n_slabs, np.arange(-0.5, self.ecal_config._n_slabs),
+            self.ecal_config._n_chips, np.arange(-0.5, self.ecal_config._n_chips),
+            self.ecal_config._n_channels, np.arange(-0.5, self.ecal_config._n_channels),
         )
-        for i_slab in range(self.ecal_config._N.n_slabs):
-            for i_chip in range(self.ecal_config._N.n_chips):
-                for i_channel in range(self.ecal_config._N.n_channels):
+        for i_slab in range(self.ecal_config._n_slabs):
+            for i_chip in range(self.ecal_config._n_chips):
+                for i_channel in range(self.ecal_config._n_channels):
                     hist.Fill(i_slab, i_chip, i_channel, config_map[i_slab, i_chip, i_channel])
         hist.Write()
 
@@ -458,7 +454,7 @@ class BuildEvents:
         )
         bcid_handler.load_spill(entry)
         hits_per_event, bcid_merge_end = get_hits_per_event(
-            entry, bcid_handler, self.ecal_config
+            entry, bcid_handler, self.ecal_config, self._zero_suppress
         )
 
         max_hits = int(self._config_parser["eventbuilding"]["max_hits_per_event"])
@@ -490,10 +486,10 @@ class BuildEvents:
 
             # count hits per slab/chan/chip
             b["nhit_slab"][0] = nhit_slab
-            tmp_for_unique = tmp_for_unique * self.ecal_config._N.n_chips + hits["chip"]
+            tmp_for_unique = tmp_for_unique * self.ecal_config._n_chips + hits["chip"]
             b["nhit_chip"][0] = np.unique(tmp_for_unique).size
             b["nhit_len"][0] = hits["isHit"].size
-            tmp_for_unique = tmp_for_unique * self.ecal_config._N.n_channels + hits["chan"]
+            tmp_for_unique = tmp_for_unique * self.ecal_config._n_channels + hits["chan"]
             b["nhit_chan"][0] = np.unique(tmp_for_unique[hits["isHit"]]).size
             b["sum_hg"][0] = hits["hg"][hits["isHit"]].sum()
             b["sum_energy"][0] = hits["energy"][hits["isHit"]].sum()
