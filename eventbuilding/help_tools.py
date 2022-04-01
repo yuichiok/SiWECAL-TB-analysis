@@ -107,14 +107,7 @@ class EcalConfig:
 
     def __init__(
         self,
-        mapping_file=dummy_config["mapping_file"],
-        mapping_file_cob=dummy_config["mapping_file_cob"],
-        pedestals_file=dummy_config["pedestals_file"],
-        mip_calibration_file=dummy_config["mip_calibration_file"],
-        pedestals_lg_file=dummy_config["pedestals_lg_file"],
-        mip_calibration_lg_file=dummy_config["mip_calibration_lg_file"],
-        masked_file=dummy_config["masked_file"],
-        commissioning_folder=None,
+        calibration_files=dummy_config,
         numbers=None,
         zero_suppress=True,
         no_lg=False,
@@ -123,25 +116,21 @@ class EcalConfig:
     ):
         self._verbose = verbose
         self._error_on_missing_config = error_on_missing_config
-        if commissioning_folder:
-            self._commissioning_folder = commissioning_folder
-        else:
-            # Resolves to the root folder of this repo
-            # Equivalent to ../ if called from within the eventbuilding folder.
-            event_building_folder = os.path.dirname(os.path.abspath(__file__))
-            self._commissioning_folder = os.path.dirname(event_building_folder)
         if numbers:
             EcalNumbers.validate_ecal_numbers(numbers)  # Catch problems early on.
             self._N = numbers
         else:
             self._N = EcalNumbers()
 
-        self.x, self.y = self._get_x_y(mapping_file, mapping_file_cob)
+        self.x, self.y = self._get_x_y(
+            calibration_files["mapping_file"],
+            calibration_files["mapping_file_cob"],
+        )
         self.z = self._get_z()
 
-        self.masked_map = self._read_masked(masked_file)
-        self.pedestal_map = self._read_pedestals(pedestals_file)
-        self.mip_map = self._read_mip_values(mip_calibration_file)
+        self.masked_map = self._read_masked(calibration_files["masked_file"])
+        self.pedestal_map = self._read_pedestals(calibration_files["pedestals_file"])
+        self.mip_map = self._read_mip_values(calibration_files["mip_calibration_file"])
 
         self.is_commissioned_map = self._handle_uncommissioned_positions(
             self.pedestal_map, self.mip_map, self.masked_map
@@ -153,8 +142,8 @@ class EcalConfig:
             print("As requested with --no_lg, low gain will not be calibrated.")
         else:
             try:
-                self.pedestal_lg_map = self._read_pedestals(pedestals_lg_file)
-                self.mip_lg_map = self._read_mip_values(mip_calibration_lg_file)
+                self.pedestal_lg_map = self._read_pedestals(calibration_files["pedestals_lg_file"])
+                self.mip_lg_map = self._read_mip_values(calibration_files["mip_calibration_lg_file"])
 
                 lg_is_commissioned = self._handle_uncommissioned_positions(
                     self.pedestal_lg_map, self.mip_lg_map, self.masked_map
@@ -170,7 +159,7 @@ class EcalConfig:
     def _get_x_y(self, mapping_file, mapping_file_cob):
         _x, _y = self._read_mapping_xy(mapping_file)
         _x_cob, _y_cob = self._read_mapping_xy(mapping_file_cob)
-        
+
         xs, ys = [], []
         for slab in self._N.slabs:
             asu_version = self._N.asu_version[self._N.slabs.index(slab)]
@@ -203,11 +192,6 @@ class EcalConfig:
 
 
     def _get_lines(self, file_name):
-        if not os.path.isabs(file_name):
-            file_name = os.path.join(self._commissioning_folder, file_name)
-        if not os.path.exists(file_name):
-            raise EventBuildingException("File does not exist: %s" %file_name)
-
         try:
             lines = open(file_name).readlines()
         except FileNotFoundError:

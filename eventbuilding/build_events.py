@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
-import argparse
 import collections
 import sys
 
 import numpy as np
 import ROOT as rt
 from help_tools import *
+
+import parse_config
 
 
 try:
@@ -323,49 +324,38 @@ class BuildEvents:
 
     def __init__(
         self,
-        file_name,
-        w_config=-1,
-        max_entries=-1,
-        out_file_name=None,
-        commissioning_folder=None,
-        min_slabs_hit=4,
-        asu_version="",
-        ecal_numbers=None,  # Not provided in CLI. Mainly useful for debugging/changing.
-        no_zero_suppress=False,
-        no_lg=False,
-        redo_config=False,
-        no_progress_info=False,
-        id_dat=-1,
-        id_run=-1,
-        **config_file_kws
+        config_parser,
     ):
-        self.file_name = file_name
-        self.w_config = w_config
-        self.max_entries = max_entries
-        self.out_file_name = out_file_name
-        self.min_slabs_hit = min_slabs_hit
-        self._previous_cycle = 0
+        self._config_parser = config_parser
+        eb_config = config_parser["eventbuilding"]
+        self.file_name = eb_config["converted_path"]
+        self.w_config = eb_config["w_config"]
+        self.max_entries = int(eb_config["max_entries"])
+        self.out_file_name = eb_config["build_path"]
+        self.min_slabs_hit = int(eb_config["min_slabs_hit"])
+        self._previous_cycle = -1
         self.event_counter = 0
 
-        self.redo_config = redo_config
-        self.in_tree = self._get_tree(file_name)
+        self.redo_config = eb_config.getboolean("redo_config")
+        self.in_tree = self._get_tree(self.file_name)
         slabs = self._get_slabs(self.in_tree)
+        asu_version = eb_config["asu_version"]
+        ecal_numbers = None
         if ecal_numbers is None:
            ecal_numbers = EcalNumbers(slabs=slabs, asu_version=asu_version)
         else:
             assert ecal_numbers.slabs == slabs
             assert ecal_numbers.asu_version == asu_version
 
-        self._no_progress_info = no_progress_info
-        self._id_dat = id_dat
-        self._id_run = id_run
+        self._no_progress_info = eb_config.getboolean("no_progress_info")
+        self._id_dat = int(eb_config["id_dat"])
+        self._id_run = int(eb_config["id_run"])
         speed_warning_if_python2()
         self.ecal_config = EcalConfig(
-            commissioning_folder=commissioning_folder,
+            calibration_files=eb_config,
             numbers=ecal_numbers,
-            no_lg=no_lg,
-            zero_suppress=not bool(no_zero_suppress),
-            **config_file_kws
+            no_lg=eb_config.getboolean("no_lg"),
+            zero_suppress=not eb_config.getboolean("no_zero_suppress"),
         )
 
     def _get_tree(self, file_name):
@@ -492,21 +482,18 @@ class BuildEvents:
         bin_edges = np.sort(np.unique(bin_edge_candidates))
 
         w_hist = rt.TH1F("w_in_front","w_in_front",len(bin_edges) - 1, bin_edges)
-        if self.w_config in self.ecal_config._N.w_config_options.keys():
-            abs_thick = self.ecal_config._N.w_config_options[self.w_config]
-        elif self.w_config == 0:
-            abs_thick = np.zeros_like(slabs)
+        if "," in self.w_config:
+            abs_thick = np.array(list(map(float, self.w_config.split(","))))
         else:
-            raise EventBuildingException("Not a valid W config:", self.w_config)
+            abs_thick = np.full_like(slabs, float(self.w_config))
         assert len(slabs) == len(abs_thick)
         for i in range(len(slabs)):
             w_hist.Fill(slabs[i], abs_thick[i])
+        w_hist.Write()
+        print("# W thickness [mm]:", abs_thick)
         # w_x0 = 1 / 3.5  # 0.56 #Xo per mm of W.
         # pos_x0 = np.cumsum(abs_thick) * w_x0
-        w_hist.Write()
-        print("W config %i used." %self.w_config, end=" ")
-        print("Absolute thickness:", abs_thick)
-
+        # print("# -> X0:", pos_x0)
 
     def _fill_config_maps(self):
         def is_config_map(name):
@@ -652,28 +639,5 @@ class BuildEvents:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Build an event-level rootfile (smaller) from the raw rootfile.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument("file_name", help="The raw rootfile from converter_SLB.")
-    parser.add_argument("-n", "--max_entries", default=-1, type=int)
-    parser.add_argument("-w", "--w_config", default=-1, type=int)
-    parser.add_argument("-o", "--out_file_name", default=None)
-    parser.add_argument("-c", "--commissioning_folder", default=None)
-    parser.add_argument("-s", "--min_slabs_hit", default=4, type=int)
-    _help = "For each layer, one of 10,11,12,13,COB. Comma seperated list. "
-    _help += "When left empty, all layers are assumed to be 12 (FEV12)."
-    parser.add_argument("-a", "--asu_version", default="", help=_help)
-    parser.add_argument("--no_zero_suppress", action="store_true", help="Store all channels on hit chip.")
-    parser.add_argument("--no_lg", action="store_true", help="Ignore low gain.")
-    _help ="Do not (re)-build the events but only change the configuration options. Then file_name should be a build.root file already."
-    parser.add_argument("--redo_config", action="store_true", help=_help)
-    _help = "Less verbose output, especially for batch processing."
-    parser.add_argument("--no_progress_info", action="store_true", help=_help)
-    parser.add_argument("--id_run", default=-1, type=int, help="Integer ID of the run within the testbeam campaign.")
-    parser.add_argument("--id_dat", default=-1, type=int, help="Integer ID for piece-by-piece eventbuilding within a run.")
-    # Run ./build_events.py --help to see all options.
-    for config_option, config_value in dummy_config.items():
-        parser.add_argument("--" + config_option, default=config_value)
-    BuildEvents(**vars(parser.parse_args())).build_events()
+    parser = parse_config.create_cli_from_default_config()
+    BuildEvents(parser).build_events()
