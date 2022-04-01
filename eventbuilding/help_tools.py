@@ -25,28 +25,6 @@ class EcalNumbers:
         self.asu_version = [asu_v.strip() for asu_v in asu_version]
         self.n_slabs = len(self.slabs)
 
-        self.w_config_options = {}  # abs thickness of Tungsten/W plates.
-        w_conf_1 = np.full(self.n_slabs, 2.1)
-        w_conf_1[-3:] = 4.2
-        self.w_config_options[1] = w_conf_1
-        # TB2021_11 scenario: https://llrelog.in2p3.fr/calice/2207
-        w_conf_2 = np.copy(w_conf_1)
-        if len(w_conf_2) > 0:
-            w_conf_2[0] = 0
-        self.w_config_options[2] = w_conf_2
-        # TB2022_03 scenario: https://github.com/fabriciojm/SiWECAL-Sim/issues/11
-        w_conf_3 = np.full(self.n_slabs, 2.8)
-        w_conf_3[-8:] = 4.2
-        self.w_config_options[3] = w_conf_3
-
-        self.bcid_skip_noisy_acquisition_start = 50
-        self.bcid_bad_value = -999
-        self.bcid_drop = [901]
-        self.bcid_drop_retrigger_delta = 2
-        self.bcid_merge_delta = 3
-        self.bcid_overflow = 2**12
-        self.bcid_too_many_hits = 8000
-
         self.pedestal_min_average = 200
         self.pedestal_min_scas = 3
         self.pedestal_min_value = 10
@@ -65,16 +43,6 @@ class EcalNumbers:
         assert all((type(i_slab) == int for i_slab in n.slabs))
         assert len(n.asu_version) == len(n.slabs), n.asu_version + n.slabs
         assert all((asu_v in asu_types for asu_v in n.asu_version)), n.asu_version
-
-        assert all(type(w_conf) == np.ndarray for w_conf in n.w_config_options.values())
-        assert all(len(w_conf) == n.n_slabs for w_conf in n.w_config_options.values())
-
-        assert type(n.bcid_skip_noisy_acquisition_start) == int
-        assert type(n.bcid_bad_value) == int
-        assert all(type(i_drop) == int for i_drop in n.bcid_drop)
-        assert n.bcid_drop_retrigger_delta >= 0
-        assert n.bcid_merge_delta >= 0
-        assert type(n.bcid_too_many_hits) == int
 
         assert type(n.pedestal_min_average) == int
         assert type(n.pedestal_min_scas) == int

@@ -2,64 +2,73 @@ import numpy as np
 
 
 class BCIDHandler:
-    def __init__(self, bcid_numbers, min_slabs_hit=1):
-        self._N = bcid_numbers
+    def __init__(self, bcid_config, geometry_config, min_slabs_hit=1):
+        self._skip_noisy_acquisition_start = int(bcid_config["skip_noisy_acquisition_start"])
+        self._bad_value = int(bcid_config["bad_value"])
+        self._drop_values = list(map(int, bcid_config["drop_values"].split(",")))
+        self._drop_retrigger_delta = int(bcid_config["drop_retrigger_delta"])
+        self._merge_delta = int(bcid_config["merge_delta"])
+        self._overflow = int(bcid_config["overflow"])
+
+        self._n_chips = int(geometry_config["n_chips"])
+        self._n_scas = int(geometry_config["n_scas"])
+
         self._min_slabs_hit = min_slabs_hit
 
 
     def _calculate_overflow_correction(self, arr):
         """"Within a chips memory, the BCID must increase. A drop indicates overflow."""
-        # assert np.max(arr) < self._N.bcid_overflow
+        # assert np.max(arr) < self._overflow
         n_memory_cycles = np.cumsum(arr[:,1:] - arr[:,:-1] < 0, axis=1)
-        is_filled = arr[:,1:] != self._N.bcid_bad_value
+        is_filled = arr[:,1:] != self._bad_value
         overflown_bcids = np.copy(arr)
-        overflown_bcids[:,1:] = arr[:,1:] + self._N.bcid_overflow * n_memory_cycles * is_filled
+        overflown_bcids[:,1:] = arr[:,1:] + self._overflow * n_memory_cycles * is_filled
         bcid_to_overflow_adjusted = {}
         unique_overflow = np.unique(overflown_bcids)
-        unique_overflow = unique_overflow[unique_overflow >= self._N.bcid_overflow]
+        unique_overflow = unique_overflow[unique_overflow >= self._overflow]
         for of_bcid in np.unique(overflown_bcids):
-            bcid_to_overflow_adjusted[of_bcid % self._N.bcid_overflow] = of_bcid
+            bcid_to_overflow_adjusted[of_bcid % self._overflow] = of_bcid
         return overflown_bcids, bcid_to_overflow_adjusted
 
 
     def _is_retrigger(self, arr):
         """Within each chip's memory, look for consecutive BCIDs."""
         delta = arr[:,1:] - arr[:,:-1]
-        return np.logical_and(delta > 0, delta <= self._N.bcid_drop_retrigger_delta)
+        return np.logical_and(delta > 0, delta <= self._drop_retrigger_delta)
 
 
     def _find_bcid_filling_last_sca(self, arr):
         bcid_in_last_sca = arr[:,-1]
-        bcid_in_last_sca = bcid_in_last_sca[bcid_in_last_sca != self._N.bcid_bad_value]
+        bcid_in_last_sca = bcid_in_last_sca[bcid_in_last_sca != self._bad_value]
         if len(bcid_in_last_sca):
             bcid_in_last_sca = bcid_in_last_sca.min()
         else:
-            bcid_in_last_sca = self._N.bcid_bad_value
+            bcid_in_last_sca = self._bad_value
         return bcid_in_last_sca
 
 
     def _get_bcids(self, raw_bcid_array):
-        raw_bcids = np.array(list(raw_bcid_array)).reshape(-1, self._N.n_scas)
+        raw_bcids = np.array(list(raw_bcid_array)).reshape(-1, self._n_scas)
         chip_ids = np.nonzero(
-            np.any(raw_bcids != self._N.bcid_bad_value, axis=1)
+            np.any(raw_bcids != self._bad_value, axis=1)
         )[0]
         bcids = np.copy(raw_bcids[chip_ids])
-        bcids[:,1:][self._is_retrigger(bcids)] = self._N.bcid_bad_value
-        bcids[bcids < self._N.bcid_skip_noisy_acquisition_start] = self._N.bcid_bad_value
-        for drop_bcid in self._N.bcid_drop:
-            bcids[bcids == drop_bcid] = self._N.bcid_bad_value
+        bcids[:,1:][self._is_retrigger(bcids)] = self._bad_value
+        bcids[bcids < self._skip_noisy_acquisition_start] = self._bad_value
+        for drop_bcid in self._drop_values:
+            bcids[bcids == drop_bcid] = self._bad_value
         return chip_ids, bcids
 
 
     def _get_bcid_start_stop(self, arr):
         all_bcids = np.unique(arr)
-        all_bcids = all_bcids[all_bcids != self._N.bcid_bad_value]
+        all_bcids = all_bcids[all_bcids != self._bad_value]
         if len(all_bcids) == 0:
             return dict()
         previous_bcid = all_bcids[0]
         bcid_start_stop = {previous_bcid: previous_bcid}
         for current_bcid in all_bcids[1:]:
-            if current_bcid - bcid_start_stop[previous_bcid] < self._N.bcid_merge_delta:
+            if current_bcid - bcid_start_stop[previous_bcid] < self._merge_delta:
                 bcid_start_stop[previous_bcid] = current_bcid
             else:
                 bcid_start_stop[current_bcid] = current_bcid
@@ -77,12 +86,12 @@ class BCIDHandler:
             ))
             bcid_before_merge[bcid_start].extend(bcids[i_chip_local, i_sca])
             i_chip = chip_ids[i_chip_local]
-            _pos_per_bcid[bcid_start].extend(i_chip * self._N.n_scas + i_sca)
+            _pos_per_bcid[bcid_start].extend(i_chip * self._n_scas + i_sca)
 
         pos_per_bcid = {}
         for k, v in _pos_per_bcid.items():
             pos = np.array(v)
-            slabs_hit = pos // (self._N.n_chips * self._N.n_scas)
+            slabs_hit = pos // (self._n_chips * self._n_scas)
             if len(np.unique(slabs_hit)) >= self._min_slabs_hit:
                 pos_per_bcid[k] = pos
         return pos_per_bcid, bcid_before_merge, bcid_start_stop
@@ -101,8 +110,8 @@ class BCIDHandler:
             n_memory_cycles = max([
                 self.bcid_to_overflow_adjusted.get(b, b)
                 for b in range(start_bcid, bcid_start_stop[start_bcid] + 1)
-            ]) // self._N.bcid_overflow
-            _overflown = start_bcid + n_memory_cycles * self._N.bcid_overflow
+            ]) // self._overflow
+            _overflown = start_bcid + n_memory_cycles * self._overflow
             self.spill_bcids_overflown.append(_overflown)
         self.spill_bcids_overflown = sorted(self.spill_bcids_overflown)
         return len(self.pos_per_bcid) > 0
@@ -110,9 +119,9 @@ class BCIDHandler:
 
     def yield_from_spill(self):
         for overflown_bcid in self.spill_bcids_overflown:
-            bcid = overflown_bcid % self._N.bcid_overflow
+            bcid = overflown_bcid % self._overflow
             before_merge = self._bcid_before_merge[bcid]
-            plus_overflow = (overflown_bcid // self._N.bcid_overflow) * self._N.bcid_overflow
+            plus_overflow = (overflown_bcid // self._overflow) * self._overflow
             for i, pos in enumerate(self.pos_per_bcid[bcid]):
                 yield pos, bcid + plus_overflow, before_merge[i] + plus_overflow
 

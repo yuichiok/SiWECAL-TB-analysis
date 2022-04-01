@@ -451,12 +451,17 @@ class BuildEvents:
     def _fill_spill(self, spill, entry):
         b = self.out_arrays
         b["spill"][0] = spill
-        bcid_handler = bcid_handling.BCIDHandler(self.ecal_config._N, self.min_slabs_hit)
+        bcid_handler = bcid_handling.BCIDHandler(
+            self._config_parser["bcid"],
+            self._config_parser["geometry"],
+            self.min_slabs_hit,
+        )
         bcid_handler.load_spill(entry)
         hits_per_event, bcid_merge_end = get_hits_per_event(
             entry, bcid_handler, self.ecal_config
         )
 
+        max_hits = int(self._config_parser["eventbuilding"]["max_hits_per_event"])
         for bcid in sorted(hits_per_event):
             hits = hits_per_event[bcid]
             if len(hits) == 0:
@@ -495,7 +500,7 @@ class BuildEvents:
             if "energy_lg" in hits:
                 b["sum_energy_lg"][0] = hits["energy_lg"][hits["isHit"]].sum()
 
-            if len(hits) > self.ecal_config._N.bcid_too_many_hits:
+            if max_hits > 0 and len(hits) > max_hits:
                 txt = "Suspicious number of hits! %i " %len(hits)
                 txt += "for bcid %i and previous bcid %i" %(b["bcid"][0], b["prev_bcid"][0])
                 txt += "\nSkipping event %i." % b["event"][0]
