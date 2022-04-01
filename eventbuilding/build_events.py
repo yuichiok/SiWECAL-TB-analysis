@@ -67,7 +67,7 @@ def get_hits_per_event(entry, bcid_handler, ecal_config, zero_suppress=True):
         ext("energy", energy)
         lg = all_lg[bcid_channel_id]
         if not ecal_config.no_lg:
-            energy_lg = hg.astype(float)
+            energy_lg = lg.astype(float)
             energy_lg -= ecal_config.pedestal_lg_map[slab_id, chip, :, sca]
             energy_lg /= ecal_config.mip_lg_map[slab_id, chip]
             ext("energy_lg", energy_lg)
