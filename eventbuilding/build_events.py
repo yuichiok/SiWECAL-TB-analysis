@@ -2,54 +2,15 @@
 from __future__ import print_function
 
 import collections
-import sys
 
 import numpy as np
-import ROOT as rt
-from ecal_config import *
+import ROOT
 
-import bcid_handling
-import parse_config
-
-
-try:
-    from tqdm.autonotebook import tqdm
-
-    def get_tree_spills(tree, max_entries):
-        for i, spill in enumerate(tqdm(tree, desc="# Build events", total=max_entries, unit=" spills")):
-            if i > max_entries:
-                break
-            yield i, spill
-except ImportError:
-    from datetime import datetime
-
-    def get_tree_spills(tree, max_entries):
-        print("# Going to analyze %i entries..." %max_entries)
-        print("# For better progress information: `pip install tqdm`.")
-        print("# Start time:", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        progress_bar = ""
-        for i, spill in enumerate(tree):
-            if i > max_entries:
-                break
-            if i%10 == 0 or i == max_entries:
-                progress_bar = "#" * int(30 * i / max_entries)
-                print("# Build events [{}] Spill {}/{}".format(
-                        progress_bar.ljust(30),
-                        str(i).rjust(len(str(max_entries))),
-                        max_entries,
-                    ),
-                    end="\r",
-                )
-                sys.stdout.flush()
-            yield i, spill
-        print("\n# Final time:", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-
-
-def get_tree_spills_no_progress_info(tree, max_entries):
-    for i, spill in enumerate(tree):
-        if i > max_entries:
-            break
-        yield i, spill
+from bcid_handling import BCIDHandler
+from ecal_config import EcalConfig
+from parse_config import create_cli_from_default_config
+from util import aligned_path, EventBuildingException, speed_warning_if_python2
+from util import get_tree_spills, get_tree_spills_no_progress_info
 
 
 def get_hits_per_event(entry, bcid_handler, ecal_config, zero_suppress=True):
@@ -225,7 +186,7 @@ class BuildEvents:
         )
 
     def _get_tree(self, file_name):
-        self.in_file = rt.TFile(file_name,"read")
+        self.in_file = ROOT.TFile(file_name,"read")
         if self.redo_config:
             tree_name = self._out_tree_name
         else:
@@ -243,7 +204,7 @@ class BuildEvents:
         if self.redo_config:
             return self._get_slabs_from_buildfile()
         tree.Draw("slboard_id >> slot_hist", "", "goff")
-        hist = rt.gDirectory.Get("slot_hist")
+        hist = ROOT.gDirectory.Get("slot_hist")
         slabs = []
         for i in range(1, hist.GetNbinsX() + 1):  # 0 is underflow bin.
             if hist.GetBinContent(i) > 0:
@@ -284,8 +245,8 @@ class BuildEvents:
             else:
                 raise EventBuildingException("Unexpected file extension: %s" %file_name)
         print(aligned_path("# Creating ecal tree in file ", out_file_name))
-        self.out_file = rt.TFile(out_file_name,"recreate")
-        self.out_tree = rt.TTree(self._out_tree_name, "Build ecal events")
+        self.out_file = ROOT.TFile(out_file_name,"recreate")
+        self.out_tree = ROOT.TTree(self._out_tree_name, "Build ecal events")
 
         for branch_tag in self._branch_tags:
             if self.ecal_config.no_lg:
@@ -347,7 +308,7 @@ class BuildEvents:
         bin_edge_candidates = np.concatenate([bin_centers - 0.5, bin_centers + 0.5])
         bin_edges = np.sort(np.unique(bin_edge_candidates))
 
-        w_hist = rt.TH1F("w_in_front","w_in_front",len(bin_edges) - 1, bin_edges)
+        w_hist = ROOT.TH1F("w_in_front","w_in_front",len(bin_edges) - 1, bin_edges)
         if "," in self.w_config:
             abs_thick = np.array(list(map(float, self.w_config.split(","))))
         else:
@@ -387,9 +348,9 @@ class BuildEvents:
         assert config_map.shape[1] == self.ecal_config._n_chips
         assert config_map.shape[2] == self.ecal_config._n_channels
         if config_map.dtype == int or config_map.dtype == bool:
-            hist_fct = rt.TH3I
+            hist_fct = ROOT.TH3I
         else:
-            hist_fct = rt.TH3F
+            hist_fct = ROOT.TH3F
         hist = hist_fct(
             name, name,
             self.ecal_config._n_slabs, np.arange(-0.5, self.ecal_config._n_slabs),
@@ -447,7 +408,7 @@ class BuildEvents:
     def _fill_spill(self, spill, entry):
         b = self.out_arrays
         b["spill"][0] = spill
-        bcid_handler = bcid_handling.BCIDHandler(
+        bcid_handler = BCIDHandler(
             self._config_parser["bcid"],
             self._config_parser["geometry"],
             self.min_slabs_hit,
@@ -510,5 +471,5 @@ class BuildEvents:
 
 
 if __name__ == "__main__":
-    parser = parse_config.create_cli_from_default_config()
+    parser = create_cli_from_default_config()
     BuildEvents(parser).build_events()

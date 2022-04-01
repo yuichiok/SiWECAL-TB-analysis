@@ -1,18 +1,9 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import sys
 
 import numpy as np
 
-
-class EventBuildingException(Exception):
-    pass
-
-
-def aligned_path(text, path):
-    _text_length = 29
-    assert _text_length >= len(text)
-    return text + (_text_length - len(text)) * " " + str(path)
+from util import aligned_path, EventBuildingException
 
 
 class EcalConfig:
@@ -303,16 +294,6 @@ class EcalConfig:
             print("is_commissioned_map", is_commissioned_map)
             print("Rate of commissioned scas: {:.2f}%".format(is_commissioned_map.mean() * 100))
         return is_commissioned_map
-
-
-def speed_warning_if_python2():
-    if sys.version_info.major == 2:
-        print(
-            "Warning: Slow. The eventbuilding is run with python2. "
-            "While the code aims to stay python2/3 compatible, "
-            "it was found to run significantly faster with python3 "
-            "(x5, see https://github.com/SiWECAL-TestBeam/SiWECAL-TB-analysis/pull/20#issuecomment-982763034)"
-        )
 
 
 if __name__ == "__main__":
