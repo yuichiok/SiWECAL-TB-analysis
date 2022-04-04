@@ -2,7 +2,7 @@ import numpy as np
 
 
 class BCIDHandler:
-    def __init__(self, bcid_config, geometry_config, min_slabs_hit=1):
+    def __init__(self, bcid_config, geometry_config, min_slabs_hit=1, merge_within_chip=False):
         self._skip_noisy_acquisition_start = int(bcid_config["skip_noisy_acquisition_start"])
         self._bad_value = int(bcid_config["bad_value"])
         self._drop_values = list(map(int, bcid_config["drop_values"].split(",")))
@@ -14,6 +14,7 @@ class BCIDHandler:
         self._n_scas = int(geometry_config["n_scas"])
 
         self._min_slabs_hit = min_slabs_hit
+        self._merge_within_chip = merge_within_chip
 
 
     def _calculate_overflow_correction(self, arr):
@@ -37,6 +38,12 @@ class BCIDHandler:
         return np.logical_and(delta > 0, delta <= self._drop_retrigger_delta)
 
 
+    def _is_empty_sca(self, nhits_branch):
+        """Drop the SKIROC2 empty SCAs."""
+        nhits = np.array(list(nhits_branch)).reshape(-1, self._n_scas)
+        return nhits == 0
+
+
     def _find_bcid_filling_last_sca(self, arr):
         bcid_in_last_sca = arr[:,-1]
         bcid_in_last_sca = bcid_in_last_sca[bcid_in_last_sca != self._bad_value]
@@ -47,13 +54,15 @@ class BCIDHandler:
         return bcid_in_last_sca
 
 
-    def _get_bcids(self, raw_bcid_array):
-        raw_bcids = np.array(list(raw_bcid_array)).reshape(-1, self._n_scas)
+    def _get_bcids(self, spill_entry):
+        raw_bcids = np.array(list(spill_entry.bcid)).reshape(-1, self._n_scas)
+        raw_bcids[self._is_empty_sca(spill_entry.nhits)] = self._bad_value
         chip_ids = np.nonzero(
             np.any(raw_bcids != self._bad_value, axis=1)
         )[0]
         bcids = np.copy(raw_bcids[chip_ids])
-        bcids[:,1:][self._is_retrigger(bcids)] = self._bad_value
+        if not self._merge_within_chip:
+            bcids[:,1:][self._is_retrigger(bcids)] = self._bad_value
         bcids[bcids < self._skip_noisy_acquisition_start] = self._bad_value
         for drop_bcid in self._drop_values:
             bcids[bcids == drop_bcid] = self._bad_value
@@ -78,28 +87,41 @@ class BCIDHandler:
 
     def _get_array_positions_per_bcid(self, chip_ids, bcids):
         bcid_start_stop = self._get_bcid_start_stop(bcids)
-        _pos_per_bcid = {k: [] for k in bcid_start_stop}
-        bcid_before_merge = {k: [] for k in bcid_start_stop}
+        _pos_per_bcid = {k: {} for k in bcid_start_stop}
+        bcid_before_merge = {k: {} for k in bcid_start_stop}
         for bcid_start in bcid_start_stop:
             i_chip_local, i_sca = np.nonzero(np.logical_and(
                 bcids >= bcid_start, bcids <= bcid_start_stop[bcid_start]
             ))
-            bcid_before_merge[bcid_start].extend(bcids[i_chip_local, i_sca])
             i_chip = chip_ids[i_chip_local]
-            _pos_per_bcid[bcid_start].extend(i_chip * self._n_scas + i_sca)
+            for i in range(len(i_chip_local)):
+                i_chip = chip_ids[i_chip_local[i]]
+                if i_chip in _pos_per_bcid[bcid_start]:
+                    if self._merge_within_chip:
+                        # Retrigger handling is postponed to build_events.py
+                        # when merging within a chip.
+                        _pos_per_bcid[bcid_start][i_chip].append(i_sca[i])
+                    else:
+                        # If we do not merge within a chip, then we take the first
+                        # BCID that is written to the BCID within the event's BCID
+                        # window and that is not an empty event (avoids retriggers).
+                        continue
+                else:
+                    _pos_per_bcid[bcid_start][i_chip] = [i_sca[i]]
+                bcid_before_merge[bcid_start][i_chip] = bcids[i_chip_local[i], i_sca[i]]
 
         pos_per_bcid = {}
-        for k, v in _pos_per_bcid.items():
-            pos = np.array(v)
-            slabs_hit = pos // (self._n_chips * self._n_scas)
+        for bcid_start, chip_to_scas in _pos_per_bcid.items():
+            chips = np.array(list(chip_to_scas.keys()))
+            slabs_hit = chips // self._n_chips
             if len(np.unique(slabs_hit)) >= self._min_slabs_hit:
-                pos_per_bcid[k] = pos
+                pos_per_bcid[bcid_start] = chip_to_scas
         return pos_per_bcid, bcid_before_merge, bcid_start_stop
 
 
     def load_spill(self, spill_entry):
         """False if the current spill is empty."""
-        chip_ids, bcids = self._get_bcids(spill_entry.bcid)
+        chip_ids, bcids = self._get_bcids(spill_entry)
         overflown_bcids, self.bcid_to_overflow_adjusted = \
             self._calculate_overflow_correction(bcids)
         self.bcid_first_sca_full = self._find_bcid_filling_last_sca(overflown_bcids)
@@ -122,8 +144,9 @@ class BCIDHandler:
             bcid = overflown_bcid % self._overflow
             before_merge = self._bcid_before_merge[bcid]
             plus_overflow = (overflown_bcid // self._overflow) * self._overflow
-            for i, pos in enumerate(self.pos_per_bcid[bcid]):
-                yield pos, bcid + plus_overflow, before_merge[i] + plus_overflow
+
+            for chip, scas in self.pos_per_bcid[bcid].items():
+                yield chip, scas, bcid + plus_overflow, before_merge[chip] + plus_overflow
 
 
     def previous_bcid(self, overflown_bcid):

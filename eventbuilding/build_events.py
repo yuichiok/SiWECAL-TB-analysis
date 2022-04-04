@@ -19,6 +19,7 @@ def get_hits_per_event(entry, bcid_handler, ecal_config, zero_suppress=True):
     n_chips = ecal_config._n_chips
     n_channels = ecal_config._n_channels
     n_scas = ecal_config._n_scas
+    channel_arange = np.arange(n_channels)
 
     # It is faster to fill the arrays once outside the loop.
     all_gain_hit = np.array(entry.gain_hit_high)
@@ -26,18 +27,33 @@ def get_hits_per_event(entry, bcid_handler, ecal_config, zero_suppress=True):
     all_lg = np.array(entry.charge_lowGain)
 
     # assert bcid_handler.merged_bcid.shape == np.array(event.bcid).shape
-    for i, bcid, bcid_before_merge in bcid_handler.yield_from_spill():
-        bcid_channel_id = slice(i * n_channels, (i + 1) * n_channels)
+    for i_chip, scas, bcid, bcid_before_merge in bcid_handler.yield_from_spill():
+        if len(scas) == 1:
+            bcid_channel_id = (i_chip * n_scas + scas[0]) * n_channels + channel_arange
+        else:
+            all_scas_bcid_channel_id = (
+                np.repeat(i_chip * n_scas + np.array(scas), n_channels)
+                * n_channels
+            ).reshape(-1, n_channels) + channel_arange
+            gain_hit_high = all_gain_hit[all_scas_bcid_channel_id]
+            # Pick the first trigger of each channel within the BCID window.
+            bcid_channel_id = all_scas_bcid_channel_id[
+                np.argmax(gain_hit_high, axis=0), channel_arange
+            ]
         gain_hit_high = all_gain_hit[bcid_channel_id]
         if np.all(gain_hit_high < 0):
-            continue
+            raise EventBuildingException(
+                "Should have been caught in BCIDHandler",
+                i_chip, scas, bcid, bcid_before_merge, gain_hit_high
+            )
         # gain_hit_high == gain_hit_low (up to tiny errors), confirmed by Stephane Callier.
         is_hit = np.array(gain_hit_high > 0)
         if zero_suppress:
             if is_hit.sum() == 0:
-                # It is not clear to me why chips with no hit-bit for any of their channels
-                # are ever written to memory, but the DAQ writes such lines.
-                continue
+                raise EventBuildingException(
+                    "Should have been caught in BCIDHandler",
+                    i_chip, scas, bcid, bcid_before_merge, gain_hit_high
+                )
 
             def ext(name, array):
                 return event[bcid][name].extend(array[is_hit])
@@ -47,28 +63,29 @@ def get_hits_per_event(entry, bcid_handler, ecal_config, zero_suppress=True):
 
         if bcid not in event:
             event[bcid] = collections.defaultdict(list)
-        slab = entry.slboard_id[(i // n_scas // n_chips)]
+        slab = entry.slboard_id[(i_chip // n_chips)]
         slab_id = ecal_config._slabs.index(slab)
-        chip = entry.chipid[i // n_scas]
-        sca = i % n_scas
+        chip = entry.chipid[i_chip]
+        sca = (bcid_channel_id // n_channels)  % n_scas
+        per_sca_picker = (slab_id, chip, channel_arange, sca)
 
         ext("isHit", is_hit)
         ext("isMasked", np.array(ecal_config.masked_map[slab_id, chip], dtype=int))
-        ext("isCommissioned", np.array(ecal_config.is_commissioned_map[slab_id, chip, :, sca], dtype=int))
+        ext("isCommissioned", np.array(ecal_config.is_commissioned_map[per_sca_picker], dtype=int))
         ext("x", np.array(ecal_config.x[slab_id, chip]))
         ext("y", np.array(ecal_config.y[slab_id, chip]))
         ext("z", np.array(ecal_config.z[slab_id, chip]))
 
         hg = all_hg[bcid_channel_id]
         energy = hg.astype(float)
-        energy -= ecal_config.pedestal_map[slab_id, chip, :, sca]
+        energy -= ecal_config.pedestal_map[per_sca_picker]
         energy /= ecal_config.mip_map[slab_id, chip]
         ext("hg", hg)
         ext("energy", energy)
         lg = all_lg[bcid_channel_id]
         if not ecal_config.no_lg:
             energy_lg = lg.astype(float)
-            energy_lg -= ecal_config.pedestal_lg_map[slab_id, chip, :, sca]
+            energy_lg -= ecal_config.pedestal_lg_map[per_sca_picker]
             energy_lg /= ecal_config.mip_lg_map[slab_id, chip]
             ext("energy_lg", energy_lg)
         ext("lg", lg)
@@ -78,7 +95,7 @@ def get_hits_per_event(entry, bcid_handler, ecal_config, zero_suppress=True):
         ext("chip", np.full(n_in_batch, chip, dtype=int))
         ext("sca", np.full(n_in_batch, sca, dtype=int))
         ext("chan", np.arange(n_channels, dtype=int))
-        n_scas_filled = entry.nColumns[i // n_scas]
+        n_scas_filled = entry.nColumns[i_chip]
         ext("n_scas_filled", np.full(n_in_batch, n_scas_filled, dtype=int))
 
         bcid_merge_end[bcid] = max(bcid_before_merge, bcid_merge_end[bcid])
@@ -164,7 +181,13 @@ class BuildEvents:
         self.max_entries = int(eb_config["max_entries"])
         self.out_file_name = eb_config["build_path"]
         self.min_slabs_hit = int(eb_config["min_slabs_hit"])
-        self._zero_suppress = not eb_config.getboolean("no_zero_suppress")
+        self._zero_suppress = eb_config.getboolean("zero_suppress")
+        self._merge_within_chip = eb_config.getboolean("merge_within_chip")
+        if self._merge_within_chip and not self._zero_suppress:
+            raise EventBuildingException(
+                "`merge_within_chip` requires `zero_suppress`."
+            )
+
         self._previous_cycle = -1
         self.event_counter = 0
 
@@ -412,6 +435,7 @@ class BuildEvents:
             self._config_parser["bcid"],
             self._config_parser["geometry"],
             self.min_slabs_hit,
+            self._merge_within_chip,
         )
         bcid_handler.load_spill(entry)
         hits_per_event, bcid_merge_end = get_hits_per_event(
