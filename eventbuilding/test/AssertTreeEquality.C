@@ -5,8 +5,6 @@ with both the new and the previous code versions on some example data.
 If the trees are different, be sure that this is what you wanted to achieve:
 
 root -l -q -b AssertTreeEquality.C\(\"previous.root\",\"new.root\"\)
-
-TODO: Maybe extend this so that it compares also the config histograms?
 */
 Int_t *SortedIndex(TTree *tree, TString tree_name) {
   Int_t n_entries = tree->GetEntries();
