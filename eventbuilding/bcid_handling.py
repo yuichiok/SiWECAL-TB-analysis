@@ -17,19 +17,22 @@ class BCIDHandler:
         self._merge_within_chip = merge_within_chip
 
 
-    def _calculate_overflow_correction(self, arr):
-        """"Within a chips memory, the BCID must increase. A drop indicates overflow."""
-        # assert np.max(arr) < self._overflow
-        n_memory_cycles = np.cumsum(arr[:,1:] - arr[:,:-1] < 0, axis=1)
-        is_filled = arr[:,1:] != self._bad_value
-        overflown_bcids = np.copy(arr)
-        overflown_bcids[:,1:] = arr[:,1:] + self._overflow * n_memory_cycles * is_filled
+    def _calculate_overflow_correction(self, spill_entry):
+        """Within a chips memory, the BCID must increase. A drop indicates overflow."""
+        raw_bcids = np.array(list(spill_entry.bcid)).reshape(-1, self._n_scas)
+        # assert np.max(raw_bcids) < self._overflow
+        n_memory_cycles = np.cumsum(raw_bcids[:,1:] - raw_bcids[:,:-1] < 0, axis=1)
+        next_cycle = np.full_like(n_memory_cycles, False, dtype=bool)
+        next_cycle[:,1:] = n_memory_cycles[:,1:] != n_memory_cycles[:,:-1]
+        next_cycle[raw_bcids[:,1:] == self._bad_value] = False
         bcid_to_overflow_adjusted = {}
-        unique_overflow = np.unique(overflown_bcids)
-        unique_overflow = unique_overflow[unique_overflow >= self._overflow]
-        for of_bcid in np.unique(overflown_bcids):
-            bcid_to_overflow_adjusted[of_bcid % self._overflow] = of_bcid
-        return overflown_bcids, bcid_to_overflow_adjusted
+        if np.sum(next_cycle) > 1:
+            adjusted = np.unique(raw_bcids[:,1:][next_cycle > 0]
+                       + self._overflow * n_memory_cycles[next_cycle]
+            )
+            for bcid_adj in adjusted:
+                bcid_to_overflow_adjusted[bcid_adj % self._overflow] = bcid_adj
+        return raw_bcids, bcid_to_overflow_adjusted
 
 
     def _is_retrigger(self, arr):
@@ -48,14 +51,16 @@ class BCIDHandler:
         bcid_in_last_sca = arr[:,-1]
         bcid_in_last_sca = bcid_in_last_sca[bcid_in_last_sca != self._bad_value]
         if len(bcid_in_last_sca):
-            bcid_in_last_sca = bcid_in_last_sca.min()
+            bcid_in_last_sca = min([
+                self.bcid_to_overflow_adjusted.get(bcid, bcid)
+                for bcid in bcid_in_last_sca
+            ])
         else:
             bcid_in_last_sca = self._bad_value
         return bcid_in_last_sca
 
 
-    def _get_bcids(self, spill_entry):
-        raw_bcids = np.array(list(spill_entry.bcid)).reshape(-1, self._n_scas)
+    def _get_bcids(self, spill_entry, raw_bcids):
         raw_bcids[self._is_empty_sca(spill_entry.nhits)] = self._bad_value
         chip_ids = np.nonzero(
             np.any(raw_bcids != self._bad_value, axis=1)
@@ -121,10 +126,10 @@ class BCIDHandler:
 
     def load_spill(self, spill_entry):
         """False if the current spill is empty."""
-        chip_ids, bcids = self._get_bcids(spill_entry)
-        overflown_bcids, self.bcid_to_overflow_adjusted = \
-            self._calculate_overflow_correction(bcids)
-        self.bcid_first_sca_full = self._find_bcid_filling_last_sca(overflown_bcids)
+        raw_bcids, self.bcid_to_overflow_adjusted = \
+            self._calculate_overflow_correction(spill_entry)
+        chip_ids, bcids = self._get_bcids(spill_entry, raw_bcids)
+        self.bcid_first_sca_full = self._find_bcid_filling_last_sca(raw_bcids)
         self.pos_per_bcid, self._bcid_before_merge, bcid_start_stop = \
             self._get_array_positions_per_bcid(chip_ids, bcids)
         self.spill_bcids_overflown = []
