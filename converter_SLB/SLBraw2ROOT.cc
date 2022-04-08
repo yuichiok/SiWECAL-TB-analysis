@@ -44,21 +44,13 @@ int	Convert_FromGrayToBinary (int grayValue, int nbOfBits)
   int binary, grayBit, binBit;
 	
   binary = 0;
-
   // mask the MSB.
-	
   grayBit = 1 << ( nbOfBits - 1 );
-	
   // copy the MSB.
-	
   binary = grayValue & grayBit;
-	
   // store the bit we just set.
-	
   binBit = binary;
-	
   // traverse remaining Gray bits.
-	
   while( grayBit >>= 1 )
     {
       // shift the current binary bit to align with the Gray bit.
@@ -76,7 +68,7 @@ class SLBraw2ROOT {
   
 public:
   SLBraw2ROOT(){
-    _ASCIIOUT = false;
+    _ASCIIOUT = true;
     _debug = false;
     _eudaq=false;
   }
@@ -216,7 +208,6 @@ void SLBraw2ROOT::InitializeRawFrame() {
 }
 
 void SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
-  if(_ASCIIOUT)cout<<" New DECODERAWFRAME "<<endl;
   chipId = ucharValFrameVec.at(datasize -2-2);
   if(_debug) std::cout<<"chipId:"<<dec<<chipId<<std::endl;
   if(_debug) std::cout<<"AsuIndex:"<<dec<<(int)(chipId/NB_OF_SKIROCS_PER_ASU)<<std::endl;
@@ -244,7 +235,7 @@ void SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
       cycleID += ((unsigned int)(((ucharValFrameVec.at(2*n+1)& 0xC0)>> 6) << (30-2*i)));
       i++;
     }
-      if(_debug) std::cout<<"cycleID:"<<dec<<cycleID<<std::endl;
+  if(_debug) std::cout<<"cycleID:"<<dec<<cycleID<<std::endl;
 	    
   i=0;
   for(n= 16; n < 32; n++)
@@ -413,7 +404,7 @@ void SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
   TH1F * h3 = new TH1F("size_event","Size event (total); Total Number of words; entries",100,0,500);
   TH2F * h4 = new TH2F("size_vs_cyclerates","Ocuppancy ; cycleID-previousCycleID; Eventsize previous event",100,-0.5,99.5,100,0,500);
   TH2F * h5 = new TH2F("size_consecutivecyclces","Eventsize previous event (DeltaCycle=1) ; ASIC ; LAYER",16,-0.5,15.5,15,-0.5,14.5);
-  TH2F * h6 = new TH2F("size_nonconsecutivecyclces","Eventsize previous event (DeltaCycle>4) ; ASIC ; LAYER",16,-0.5,15.5,15,-0.5,14.5);
+  TH2F * h6 = new TH2F("size_nonconsecutivecyclces","Eventsize previous event (DeltaCycle>1) ; ASIC ; LAYER",16,-0.5,15.5,15,-0.5,14.5);
   TH1F * h7 = new TH1F("wrongly_reconstructed_cycles","wrongly_reconstructed_cycles",4320000,0.5,4320000.5);
   int event_size=0;
   int event_size_prev=0;
@@ -569,7 +560,7 @@ void SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
 		  h5->Fill(j,i,max_event_size_prev[i][j]);
 		  consecevents++;
 		}
-		if( (cycleID-previouscycle)>4) {
+		if( (cycleID-previouscycle)>1) {
 		  h6->Fill(j,i,max_event_size_prev[i][j]);
 		  nonconsecevents++;
 		}
