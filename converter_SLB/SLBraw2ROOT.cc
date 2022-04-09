@@ -405,24 +405,43 @@ void SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
   int cycleswithdata=0;
   int totalcycles=0;
   int initialcycle=0;
+  int previouscycle=0;
+  double previousstart=0;
+
+  TH1F * h1 = new TH1F("cyclerates","CycleID - previousCycleID; cycleID-previousCycleID; entries",500,-0.5,499.5);
+  TH1F * h2 = new TH1F("start_acq_rates","StartAcq - previousStartAcq; startAcq-previousStartAcq; entries",1000,-0.5,999.5);
+  TH1F * h3 = new TH1F("size_event","Size event (total); Total Number of words; entries",100,0,500);
+  TH2F * h4 = new TH2F("size_vs_cyclerates","Ocuppancy ; cycleID-previousCycleID; Eventsize previous event",100,-0.5,99.5,100,0,500);
+  TH2F * h5 = new TH2F("size_consecutivecyclces","Eventsize previous event (DeltaCycle=1) ; ASIC ; LAYER",16,-0.5,15.5,15,-0.5,14.5);
+  TH2F * h6 = new TH2F("size_nonconsecutivecyclces","Eventsize previous event (DeltaCycle>4) ; ASIC ; LAYER",16,-0.5,15.5,15,-0.5,14.5);
+  TH1F * h7 = new TH1F("wrongly_reconstructed_cycles","wrongly_reconstructed_cycles",4320000,0.5,4320000.5);
+  int event_size=0;
+  int event_size_prev=0;
+  int max_event_size[15][16]={0};
+  int max_event_size_prev[15][16]={0};
+
+  int max_event_size_prev_=0;
+  float consecevents=0;
+  float nonconsecevents=0;
 
   while(fin.is_open()) {
  
       if(_debug) std::cout<<" hex:"<<hex<<dataResult<<"  dec:"<<dec<<dataResult<<std::endl;
       
-      
       InitializeRawFrame();
+
       bool firstframe=false;
       bool readframe=false;
-      
       if(_eudaq) {
 	//EUDAQ RAW FRAME
 	if(firstframe==false && initfilefound==false) {
 	  unsigned char temp_char;
 	  fin.read((char*)&temp_char, sizeof(unsigned char));
-	  if(temp_char==0xCD) {
+	  if(_debug) std::cout<<" hex:"<<hex<<temp_char<<"  dec:"<<dec<<temp_char<<std::endl;
+
+	  if(temp_char==0xAB) {
 	    fin.read((char*)&temp_char, sizeof(unsigned char));
-	    if(temp_char==0xAB) {
+	    if(temp_char==0xCD) {
 	      firstframe=true;
 	      initfilefound=true;
 	      if(_debug) cout<<"FIRST FRAME FOUND "<<endl;
@@ -430,23 +449,34 @@ void SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
 	  }
 	}
 	
-	if( (0xFFFF & dataResult) == 0xCDAB || firstframe==true) {
+	if( (0xFFFF & dataResult) == 0xABCD || firstframe==true) {
 	  if(_debug) std::cout<<" HEADER "<<std::endl;
+	  //  if(firstframe==true) fin.read((char *)&dataResult, sizeof(dataResult));
+		
 	  unsigned char buffer[8];
-	  //AcqEventStruct AcqEvent;
-	  datasize=((dataResult & 0xFFFF0000) >>16);
+	  unsigned char ucharVal0;
+	  fin.read((char *)&ucharVal0, sizeof(ucharVal0));
+	  unsigned char ucharVal1;
+	  fin.read((char *)&ucharVal1, sizeof(ucharVal1));
+	  unsigned char ucharVal2;
+	  fin.read((char *)&ucharVal2, sizeof(ucharVal2));
+
+	  //  datasize=((dataResult & 0xFFFF0000) >>16);
+	  datasize=  ((unsigned short)ucharVal1 << 8) + ucharVal0;
+
 	  if(_debug) cout<<"EventSize "<<datasize<<endl;
 	  if(datasize<0) continue;
 	  if(_debug) std::cout<<" hex:"<<hex<<dataResult<<"  dec:"<<dec<<dataResult<<std::endl;
 	  
 	  nbOfSingleSkirocEventsInFrame=0;
 	  
-	  for(int ibuf=0; ibuf<6; ibuf++) {
+	  for(int ibuf=0; ibuf<5; ibuf++) {
 	    unsigned char ucharVal;
 	    fin.read((char *)&ucharVal, sizeof(ucharVal));
 	    if(ibuf==0) coreDaughterIndex=ucharVal;
-	    if(ibuf==4) slabAdd=ucharVal;
-	    if(ibuf==5) slabIndex=ucharVal;
+	    if(ibuf==3) slabAdd=ucharVal;
+	    if(ibuf==4) slabIndex=ucharVal;
+	    if(slabIndex==255) slabIndex=0;// for the USB conection we don't have address
 	  }
 	  
 	  if(_debug) cout<<"CoreDaughterIndex "<<coreDaughterIndex<<endl;
@@ -503,16 +533,21 @@ void SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
 	  unsigned char ucharValFrame;
 	  fin.read((char *)&ucharValFrame, sizeof(unsigned char));
 	  ucharValFrameVec.push_back(ucharValFrame);
-	  //	  if(_debug) std::cout<<" LOOP, j="<<j<<" hex:"<<hex<<ucharValFrame<<"  dec:"<<dec<<ucharValFrame<<std::endl;
+	  if(_debug) std::cout<<" LOOP, j="<<j<<" hex:"<<hex<<ucharValFrame<<"  dec:"<<dec<<ucharValFrame<<std::endl;
 	}
 	trailerWord =   ((unsigned short)ucharValFrameVec.at(datasize -1) << 8) + ucharValFrameVec.at(datasize -2);
 	if(_debug) std:cout<<"Trailer Word hex:"<<hex<<trailerWord<<" dec:"<<dec<<trailerWord<<std::endl;
 	if(trailerWord == 0x9697) {
-	  DecodeRawFrame(ucharValFrameVec);   
-	  
+	  DecodeRawFrame(ucharValFrameVec);
+	  event_size+=ucharValFrameVec.size();
+	  max_event_size[slabAdd][chipId]+=ucharValFrameVec.size();
 	  if(_debug) std::cout<<"ACQNumber:"<<dec<<_acqNumber<<" cycleID:"<<cycleID<<" sca:"<<sca<<std::endl;
-	  
-	  
+	  if( (cycleID-_acqNumber )< 0) {
+	    std::cout<<" ****************************************************"<<endl;
+	    std::cout<<"ERROR, THIS CYCLE"<<_acqNumber<<" AND THIS CYCLE "<<cycleID<<" ARE TO BE REMOVED FROM THE ANALYSIS"<<endl;
+	    h7->Fill(cycleID);
+	    h7->Fill(_acqNumber);
+	  }
 	  // FILL trees
 	  if(_acqNumber==0) treeInit(zerosupression);
 	  if(_acqNumber==-1 && cycleID>0) initialcycle=cycleID;
@@ -522,6 +557,32 @@ void SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
 	    tree->Fill();
 	    treeInit(zerosupression);
 	    cycleswithdata++;
+	    h1->Fill(cycleID-previouscycle);
+	    h2->Fill((startAcqTimeStamp-previousstart)/1000.);
+	    h3->Fill(max_event_size_prev_);
+	    h4->Fill((cycleID-previouscycle),max_event_size_prev_);
+	    max_event_size_prev_=0;
+
+	    for(int i=0; i<15; i++) {
+	      for(int j=0; j<16; j++) {
+		if( (cycleID-previouscycle)==1) {
+		  h5->Fill(j,i,max_event_size_prev[i][j]);
+		  consecevents++;
+		}
+		if( (cycleID-previouscycle)>4) {
+		  h6->Fill(j,i,max_event_size_prev[i][j]);
+		  nonconsecevents++;
+		}
+		if(max_event_size[i][j]>max_event_size_prev_) max_event_size_prev_=max_event_size[i][j];
+		max_event_size_prev[i][j]=max_event_size[i][j];
+		max_event_size[i][j]=0;
+	      }
+	    }
+
+	    previouscycle=cycleID;
+	    previousstart=startAcqTimeStamp;
+	    event_size_prev=event_size;
+	    event_size=0;
 	  }
 	  _acqNumber=cycleID;
 	  _n_slboards=SLBDEPTH;
@@ -564,7 +625,10 @@ void SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
 	      //	      cout<<ichn<<" ---- "<<chargevalue[1][isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1]<<" "<<hitvalue[1][isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1]<<endl;
 	    }
 	  }//end isca
-	}//trailer
+	}else{
+	  cout<<"WARNING NO TRAILER FOUND!"<<endl;
+	}
+	
       }
 
       trailerWord=0;
@@ -576,9 +640,20 @@ void SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
   }
   cout<<" ## END OF SLBrawROOT.cc converter : file: "<<inputFileName<<" TOTAL cycles:"<<totalcycles<<" cycles with data:"<<cycleswithdata<<endl;
 
-  fout->cd(); 
+  fout->cd();
+  h1->Write();
+  h2->Write();
+  h3->Write();
+  h4->Write();
+  h5->Scale(1./consecevents);
+  h5->Write();
+  h6->Scale(1./nonconsecevents);
+  h6->Write();
+  h7->Write();
+  
   fout->Write(0);
   fout->Close();
+
 
 }
 
@@ -797,3 +872,4 @@ void SLBraw2ROOT::GetBadBCID() {
 
 
 #endif
+
