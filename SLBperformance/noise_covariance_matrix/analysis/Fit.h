@@ -108,11 +108,11 @@ TH2F* OpenCovMatrix(TString filename="3GeVMIPscan_scagt0",TString gain="highgain
   for (int i=0; i<64; i++) {
     TH1F* htemp=(TH1F*)file->Get(TString::Format("layer_%i/h_ped_layer%i_chip%i_chn%i",layer,layer,chip,i));
     if(htemp==NULL) {
-      cout<<"htemp == NUL"<<endl;
+      cout<<"htemp == NULL"<<endl;
       continue;
     }
-    if(htemp->GetEntries()>100) {
-      htemp->GetXaxis()->SetRangeUser(htemp->GetMean()-20,htemp->GetMean()+20);
+    if(htemp->GetEntries()>50) {
+      htemp->GetXaxis()->SetRangeUser(htemp->GetMean()-15,htemp->GetMean()+15);
       pedestal[i]=htemp->GetMean();
       epedestal[i]=htemp->GetRMS();
     
@@ -159,9 +159,9 @@ int Fit(TString name="3GeVMIPscan", TString gain="highgain", int layer=0, int ch
   Double_t step[nparameters];
   for(int i=0; i<nparameters; i++) {
     if(i<64) {
-      vstart[i]=3.0;
+      vstart[i]=1.0;
       step[i]=0.001;
-      gMinuit->mnparm(i, TString::Format("I_%i",i), vstart[i], step[i], 1.0,100,ierflg);
+      gMinuit->mnparm(i, TString::Format("I_%i",i), vstart[i], step[i], 0.1,100,ierflg);
     } else if(i<128) {
       vstart[i]=0.5;
       step[i]=0.001;
@@ -182,7 +182,7 @@ int Fit(TString name="3GeVMIPscan", TString gain="highgain", int layer=0, int ch
   }
 
   // Now data for minimization step
-  arglist[0] = 20000;//1000;//10000; //2000 for the HG
+  arglist[0] = 500000;//1000;//10000; //2000 for the HG
   arglist[1] = 1;
   gMinuit->SetErrorDef(1);
   gMinuit->mnexcm("MIGRAD", arglist ,1,ierflg);
