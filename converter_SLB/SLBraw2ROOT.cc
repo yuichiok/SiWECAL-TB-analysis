@@ -112,10 +112,10 @@ protected:
   float AVDD1; // in Volts
   int sca;
   int core, slab;
-  int chargevalue_low[NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
+  int adcvalue_low[NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
   int gainvalue_low[NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
   int hitvalue_low[NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
-  int chargevalue_high[NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
+  int adcvalue_high[NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
   int gainvalue_high[NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
   int hitvalue_high[NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
   int valid_frame;
@@ -146,8 +146,8 @@ protected:
   int _corrected_bcid[SLBDEPTH][NB_OF_SKIROCS_PER_ASU][NB_OF_SCAS_IN_SKIROC];
   int _badbcid[SLBDEPTH][NB_OF_SKIROCS_PER_ASU][NB_OF_SCAS_IN_SKIROC];
   int _nhits[SLBDEPTH][NB_OF_SKIROCS_PER_ASU][NB_OF_SCAS_IN_SKIROC];
-  int _charge_low[SLBDEPTH][NB_OF_SKIROCS_PER_ASU][NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
-  int _charge_high[SLBDEPTH][NB_OF_SKIROCS_PER_ASU][NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
+  int _adc_low[SLBDEPTH][NB_OF_SKIROCS_PER_ASU][NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
+  int _adc_high[SLBDEPTH][NB_OF_SKIROCS_PER_ASU][NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
   int _autogainbit_low[SLBDEPTH][NB_OF_SKIROCS_PER_ASU][NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
   int _autogainbit_high[SLBDEPTH][NB_OF_SKIROCS_PER_ASU][NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
   int _hitbit_low[SLBDEPTH][NB_OF_SKIROCS_PER_ASU][NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
@@ -211,10 +211,10 @@ void SLBraw2ROOT::InitializeRawFrame() {
     nhits[i]=0;
     bcid[i]=0;
     for(int j=0; j<NB_OF_CHANNELS_IN_SKIROC; j++) {
-      chargevalue_low[i][j]=0;
+      adcvalue_low[i][j]=0;
       gainvalue_low[i][j]=0;
       hitvalue_low[i][j]=0;
-      chargevalue_high[i][j]=0;
+      adcvalue_high[i][j]=0;
       gainvalue_high[i][j]=0;
       hitvalue_high[i][j]=0;
     }
@@ -375,11 +375,11 @@ bool SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
 	  
 	  rawData = (unsigned short)ucharValFrameVec.at(index+2*channel) + ((unsigned short)ucharValFrameVec.at(index+1+2*channel) << 8);
 	  rawValue = (int)(rawData & 0xFFF);
-	  gainalue_high[sca][channel] =  (rawData & 0x1000)>>12;
+	  gainvalue_high[sca][channel] =  (rawData & 0x1000)>>12;
 	  hitvalue_high[sca][channel] =  (rawData & 0x2000)>>13;
-	  int chargeValuetemp =  Convert_FromGrayToBinary(rawValue , 12); 
-	  chargevalue_high[sca][channel] = chargeValuetemp;
-	  if(_debug) std::cout<<"chn:"<<channel<<" gainvalue_1:"<<gainvalue_high[sca][channel]<<" hitvalue_1:"<<hitvalue_high[sca][channel]<<" "<<"chargeValue_1:"<<chargevalue_high[sca][channel]<<std::endl;
+	  int adcValuetemp =  Convert_FromGrayToBinary(rawValue , 12); 
+	  adcvalue_high[sca][channel] = adcValuetemp;
+	  if(_debug) std::cout<<"chn:"<<channel<<" gainvalue_1:"<<gainvalue_high[sca][channel]<<" hitvalue_1:"<<hitvalue_high[sca][channel]<<" "<<"adcValue_1:"<<adcvalue_high[sca][channel]<<std::endl;
 	  
 	}
       
@@ -393,9 +393,9 @@ bool SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
 	  rawValue = (int)(rawData & 0xFFF);
 	  gainvalue_low[sca][channel] =  (rawData & 0x1000)>>12;
 	  hitvalue_low[sca][channel] =  (rawData & 0x2000)>>13;  
-	  int chargeValuetemp = Convert_FromGrayToBinary(rawValue , 12);
-	  chargevalue_low[sca][channel] = chargeValuetemp;
-	  if(_debug) std::cout<<"chn:"<<channel<<" gainvalue_0:"<<gainvalue_low[sca][channel]<<" hitvalue_0:"<<hitvalue_low[sca][channel]<<" "<<"chargeValue_0:"<<chargevalue_low[sca][channel]<<std::endl;
+	  int adcValuetemp = Convert_FromGrayToBinary(rawValue , 12);
+	  adcvalue_low[sca][channel] = adcValuetemp;
+	  if(_debug) std::cout<<"chn:"<<channel<<" gainvalue_0:"<<gainvalue_low[sca][channel]<<" hitvalue_0:"<<hitvalue_low[sca][channel]<<" "<<"adcValue_0:"<<adcvalue_low[sca][channel]<<std::endl;
 	  if(hitvalue_low[sca][channel]>0) nhits[sca]++;
 	}
 				
@@ -414,7 +414,7 @@ bool SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
 	//Ch 0 LG 282 0 0 HG 296 0 0
 	std::cout<<"##"<<nbOfSingleSkirocEventsInFrame-sca_ascii-1<<" BCID "<<bcid[sca]<<" SCA "<<sca_ascii<<" #Hits "<<nhits[sca]<<std::endl;
 	for(channel = 0; channel < NB_OF_CHANNELS_IN_SKIROC; channel++)
-	  std::cout<<"Ch "<<channel<<" LG "<< chargevalue_low[sca][NB_OF_CHANNELS_IN_SKIROC-channel-1]<<" "<<hitvalue_low[sca][NB_OF_CHANNELS_IN_SKIROC-channel-1]<<" "<<gainvalue_low[sca][NB_OF_CHANNELS_IN_SKIROC-channel-1]<<" HG "<< chargevalue_high[sca][NB_OF_CHANNELS_IN_SKIROC-channel-1]<<" "<<hitvalue_high[sca][NB_OF_CHANNELS_IN_SKIROC-channel-1]<<" "<<gainvalue_high[sca][channel-1]<<std::endl;
+	  std::cout<<"Ch "<<channel<<" LG "<< adcvalue_low[sca][NB_OF_CHANNELS_IN_SKIROC-channel-1]<<" "<<hitvalue_low[sca][NB_OF_CHANNELS_IN_SKIROC-channel-1]<<" "<<gainvalue_low[sca][NB_OF_CHANNELS_IN_SKIROC-channel-1]<<" HG "<< adcvalue_high[sca][NB_OF_CHANNELS_IN_SKIROC-channel-1]<<" "<<hitvalue_high[sca][NB_OF_CHANNELS_IN_SKIROC-channel-1]<<" "<<gainvalue_high[sca][channel-1]<<std::endl;
       }
       skirocEventNumber++;
       
@@ -731,11 +731,11 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
     name= TString::Format("nhits[%i][%i][%i]/I",SLBDEPTH,NB_OF_SKIROCS_PER_ASU,NB_OF_SCAS_IN_SKIROC);
     tree->Branch("nhits",_nhits,name);
 
-    name= TString::Format("lowGain[%i][%i][%i][%i]/I",SLBDEPTH,NB_OF_SKIROCS_PER_ASU,NB_OF_SCAS_IN_SKIROC,NB_OF_CHANNELS_IN_SKIROC);
-    tree->Branch("charge_lowGain",_charge_low,name);
+    name= TString::Format("adc_low[%i][%i][%i][%i]/I",SLBDEPTH,NB_OF_SKIROCS_PER_ASU,NB_OF_SCAS_IN_SKIROC,NB_OF_CHANNELS_IN_SKIROC);
+    tree->Branch("adc_low",_adc_low,name);
 
-    name= TString::Format("highGain[%i][%i][%i][%i]/I",SLBDEPTH,NB_OF_SKIROCS_PER_ASU,NB_OF_SCAS_IN_SKIROC,NB_OF_CHANNELS_IN_SKIROC);
-    tree->Branch("charge_hiGain",_charge_high,name);
+    name= TString::Format("adc_high[%i][%i][%i][%i]/I",SLBDEPTH,NB_OF_SKIROCS_PER_ASU,NB_OF_SCAS_IN_SKIROC,NB_OF_CHANNELS_IN_SKIROC);
+    tree->Branch("adc_high",_adc_high,name);
 
     name= TString::Format("autogainbit_low[%i][%i][%i][%i]/I",SLBDEPTH,NB_OF_SKIROCS_PER_ASU,NB_OF_SCAS_IN_SKIROC,NB_OF_CHANNELS_IN_SKIROC);
     tree->Branch("autogainbit_low",_autogainbit_low,name);
@@ -762,8 +762,8 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
 	  _corrected_bcid[isl][k][i]=-999;
 	  _nhits[isl][k][i]=-999;
 	  for (int j=0; j<NB_OF_CHANNELS_IN_SKIROC; j++) {
-	    _charge_low[isl][k][i][j]=-999;
-	    _charge_high[isl][k][i][j]=-999;
+	    _adc_low[isl][k][i][j]=-999;
+	    _adc_high[isl][k][i][j]=-999;
 	    _autogainbit_low[isl][k][i][j]=-999;
 	    _autogainbit_high[isl][k][i][j]=-999;
 	     _hitbit_low[isl][k][i][j]=-999;
@@ -826,10 +826,10 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
       if(zerosupression==false) nchn=NB_OF_CHANNELS_IN_SKIROC;
       else nchn = nhits[isca];
       for(int ichn=0; ichn<nchn; ichn++) {
-	_charge_low[slabAdd][chipId][isca][ichn]=chargevalue_low[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
+	_adc_low[slabAdd][chipId][isca][ichn]=adcvalue_low[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
 	_autogainbit_low[slabAdd][chipId][isca][ichn]=gainvalue_low[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
 	_hitbit_low[slabAdd][chipId][isca][ichn]=hitvalue_low[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
-	_charge_high[slabAdd][chipId][isca][ichn]=chargevalue_high[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
+	_adc_high[slabAdd][chipId][isca][ichn]=adcvalue_high[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
 	_hitbit_high[slabAdd][chipId][isca][ichn]=gainvalue_high[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
 	_autogainbit_high[slabAdd][chipId][isca][ichn]=hitvalue_high[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
 	
@@ -949,7 +949,7 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
 	    //	count_negdata=0;
 	
 	    //	for (int ichan=0; ichan<NB_OF_CHANNELS_IN_SKIROC; ichan++) {
-	    //  if  (charge_high[i][k][ibc][ichan] < NEGDATA_THR) count_negdata++;
+	    //  if  (adc_high[i][k][ibc][ichan] < NEGDATA_THR) count_negdata++;
 	    //}//ichan
 
 	    //if (count_negdata>0) {_badbcid[i][k][ibc]+=32;}
