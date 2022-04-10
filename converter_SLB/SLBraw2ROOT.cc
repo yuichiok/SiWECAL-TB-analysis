@@ -35,7 +35,7 @@ using std::endl;
 #define SLBDEPTH 15
 #define NB_CORE_DAUGHTERS 1 
 #define NEGDATA_THR 11
-#define BCIDTHRES 4
+#define BCIDTHRES 3
 
 /* ======================================================================= */
 int	Convert_FromGrayToBinary (int grayValue, int nbOfBits)
@@ -824,10 +824,13 @@ void SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
 	if (_chipId[i][k]>=0) {
 	  for (int ibc=0; ibc<_numCol[i][k]; ibc++) {
 
-	    // if sca+1 is filled with consec bcid, but sca+2 not, then _badbcid[sca]==1 && _badbcid[sca+1]==2 (bcid+1 issue, events are not _bad, just the next sca trigger is empty)
 	    // if sca+1 is filled with consec bcid, and sca+2 also, then _badbcid[sca]==3 && _badbcid[sca+1]==3 (retriggering)
 	    // if sca+1 is not filled with consec bcid,  _badbcid==0
-
+	    // if sca and sca+1 have consecutive bcids but are not retriggers, then we consider 3 types of EMPTY events
+	    //     case A: empty events after a event with triggers
+	    //     case B: empty events before a event with triggers --> TO BE UNDERSTOOD but it seems that the good one is the one without the trigger (the first)
+	    //     case C&D: both bcids have triggers but, we do nothing
+	    
 	    if(ibc==0) {
 	      _badbcid[i][k][ibc]=0;
 	      int _corr_bcid=_corrected_bcid[i][k][ibc];
@@ -843,8 +846,17 @@ void SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
 	      if(_corr_bcid2>0) {
 		//empty events
 		if( ( _corr_bcid2-_corr_bcid1) >(BCIDTHRES - 1) && (_corr_bcid1-_corr_bcid) ==1) {
-		  _badbcid[i][k][ibc]=1;
-		  _badbcid[i][k][ibc+1]=2;
+		  //case A: empty events after a event with triggers
+		  if(_nhits[i][k][ibc]>0 && _nhits[i][k][ibc+1]==0) {
+		    _badbcid[i][k][ibc]=0;
+		    _badbcid[i][k][ibc+1]=2;//this one is to not be used in any case
+		  }
+		  //case B: empty events before a event with triggers --> TO BE UNDERSTOOD but it seems that the good one is the one without the trigger (the first)
+		  if(_nhits[i][k][ibc]==0 && _nhits[i][k][ibc+1]>0) {
+		    _badbcid[i][k][ibc]=1; //this one should be used but it contains no info about the cells that were retriggered
+		    _badbcid[i][k][ibc+1]=2;//this one is to not be used
+		  }
+		  //case C&D: both bcids have triggers but, we do nothing
 		}
 		// pure retriggers
 		if( ( _corr_bcid2-_corr_bcid1) < BCIDTHRES && (_corr_bcid1-_corr_bcid) < BCIDTHRES) {
@@ -854,6 +866,7 @@ void SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
 		}
 	      }
 
+	      // pure retriggers
 	      if( _corr_bcid1 > 0 && (_corr_bcid1-_corr_bcid) > 1 && (_corr_bcid1-_corr_bcid) <BCIDTHRES) {
 		_badbcid[i][k][ibc]=3;
 		_badbcid[i][k][ibc+1]=3;
@@ -878,8 +891,17 @@ void SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
 		  if( (_corr_bcid1-_corr_bcid) < BCIDTHRES && (_corr_bcid-_corr_bcidminus) < BCIDTHRES ) _badbcid[i][k][ibc]=3;
 
 		  if( _badbcid[i][k][ibc]!=3 && ( _corr_bcid2-_corr_bcid1) >(BCIDTHRES - 1) && (_corr_bcid1-_corr_bcid) ==1) {
-		    _badbcid[i][k][ibc]=1;
-		    _badbcid[i][k][ibc+1]=2;
+		    //case A: empty events after a event with triggers
+		    if(_nhits[i][k][ibc]>0 && _nhits[i][k][ibc+1]==0) {
+		      _badbcid[i][k][ibc]=0;
+		      _badbcid[i][k][ibc+1]=2;//this one is to not be used in any case
+		    }
+		    //case B: empty events before a event with triggers --> TO BE UNDERSTOOD but it seems that the good one is the one without the trigger (the first)
+		    if(_nhits[i][k][ibc]==0 && _nhits[i][k][ibc+1]>0) {
+		      _badbcid[i][k][ibc]=1; //this one should be used but it contains no info about the cells that were retriggered
+		      _badbcid[i][k][ibc+1]=2;//this one is to not be used
+		    }
+		    //case C&D: both bcids have triggers but, we do nothing
 		  }
 		  if( _badbcid[i][k][ibc]!=3 && ( _corr_bcid2-_corr_bcid1) >(BCIDTHRES - 1) && (_corr_bcid1-_corr_bcid) > 1 && (_corr_bcid1-_corr_bcid) <BCIDTHRES) {
 		    _badbcid[i][k][ibc]=3;
