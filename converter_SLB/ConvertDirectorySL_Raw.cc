@@ -61,15 +61,15 @@ void ConvertDirectorySL_Raw(string dirname, bool zerosupression=false, TString r
       break;
     }
     
-    SLBraw2ROOT *ss;
+    SLBraw2ROOT ss;
 
-    ss->_maxReadOutCycleJump=10;
+    ss._maxReadOutCycleJump=10;
     bool result=false;
     while(result==false) {
-      result=ss->ReadFile((*filenames)[0], true, output);
-      ss->_maxReadOutCycleJump*=10;
+      result=ss.ReadFile((*filenames)[0], true, output);
+      ss._maxReadOutCycleJump*=10;
     }
-    delete ss;
+    //    delete ss;
     
   }
   
