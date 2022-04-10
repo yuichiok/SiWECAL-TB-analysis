@@ -99,10 +99,10 @@ void DecodedSLBAnalysis::HitMonitoring(TString outputname="", int maxnhit=5, int
 
 	  // int ntaggedasbad = 0;
 	  // for(int ichn=0; ichn<64; ichn++) {
-	  //   if(charge_lowGain[ilayer][ichip][isca][ichn]<180 && charge_lowGain[ilayer][ichip][isca][ichn]>-1) {
+	  //   if(adc_low[ilayer][ichip][isca][ichn]<180 && adc_low[ilayer][ichip][isca][ichn]>-1) {
 	  //     ntaggedasbad++;
 	  //   }
-	  //   if(charge_hiGain[ilayer][ichip][isca][ichn]<200 && charge_hiGain[ilayer][ichip][isca][ichn]>-1) {
+	  //   if(adc_high[ilayer][ichip][isca][ichn]<200 && adc_high[ilayer][ichip][isca][ichn]>-1) {
 	  //     ntaggedasbad++;
 	  //   }
 	  // }//ichn 
@@ -268,14 +268,14 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=1, int
 
 	  for(int ichn=0; ichn<64; ichn++) {
 	    if(hitbit_low[ilayer][ichip][isca][ichn]==0) 
-	      ped_low_sca.at(ilayer).at(ichip).at(ichn).at(isca)->Fill(charge_lowGain[ilayer][ichip][isca][ichn]);
+	      ped_low_sca.at(ilayer).at(ichip).at(ichn).at(isca)->Fill(adc_low[ilayer][ichip][isca][ichn]);
 	    if(hitbit_high[ilayer][ichip][isca][ichn]==0) 
-	      ped_high_sca.at(ilayer).at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[ilayer][ichip][isca][ichn]);
+	      ped_high_sca.at(ilayer).at(ichip).at(ichn).at(isca)->Fill(adc_high[ilayer][ichip][isca][ichn]);
 	    
 	    if(hitbit_low[ilayer][ichip][isca][ichn]==1) 
-	      mip_low_sca.at(ilayer).at(ichip).at(ichn).at(isca)->Fill(charge_lowGain[ilayer][ichip][isca][ichn]);
+	      mip_low_sca.at(ilayer).at(ichip).at(ichn).at(isca)->Fill(adc_low[ilayer][ichip][isca][ichn]);
 	    if(hitbit_high[ilayer][ichip][isca][ichn]==1) 
-	      mip_high_sca.at(ilayer).at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[ilayer][ichip][isca][ichn]);
+	      mip_high_sca.at(ilayer).at(ichip).at(ichn).at(isca)->Fill(adc_high[ilayer][ichip][isca][ichn]);
 	  }
 	}//isca
 	  
@@ -417,8 +417,8 @@ int DecodedSLBAnalysis::NSlabsAnalysisNoise(TString outputname="", int gain=1, i
 	  if(badbcid[ilayer][ichip][isca]!=0) continue;
 
      	  for(int j=0; j<64; j++) {
-	    if(gain==1 && hitbit_high[ilayer][ichip][isca][j]==0 ) h_ped.at(isca).at(ilayer).at(ichip).at(j)->Fill(charge_hiGain[ilayer][ichip][isca][j]);
-	    if(gain==0 && hitbit_low[ilayer][ichip][isca][j]==0 ) h_ped.at(isca).at(ilayer).at(ichip).at(j)->Fill(charge_lowGain[ilayer][ichip][isca][j]);
+	    if(gain==1 && hitbit_high[ilayer][ichip][isca][j]==0 ) h_ped.at(isca).at(ilayer).at(ichip).at(j)->Fill(adc_high[ilayer][ichip][isca][j]);
+	    if(gain==0 && hitbit_low[ilayer][ichip][isca][j]==0 ) h_ped.at(isca).at(ilayer).at(ichip).at(j)->Fill(adc_low[ilayer][ichip][isca][j]);
 	  }
 	  
 	}
@@ -467,16 +467,16 @@ for (Long64_t jentry=0; jentry<nentries;jentry++) {
        
        for(int ichn=0; ichn<64; ichn++) {                   
          if(ped_value.at(isca).at(ilayer).at(ichip).at(ichn)<1 || hitbit_high[ilayer][ichip][isca][ichn]==1 ) continue;
-         if(charge_hiGain[ilayer][ichip][isca][ichn]<0) continue;
+         if(adc_high[ilayer][ichip][isca][ichn]<0) continue;
 
-         double charge=charge_hiGain[ilayer][ichip][isca][ichn]-ped_value.at(isca).at(ilayer).at(ichip).at(ichn);  
-         if(gain==0) charge=charge_lowGain[ilayer][ichip][isca][ichn]-ped_value.at(isca).at(ilayer).at(ichip).at(ichn);
+         double charge=adc_high[ilayer][ichip][isca][ichn]-ped_value.at(isca).at(ilayer).at(ichip).at(ichn);  
+         if(gain==0) charge=adc_low[ilayer][ichip][isca][ichn]-ped_value.at(isca).at(ilayer).at(ichip).at(ichn);
          for(int kchn=0; kchn<64; kchn++) {
            if(ped_value.at(isca).at(ilayer).at(ichip).at(kchn)<1 || hitbit_high[ilayer][ichip][isca][kchn]==1) continue;
-           if(charge_hiGain[ilayer][ichip][isca][kchn]<0) continue;
+           if(adc_high[ilayer][ichip][isca][kchn]<0) continue;
 
-           double charge_k=charge_hiGain[ilayer][ichip][isca][kchn]-ped_value.at(isca).at(ilayer).at(ichip).at(kchn);   
-           if(gain==0) charge_k=charge_lowGain[ilayer][ichip][isca][kchn]-ped_value.at(isca).at(ilayer).at(ichip).at(kchn);    
+           double charge_k=adc_high[ilayer][ichip][isca][kchn]-ped_value.at(isca).at(ilayer).at(ichip).at(kchn);   
+           if(gain==0) charge_k=adc_low[ilayer][ichip][isca][kchn]-ped_value.at(isca).at(ilayer).at(ichip).at(kchn);    
            cov.at(isca).at(ilayer).at(ichip)->Fill(ichn,kchn,charge*charge_k);       
            nevents.at(isca).at(ilayer).at(ichip)->Fill(ichn,kchn);
 

@@ -46,8 +46,8 @@ Int_t           bcid[15][16][15];
 Int_t           corrected_bcid[15][16][15];
 Int_t           badbcid[15][16][15];
 Int_t           nhits[15][16][15];
-Int_t           charge_lowGain[15][16][15][64];
-Int_t           charge_hiGain[15][16][15][64];
+Int_t           adc_low[15][16][15][64];
+Int_t           adc_high[15][16][15][64];
 Int_t           autogainbit_low[15][16][15][64];
 Int_t           autogainbit_high[15][16][15][64];
 Int_t           hitbit_low[15][16][15][64];
@@ -72,8 +72,8 @@ TBranch        *b_bcid;   //!
 TBranch        *b_corrected_bcid;   //!
 TBranch        *b_badbcid;   //!
 TBranch        *b_nhits;   //!
-TBranch        *b_lowGain;   //!
-TBranch        *b_highGain;   //!
+TBranch        *b_adc_low;   //!
+TBranch        *b_adc_high;   //!
 TBranch        *b_autogainbit_low;   //!
 TBranch        *b_autogainbit_high;   //!
 TBranch        *b_hitbit_low;   //!
@@ -99,8 +99,8 @@ void SetBranchAddressFunction(TTree *fChain) {
   fChain->SetBranchAddress("corrected_bcid", corrected_bcid, &b_corrected_bcid);
   fChain->SetBranchAddress("badbcid", badbcid, &b_badbcid);
   fChain->SetBranchAddress("nhits", nhits, &b_nhits);
-  fChain->SetBranchAddress("charge_lowGain", charge_lowGain, &b_lowGain);
-  fChain->SetBranchAddress("charge_hiGain", charge_hiGain, &b_highGain);
+  fChain->SetBranchAddress("adc_low", adc_low, &b_adc_low);
+  fChain->SetBranchAddress("adc_high", adc_high, &b_adc_high);
   fChain->SetBranchAddress("autogainbit_low", autogainbit_low, &b_autogainbit_low);
   fChain->SetBranchAddress("autogainbit_high", autogainbit_high, &b_autogainbit_high);
   fChain->SetBranchAddress("hitbit_low", hitbit_low, &b_hitbit_low);
