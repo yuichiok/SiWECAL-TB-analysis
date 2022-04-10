@@ -375,8 +375,8 @@ bool SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
 	  
 	  rawData = (unsigned short)ucharValFrameVec.at(index+2*channel) + ((unsigned short)ucharValFrameVec.at(index+1+2*channel) << 8);
 	  rawValue = (int)(rawData & 0xFFF);
-	  hitvalue_high[sca][channel] =  (rawData & 0x1000)>>12;
-	  gainvalue_high[sca][channel] =  (rawData & 0x2000)>>13;
+	  gainalue_high[sca][channel] =  (rawData & 0x1000)>>12;
+	  hitvalue_high[sca][channel] =  (rawData & 0x2000)>>13;
 	  int chargeValuetemp =  Convert_FromGrayToBinary(rawValue , 12); 
 	  chargevalue_high[sca][channel] = chargeValuetemp;
 	  if(_debug) std::cout<<"chn:"<<channel<<" gainvalue_1:"<<gainvalue_high[sca][channel]<<" hitvalue_1:"<<hitvalue_high[sca][channel]<<" "<<"chargeValue_1:"<<chargevalue_high[sca][channel]<<std::endl;
@@ -391,8 +391,8 @@ bool SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
 	  if(_debug) std::cout<<"chn:"<<channel<<endl;
 	  rawData = (unsigned short)ucharValFrameVec.at(index+2*channel) + ((unsigned short)ucharValFrameVec.at(index+1+2*channel) << 8);
 	  rawValue = (int)(rawData & 0xFFF);
-	  hitvalue_low[sca][channel] =  (rawData & 0x1000)>>12;
-	  gainvalue_low[sca][channel] =  (rawData & 0x2000)>>13;  
+	  gainvalue_low[sca][channel] =  (rawData & 0x1000)>>12;
+	  hitvalue_low[sca][channel] =  (rawData & 0x2000)>>13;  
 	  int chargeValuetemp = Convert_FromGrayToBinary(rawValue , 12);
 	  chargevalue_low[sca][channel] = chargeValuetemp;
 	  if(_debug) std::cout<<"chn:"<<channel<<" gainvalue_0:"<<gainvalue_low[sca][channel]<<" hitvalue_0:"<<hitvalue_low[sca][channel]<<" "<<"chargeValue_0:"<<chargevalue_low[sca][channel]<<std::endl;
