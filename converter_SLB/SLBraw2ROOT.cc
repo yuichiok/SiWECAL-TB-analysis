@@ -148,9 +148,11 @@ protected:
   int _nhits[SLBDEPTH][NB_OF_SKIROCS_PER_ASU][NB_OF_SCAS_IN_SKIROC];
   int _charge_low[SLBDEPTH][NB_OF_SKIROCS_PER_ASU][NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
   int _charge_high[SLBDEPTH][NB_OF_SKIROCS_PER_ASU][NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
-  int _gain_hit_low[SLBDEPTH][NB_OF_SKIROCS_PER_ASU][NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
-  int _gain_hit_high[SLBDEPTH][NB_OF_SKIROCS_PER_ASU][NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
-  int _event;
+  int _autogainbit_low[SLBDEPTH][NB_OF_SKIROCS_PER_ASU][NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
+  int _autogainbit_high[SLBDEPTH][NB_OF_SKIROCS_PER_ASU][NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
+  int _hitbit_low[SLBDEPTH][NB_OF_SKIROCS_PER_ASU][NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
+  int _hitbit_high[SLBDEPTH][NB_OF_SKIROCS_PER_ASU][NB_OF_SCAS_IN_SKIROC][NB_OF_CHANNELS_IN_SKIROC];
+  //  int _event;
   //int numbcid;
   int _numCol[SLBDEPTH][NB_OF_SKIROCS_PER_ASU];
   int _chipId[SLBDEPTH][NB_OF_SKIROCS_PER_ASU];
@@ -393,8 +395,8 @@ void SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
 	}
 				
       index += (NB_OF_CHANNELS_IN_SKIROC*2);
-      if((nbOfSingleSkirocEventsInFrame-sca_ascii-1) == 0)
-	_event++;
+      //      if((nbOfSingleSkirocEventsInFrame-sca_ascii-1) == 0)
+      //	_event++;
 
       if(_ASCIIOUT){
 	//#0 Size 1 ChipID 9 coreIdx 0 slabIdx 0 slabAdd 0 Asu 0 SkirocIndex 9 transmitID 0 cycleID 2 StartTime 56717 rawTSD 3712 rawAVDD0 2017 rawAVDD1 2023 tsdValue 36.02 avDD0 1.971 aVDD1 1.977
@@ -421,7 +423,7 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
  
     ifstream fin;
     unsigned int dataResult=0;
-    _event=0;
+    //    _event=0;
     _acqNumber=0;
   
     if(outFileName == "default"){
@@ -671,7 +673,7 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
 
     tree = new TTree("siwecaldecoded","siwecaldecoded");
 
-    tree->Branch("event",&_event,"event/I");
+    //    tree->Branch("event",&_event,"event/I");
     tree->Branch("acqNumber",&_acqNumber,"acqNumber/I");
     tree->Branch("n_slboards",&_n_slboards,"n_slboards/I");
 
@@ -727,11 +729,17 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
     name= TString::Format("highGain[%i][%i][%i][%i]/I",SLBDEPTH,NB_OF_SKIROCS_PER_ASU,NB_OF_SCAS_IN_SKIROC,NB_OF_CHANNELS_IN_SKIROC);
     tree->Branch("charge_hiGain",_charge_high,name);
 
-    name= TString::Format("gain_hit_low[%i][%i][%i][%i]/I",SLBDEPTH,NB_OF_SKIROCS_PER_ASU,NB_OF_SCAS_IN_SKIROC,NB_OF_CHANNELS_IN_SKIROC);
-    tree->Branch("gain_hit_low",_gain_hit_low,name);
+    name= TString::Format("autogainbit_low[%i][%i][%i][%i]/I",SLBDEPTH,NB_OF_SKIROCS_PER_ASU,NB_OF_SCAS_IN_SKIROC,NB_OF_CHANNELS_IN_SKIROC);
+    tree->Branch("autogainbit_low",_autogainbit_low,name);
 
-    name= TString::Format("gain_hit_high[%i][%i][%i][%i]/I",SLBDEPTH,NB_OF_SKIROCS_PER_ASU,NB_OF_SCAS_IN_SKIROC,NB_OF_CHANNELS_IN_SKIROC);
-    tree->Branch("gain_hit_high",_gain_hit_high,name);
+    name= TString::Format("autogainbit_high[%i][%i][%i][%i]/I",SLBDEPTH,NB_OF_SKIROCS_PER_ASU,NB_OF_SCAS_IN_SKIROC,NB_OF_CHANNELS_IN_SKIROC);
+    tree->Branch("autogainbit_high",_autogainbit_high,name);
+    
+    name= TString::Format("hitbit_low[%i][%i][%i][%i]/I",SLBDEPTH,NB_OF_SKIROCS_PER_ASU,NB_OF_SCAS_IN_SKIROC,NB_OF_CHANNELS_IN_SKIROC);
+    tree->Branch("hitbit_low",_hitbit_low,name);
+
+    name= TString::Format("hitbit_high[%i][%i][%i][%i]/I",SLBDEPTH,NB_OF_SKIROCS_PER_ASU,NB_OF_SCAS_IN_SKIROC,NB_OF_CHANNELS_IN_SKIROC);
+    tree->Branch("hitbit_high",_hitbit_high,name);
 
     return;
   }
@@ -748,8 +756,11 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
 	  for (int j=0; j<NB_OF_CHANNELS_IN_SKIROC; j++) {
 	    _charge_low[isl][k][i][j]=-999;
 	    _charge_high[isl][k][i][j]=-999;
-	    _gain_hit_low[isl][k][i][j]=-999;
-	    _gain_hit_high[isl][k][i][j]=-999;
+	    _autogainbit_low[isl][k][i][j]=-999;
+	    _autogainbit_high[isl][k][i][j]=-999;
+	     _hitbit_low[isl][k][i][j]=-999;
+            _hitbit_high[isl][k][i][j]=-999;
+
 	  }
 	}
       
@@ -808,9 +819,12 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
       else nchn = nhits[isca];
       for(int ichn=0; ichn<nchn; ichn++) {
 	_charge_low[slabAdd][chipId][isca][ichn]=chargevalue_low[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
-	_gain_hit_low[slabAdd][chipId][isca][ichn]=hitvalue_low[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
+	_autogainbit_low[slabAdd][chipId][isca][ichn]=gainvalue_low[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
+	_hitbit_low[slabAdd][chipId][isca][ichn]=hitvalue_low[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
 	_charge_high[slabAdd][chipId][isca][ichn]=chargevalue_high[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
-	_gain_hit_high[slabAdd][chipId][isca][ichn]=hitvalue_high[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
+	_hitbit_high[slabAdd][chipId][isca][ichn]=gainvalue_high[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
+	_autogainbit_high[slabAdd][chipId][isca][ichn]=hitvalue_high[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
+	
       }
     }//end isca
   }
