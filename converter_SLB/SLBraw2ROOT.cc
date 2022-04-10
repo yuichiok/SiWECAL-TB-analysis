@@ -72,7 +72,7 @@ public:
     _ASCIIOUT = false;
     _debug = false;
     _debug2 = false;
-    _eudaq=false;
+    _eudaq= false;
     _maxReadOutCycleJump=10;
   }
   ~SLBraw2ROOT(){
