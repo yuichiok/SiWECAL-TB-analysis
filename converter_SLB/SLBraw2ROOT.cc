@@ -72,14 +72,14 @@ public:
     _ASCIIOUT = false;
     _debug = false;
     _debug2 = false;
-    _eudaq=true;
+    _eudaq=false;
     _maxReadOutCycleJump=10;
   }
   ~SLBraw2ROOT(){
   };
   
-  void ReadFile(TString inputFileName, bool overwrite=false, TString outFileName = "default", bool zerosupression=false, bool getbadbcid_bool=true);
-
+  bool ReadFile(TString inputFileName, bool overwrite=false, TString outFileName = "default", bool zerosupression=false, bool getbadbcid_bool=true);
+  int _maxReadOutCycleJump;
 protected:
 
   // general
@@ -87,9 +87,8 @@ protected:
   bool _debug;
   bool _debug2;
   bool _eudaq;
-  int _maxReadOutCycleJump;
   // -------- RAW DATA
-  int coreDaughterIndex;
+ int coreDaughterIndex;
   int chipId;
   int asuIndex; 
   int slabIndex;
@@ -417,7 +416,7 @@ void SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
 
 }
 
-  void SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString outFileName = "default", bool zerosupression=false, bool getbadbcid_bool=true) {
+bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString outFileName = "default", bool zerosupression=false, bool getbadbcid_bool=true) {
 
  
     ifstream fin;
@@ -433,7 +432,7 @@ void SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
     if(!overwrite){
       fout = new TFile(outFileName,"create");
       if(!fout->IsOpen()){
-	return;
+	return true;
       }
     }
     else {
@@ -453,7 +452,9 @@ void SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
     //one map of cycles per slboard
     //why per slboard? because the slboad-add is not in the raw dataframes but in the 
     std::map<int, std::vector<std::vector<unsigned char> > >map_of_cycles_and_frames;
-  
+    // If one of the cycles
+    // reappears after the _maxReadOutCycleJump, then we will report it at the end of the conversion
+    std::vector<int> vector_with_dumped_cycles;
   
     int cycleswithdata=0;
     int lastcycleid=-1;
@@ -568,6 +569,7 @@ void SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
 	    std::vector<std::vector<unsigned char> > new_vector_of_frames;
 	    new_vector_of_frames.push_back(ucharValFrameVec);
 	    map_of_cycles_and_frames[latestfoundcycle]=new_vector_of_frames;
+	    vector_with_dumped_cycles.push_back(latestfoundcycle);
 	  } else {
 	    //existing cycle ID
 	    it->second.push_back(ucharValFrameVec);
@@ -638,13 +640,26 @@ void SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
       if (it != map_of_cycles_and_frames.end())
         map_of_cycles_and_frames.erase(it++);
     }
-  
-    cout<<" ## END OF SLBrawROOT.cc converter : file: "<<inputFileName<<" FirstCycle:"<<firstcycleid<<" LastCycle:"<<lastcycleid<<" Total cycles with data:"<<cycleswithdata<<endl;
+
+    sort(vector_with_dumped_cycles.begin(),vector_with_dumped_cycles.end());
+    int size_dumpedcycles=vector_with_dumped_cycles.size();
+    unique(vector_with_dumped_cycles.begin(),vector_with_dumped_cycles.end());
+    int	size_dumpedcycles_after=vector_with_dumped_cycles.size();
+
+    
+    cout<<" ## END OF SLBrawROOT.cc converter : file: "<<inputFileName<<" FirstCycle:"<<firstcycleid<<" LastCycle:"<<lastcycleid<<" Total cycles with data:"<<cycleswithdata<<" size_dumpedcycles_after:"<<size_dumpedcycles_after<<" size_dumpedcycles:"<<size_dumpedcycles<<endl;
 
     fout->cd();
    
     fout->Write(0);
     fout->Close();
+
+    if(size_dumpedcycles>size_dumpedcycles_after) {
+      cout<<" ATTENTION : REPEATED CYCLES WHEN USING _maxReadOutCycleJump="<<_maxReadOutCycleJump<<endl;
+	return false;
+    }
+
+    return true;
 
 
   }
