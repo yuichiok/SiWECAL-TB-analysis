@@ -124,7 +124,7 @@ protected:
   int nhits[NB_OF_SCAS_IN_SKIROC];
 
   void InitializeRawFrame();
-  void DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec);
+  bool DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec);
   int cycleIDDecoding(std::vector<unsigned char> ucharValFrameVec);
 
   // ROOT CONVERSION
@@ -243,7 +243,7 @@ int SLBraw2ROOT::cycleIDDecoding(std::vector<unsigned char> ucharValFrameVec ) {
 
 }
 
-void SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
+bool SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
 
   sca=0;
   cycleID  = 0;
@@ -351,23 +351,28 @@ void SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
       rawValue = (int)ucharValFrameVec.at(actualdatasize -2*(n+1)-2-2) + ((int)(ucharValFrameVec.at(actualdatasize -1 -2*(n+1)-2) & 0x0F)<<8) ;   
       int sca_ascii = nbOfSingleSkirocEventsInFrame-n-1;
       sca=nbOfSingleSkirocEventsInFrame-(sca_ascii+1);
+
+      if(sca> (NB_OF_SCAS_IN_SKIROC-1) ) {
+	cout<<" ERROR, SCA="<<sca<<" LARGER THAN NB_OF_SCAS_IN_SKIROC  --> ignore frame"<<endl;
+	return false;
+      }	
       if(coreDaughterIndex == -1)
 	core = 0;
       else
 	core = coreDaughterIndex;
-		
+      
       if(slabIndex == -1)
 	slab = 0;
       else
 	slab = slabIndex;
-
+      
       bcid[sca]=Convert_FromGrayToBinary(rawValue , 12);
       if(_debug) std::cout<<"sca:"<<sca<<" sca_ascii:"<<sca_ascii<<" bcid:"<<bcid[sca]<<std::endl;
-
+      
       for(channel = 0; channel < NB_OF_CHANNELS_IN_SKIROC; channel++)
 	{
 	  if(_debug) std::cout<<"chn:"<<channel<<"index:"<<index<<endl;
-
+	  
 	  rawData = (unsigned short)ucharValFrameVec.at(index+2*channel) + ((unsigned short)ucharValFrameVec.at(index+1+2*channel) << 8);
 	  rawValue = (int)(rawData & 0xFFF);
 	  hitvalue_high[sca][channel] =  (rawData & 0x1000)>>12;
@@ -375,11 +380,11 @@ void SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
 	  int chargeValuetemp =  Convert_FromGrayToBinary(rawValue , 12); 
 	  chargevalue_high[sca][channel] = chargeValuetemp;
 	  if(_debug) std::cout<<"chn:"<<channel<<" gainvalue_1:"<<gainvalue_high[sca][channel]<<" hitvalue_1:"<<hitvalue_high[sca][channel]<<" "<<"chargeValue_1:"<<chargevalue_high[sca][channel]<<std::endl;
-
+	  
 	}
-		
+      
       index += (NB_OF_CHANNELS_IN_SKIROC*2);
-
+      
       nhits[sca]=0;
       for(channel = 0; channel < NB_OF_CHANNELS_IN_SKIROC; channel++)
 	{
@@ -416,6 +421,7 @@ void SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
     }
  if(_debug) cout<<"endDECODING"<<endl;
 
+ return true;
 }
 
 bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString outFileName = "default", bool zerosupression=false, bool getbadbcid_bool=true) {
@@ -597,9 +603,10 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
 	
 	for(int jframes=0; jframes<nframes; jframes++) {
 	  if(jframes==0) treeInit(zerosupression);
-	  DecodeRawFrame(map_dumped_into_a_vector[0].second.at(jframes));
-	  RecordCycle(zerosupression);
-	  if(getbadbcid_bool==true) GetBadBCID();
+	  if(DecodeRawFrame(map_dumped_into_a_vector[0].second.at(jframes))){
+	    RecordCycle(zerosupression);
+	    if(getbadbcid_bool==true) GetBadBCID();
+	  }
 	}
 	tree->Fill();
 	// }
@@ -630,12 +637,13 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
       if(_debug)   std::cout<<"storing cycleID:"<<map_dumped_into_a_vector[0].first<<" that has "<<nframes<<" nframes"<<endl;
 
       for(int jframes=0; jframes<nframes; jframes++) {
-        DecodeRawFrame(map_dumped_into_a_vector[0].second.at(jframes));
-        if(jframes==0) treeInit(zerosupression);
-        RecordCycle(zerosupression);
-        if(getbadbcid_bool==true) GetBadBCID();
-        tree->Fill();
+        if(DecodeRawFrame(map_dumped_into_a_vector[0].second.at(jframes))) {
+	  if(jframes==0) treeInit(zerosupression);
+	  RecordCycle(zerosupression);
+	  if(getbadbcid_bool==true) GetBadBCID();
+	}
       }
+      tree->Fill();
       // }
       std::map<int, std::vector<std::vector<unsigned char>>>::iterator it;
       it=map_of_cycles_and_frames.find(map_dumped_into_a_vector[0].first);
