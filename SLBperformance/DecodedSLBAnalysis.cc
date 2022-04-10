@@ -108,7 +108,7 @@ void DecodedSLBAnalysis::HitMonitoring(TString outputname="", int maxnhit=5, int
 	  // }//ichn 
 
         for(int ichn=0; ichn<64; ichn++) {
-         if(gain_hit_high[ilayer][ichip][isca][ichn]==1) {
+         if(hitbit_high[ilayer][ichip][isca][ichn]==1) {
            if(bcid_seen>nslabshit ) { 
             hit_monitoring->Fill(1,(ilayer)*20 +ichip);
             hit_monitoring_layer->Fill(1,(ilayer));
@@ -260,21 +260,21 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=1, int
 
             /*int triggers=0;
             for(int ichn=0; ichn<64; ichn++) {
-              if(gain_hit_high[ilayer][ichip][isca][ichn]==1 ||gain_hit_low[ilayer][ichip][isca][ichn]==1) {
+              if(hitbit_high[ilayer][ichip][isca][ichn]==1 ||hitbit_low[ilayer][ichip][isca][ichn]==1) {
                 triggers++;
               }
           }*/
           // if(triggers==0 || triggers>1) continue;
 
 	  for(int ichn=0; ichn<64; ichn++) {
-	    if(gain_hit_low[ilayer][ichip][isca][ichn]==0) 
+	    if(hitbit_low[ilayer][ichip][isca][ichn]==0) 
 	      ped_low_sca.at(ilayer).at(ichip).at(ichn).at(isca)->Fill(charge_lowGain[ilayer][ichip][isca][ichn]);
-	    if(gain_hit_high[ilayer][ichip][isca][ichn]==0) 
+	    if(hitbit_high[ilayer][ichip][isca][ichn]==0) 
 	      ped_high_sca.at(ilayer).at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[ilayer][ichip][isca][ichn]);
 	    
-	    if(gain_hit_low[ilayer][ichip][isca][ichn]==1) 
+	    if(hitbit_low[ilayer][ichip][isca][ichn]==1) 
 	      mip_low_sca.at(ilayer).at(ichip).at(ichn).at(isca)->Fill(charge_lowGain[ilayer][ichip][isca][ichn]);
-	    if(gain_hit_high[ilayer][ichip][isca][ichn]==1) 
+	    if(hitbit_high[ilayer][ichip][isca][ichn]==1) 
 	      mip_high_sca.at(ilayer).at(ichip).at(ichn).at(isca)->Fill(charge_hiGain[ilayer][ichip][isca][ichn]);
 	  }
 	}//isca
@@ -336,7 +336,7 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=1, int
 
 
 
-int DecodedSLBAnalysis::NSlabsAnalysisNoise(TString outputname="", int gain=1, int sca_test=15)
+int DecodedSLBAnalysis::NSlabsAnalysisNoise(TString outputname="", int gain=1, int iscamax=4)
 {
 
   //Read the channel/chip -- x/y mapping
@@ -350,41 +350,53 @@ int DecodedSLBAnalysis::NSlabsAnalysisNoise(TString outputname="", int gain=1, i
 
 
 
-  std::vector<std::vector<TH2F *> > cov;
-  std::vector<std::vector<TH2F *> > nevents;
-  std::vector<std::vector<std::vector<TH1F *> > > h_ped;
-  std::vector<std::vector<std::vector<double> > > ped_value;
-  for(int ilayer=0; ilayer<15; ilayer++) {                                                                                                                                                                
-    std::vector<TH2F* > cov1;
-    std::vector<TH2F* > nevents1;
-    std::vector<std::vector<TH1F* > > h_ped1;
-    std::vector<std::vector<double > > ped1;
-    for(int i=0; i<16; i++) {                                                                                                                                                                             
-      TH2F * cov2 = new TH2F(TString::Format("cov_unnorm_layer%i_chip%i",ilayer,i),TString::Format("cov_unnorm_layer%i_chip%i",ilayer,i),64,-0.5,63.5,64,-0.5,63.5);
-      TH2F * nevents2 = new TH2F(TString::Format("nevents_layer%i_chip%i",ilayer,i),TString::Format("nevents_layer%i_chip%i",ilayer,i),64,-0.5,63.5,64,-0.5,63.5);
-      cov1.push_back(cov2);
-      nevents1.push_back(nevents2);
-      std::vector<TH1F* > h_ped2;
-      std::vector<double > ped2;
-      for(int j=0; j<64; j++) {
-       TH1F * h_ped3 = new TH1F(TString::Format("h_ped_layer%i_chip%i_chn%i",ilayer,i,j),TString::Format("h_ped_layer%i_chip%i_chn%i",ilayer,i,j),300,150.5,450.5);
-       h_ped2.push_back(h_ped3);
-       ped2.push_back(0);
-     }
-     h_ped1.push_back(h_ped2);
-     ped1.push_back(ped2);
-   }
-   cov.push_back(cov1);
-   nevents.push_back(nevents1);
-   h_ped.push_back(h_ped1);
-   ped_value.push_back(ped1);
- }
+  std::vector<std::vector<std::vector<TH2F *> > > cov;
+  std::vector<std::vector<std::vector<TH2F *> > > nevents;
+  std::vector<std::vector<std::vector<std::vector<TH1F *> > > > h_ped;
+  std::vector<std::vector<std::vector<std::vector<double> > > > ped_value;
+
+  for(int isca=0; isca<iscamax; isca++) {        
+    std::vector<std::vector<TH2F* > > cov_;
+    std::vector<std::vector<TH2F* > > nevents_;
+    std::vector<std::vector<std::vector<TH1F* > > > h_ped_;
+    std::vector<std::vector<std::vector<double > > > ped_;
+    
+    for(int ilayer=0; ilayer<15; ilayer++) {        
+      std::vector<TH2F* > cov1;
+      std::vector<TH2F* > nevents1;
+      std::vector<std::vector<TH1F* > > h_ped1;
+      std::vector<std::vector<double > > ped1;
+      for(int i=0; i<16; i++) {                     
+	TH2F * cov2 = new TH2F(TString::Format("cov_unnorm_layer%i_chip%i_sca%i",ilayer,i,isca),TString::Format("cov_unnorm_layer%i_chip%i_sca%i",ilayer,i,isca),64,-0.5,63.5,64,-0.5,63.5);
+	TH2F * nevents2 = new TH2F(TString::Format("nevents_layer%i_chip%i_sca%i",ilayer,i,isca),TString::Format("nevents_layer%i_chip%i_sca%i",ilayer,i,isca),64,-0.5,63.5,64,-0.5,63.5);
+	cov1.push_back(cov2);
+	nevents1.push_back(nevents2);
+	std::vector<TH1F* >  h_ped2;
+	std::vector<double >  ped2;
+	for(int j=0; j<64; j++) {
+	  TH1F * h_ped3 = new TH1F(TString::Format("h_ped_layer%i_chip%i_chn%i_sca%i",ilayer,i,j,isca),TString::Format("h_ped_layer%i_chip%i_chn%i_sca%i",ilayer,i,j,isca),300,150.5,450.5);
+	  h_ped2.push_back(h_ped3);
+	  ped2.push_back(0);
+	}
+	h_ped1.push_back(h_ped2);
+	ped1.push_back(ped2);
+      }
+      cov_.push_back(cov1);
+      nevents_.push_back(nevents1);
+      h_ped_.push_back(h_ped1);
+      ped_.push_back(ped1);
+    }
+    cov.push_back(cov_);
+    nevents.push_back(nevents_);
+    h_ped.push_back(h_ped_);
+    ped_value.push_back(ped_);
+  }
 
  Long64_t nbytes = 0, nb = 0;
 
 
-  // -----------------------------------------------------------------------------------------------------
-  // Pedestal Analysis
+ // -----------------------------------------------------------------------------------------------------
+ // Pedestal Analysis
  for (Long64_t jentry=0; jentry<nentries;jentry++) {
   Long64_t ientry = LoadTree(jentry);
   if (ientry < 0) break;
@@ -400,31 +412,35 @@ int DecodedSLBAnalysis::NSlabsAnalysisNoise(TString outputname="", int gain=1, i
     //std::vector<int> list_of_bcids;
     for(int ilayer=0; ilayer<n_slboards; ilayer++) {
       for(int ichip=0; ichip<16; ichip++) {
-        for(int isca=0; isca<15; isca++) {
-          if(sca_test<15 && isca!=sca_test) continue;
+        for(int isca=0; isca<iscamax; isca++) {
 	  if(bcid[ilayer][ichip][isca]<0) continue;
-     	  for(int j=0; j<64; j++) {
-	    if(gain==1 && gain_hit_high[ilayer][ichip][isca][j]==0 ) h_ped.at(ilayer).at(ichip).at(j)->Fill(charge_hiGain[ilayer][ichip][isca][j]);
-	    if(gain==0 && gain_hit_low[ilayer][ichip][isca][j]==0 ) h_ped.at(ilayer).at(ichip).at(j)->Fill(charge_lowGain[ilayer][ichip][isca][j]);
-	  }
+	  if(badbcid[ilayer][ichip][isca]!=0) continue;
 
+     	  for(int j=0; j<64; j++) {
+	    if(gain==1 && hitbit_high[ilayer][ichip][isca][j]==0 ) h_ped.at(isca).at(ilayer).at(ichip).at(j)->Fill(charge_hiGain[ilayer][ichip][isca][j]);
+	    if(gain==0 && hitbit_low[ilayer][ichip][isca][j]==0 ) h_ped.at(isca).at(ilayer).at(ichip).at(j)->Fill(charge_lowGain[ilayer][ichip][isca][j]);
+	  }
+	  
 	}
       }
     }
   }
 
-  for(int ilayer=0; ilayer<n_slboards; ilayer++) {
-    for(int ichip=0; ichip<16; ichip++) {
-      for(int ichn=0; ichn<64; ichn++) {
-	if(h_ped.at(ilayer).at(ichip).at(ichn)->GetEntries()>50) {
-	  h_ped.at(ilayer).at(ichip).at(ichn)->GetXaxis()->SetRangeUser(h_ped.at(ilayer).at(ichip).at(ichn)->GetMean()-20,h_ped.at(ilayer).at(ichip).at(ichn)->GetMean()+20);
-	  ped_value.at(ilayer).at(ichip).at(ichn)=h_ped.at(ilayer).at(ichip).at(ichn)->GetMean();
-	} else ped_value.at(ilayer).at(ichip).at(ichn)=0;
 
-	//	cout<<endl;
+ for(int isca=0; isca<iscamax; isca++) {
+   for(int ilayer=0; ilayer<n_slboards; ilayer++) {
+     for(int ichip=0; ichip<16; ichip++) {
+       for(int ichn=0; ichn<64; ichn++) {
+	 if(h_ped.at(isca).at(ilayer).at(ichip).at(ichn)->GetEntries()>50) {
+	   h_ped.at(isca).at(ilayer).at(ichip).at(ichn)->GetXaxis()->SetRangeUser(h_ped.at(isca).at(ilayer).at(ichip).at(ichn)->GetMean()-15,h_ped.at(isca).at(ilayer).at(ichip).at(ichn)->GetMean()+15);
+	   ped_value.at(isca).at(ilayer).at(ichip).at(ichn)=h_ped.at(isca).at(ilayer).at(ichip).at(ichn)->GetMean();
+	 } else ped_value.at(isca).at(ilayer).at(ichip).at(ichn)=0;
+	 
+	 //	cout<<endl;
+       }
+     }
    }
  }
-}
 
   // -----------------------------------------------------------------------------------------------------   
   // COVARIANCE ANALYSIS
@@ -443,25 +459,26 @@ for (Long64_t jentry=0; jentry<nentries;jentry++) {
   for(int ilayer=0; ilayer<n_slboards; ilayer++) {
     for(int ichip=0; ichip<16; ichip++) {
 
-     for(int isca=0; isca<15; isca++) {
-       if(sca_test<15 && isca!=sca_test) continue;
+     for(int isca=0; isca<iscamax; isca++) {
+       //     if(sca_test<iscamax && isca!=sca_test) continue;
 	  //	  if(isca>0) if(badbcid[ilayer][ichip][isca]-) continue;
-          if(bcid[ilayer][ichip][isca]<0) continue;
-
+       if(bcid[ilayer][ichip][isca]<0) continue;
+       if(badbcid[ilayer][ichip][isca]!=0) continue;
+       
        for(int ichn=0; ichn<64; ichn++) {                   
-         if(ped_value.at(ilayer).at(ichip).at(ichn)<100 || gain_hit_high[ilayer][ichip][isca][ichn]==1 ) continue;
+         if(ped_value.at(isca).at(ilayer).at(ichip).at(ichn)<1 || hitbit_high[ilayer][ichip][isca][ichn]==1 ) continue;
          if(charge_hiGain[ilayer][ichip][isca][ichn]<0) continue;
 
-         double charge=charge_hiGain[ilayer][ichip][isca][ichn]-ped_value.at(ilayer).at(ichip).at(ichn);  
-         if(gain==0) charge=charge_lowGain[ilayer][ichip][isca][ichn]-ped_value.at(ilayer).at(ichip).at(ichn);
+         double charge=charge_hiGain[ilayer][ichip][isca][ichn]-ped_value.at(isca).at(ilayer).at(ichip).at(ichn);  
+         if(gain==0) charge=charge_lowGain[ilayer][ichip][isca][ichn]-ped_value.at(isca).at(ilayer).at(ichip).at(ichn);
          for(int kchn=0; kchn<64; kchn++) {
-           if(ped_value.at(ilayer).at(ichip).at(kchn)<100 || gain_hit_high[ilayer][ichip][isca][kchn]==1) continue;
+           if(ped_value.at(isca).at(ilayer).at(ichip).at(kchn)<1 || hitbit_high[ilayer][ichip][isca][kchn]==1) continue;
            if(charge_hiGain[ilayer][ichip][isca][kchn]<0) continue;
 
-           double charge_k=charge_hiGain[ilayer][ichip][isca][kchn]-ped_value.at(ilayer).at(ichip).at(kchn);   
-           if(gain==0) charge_k=charge_lowGain[ilayer][ichip][isca][kchn]-ped_value.at(ilayer).at(ichip).at(kchn);    
-           cov.at(ilayer).at(ichip)->Fill(ichn,kchn,charge*charge_k);       
-           nevents.at(ilayer).at(ichip)->Fill(ichn,kchn);
+           double charge_k=charge_hiGain[ilayer][ichip][isca][kchn]-ped_value.at(isca).at(ilayer).at(ichip).at(kchn);   
+           if(gain==0) charge_k=charge_lowGain[ilayer][ichip][isca][kchn]-ped_value.at(isca).at(ilayer).at(ichip).at(kchn);    
+           cov.at(isca).at(ilayer).at(ichip)->Fill(ichn,kchn,charge*charge_k);       
+           nevents.at(isca).at(ilayer).at(ichip)->Fill(ichn,kchn);
 
 	    }//kchn                                          
 	  }//ichn  
@@ -479,27 +496,36 @@ for (Long64_t jentry=0; jentry<nentries;jentry++) {
   TString gain_st="highgain";
   if(gain==0) gain_st="lowgain";
   TString title=gain_st;
-  if(sca_test<15)  title=TString::Format("%s_sca%i",gain_st.Data(),sca_test);
-  
-  TFile *pedfile = new TFile("results_noise/NoiseCovariance_"+outputname+"_"+title+".root" , "RECREATE");
-  pedfile->cd();
-  TDirectory *cdhisto[nSLB];
-  for(int ilayer=0; ilayer<nSLB; ilayer++) {
-    cdhisto[ilayer] = pedfile->mkdir(TString::Format("layer_%i",ilayer));
+
+  for(int isca=0; isca<iscamax; isca++) {
+
+    title=TString::Format("%s_sca%i",gain_st.Data(),isca);
+    
+    TFile *pedfile = new TFile("results_noise/NoiseCovariance_"+outputname+"_"+title+".root" , "RECREATE");
+    pedfile->cd();
+    TDirectory *cdhisto[nSLB];
+    for(int ilayer=0; ilayer<nSLB; ilayer++) {
+      cdhisto[ilayer] = pedfile->mkdir(TString::Format("layer_%i",ilayer));
+    }
+    
+    // do pedestal (layer/chip/channel/sca based) analysis
+    for(int ilayer=0; ilayer<nSLB; ilayer++) {
+      cdhisto[ilayer]->cd();
+      
+      for(int ichip=0; ichip<16; ichip++) {
+	if( cov.at(isca).at(ilayer).at(ichip)->GetEntries()>400) {
+	  cov.at(isca).at(ilayer).at(ichip)->SetName(TString::Format("cov_unnorm_layer%i_chip%i",ilayer,ichip));
+	  cov.at(isca).at(ilayer).at(ichip)->Write();
+	  nevents.at(isca).at(ilayer).at(ichip)->SetName(TString::Format("nevents_layer%i_chip%i",ilayer,ichip));
+	  nevents.at(isca).at(ilayer).at(ichip)->Write();
+	}
+	for(int ichn=0; ichn<64; ichn++) {
+	  h_ped.at(isca).at(ilayer).at(ichip).at(ichn)->SetName(TString::Format("h_ped_layer%i_chip%i_chn%i",ilayer,ichip,ichn));
+	  h_ped.at(isca).at(ilayer).at(ichip).at(ichn)->Write();
+	}
+      }
+    }
   }
-
-  // do pedestal (layer/chip/channel/sca based) analysis
-  for(int ilayer=0; ilayer<nSLB; ilayer++) {
-    cdhisto[ilayer]->cd();
-
-    for(int ichip=0; ichip<16; ichip++) {
-      if( cov.at(ilayer).at(ichip)->GetEntries()>400) {
-       cov.at(ilayer).at(ichip)->Write();
-       nevents.at(ilayer).at(ichip)->Write();
-     }
-     for(int ichn=0; ichn<64; ichn++) h_ped.at(ilayer).at(ichip).at(ichn)->Write();
-   }
-}
   // noise->Write();
   //hits->Write();
   //}
