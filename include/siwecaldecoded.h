@@ -28,7 +28,7 @@ int slboard_array_mapping[15]={-1};
 
 
 // Declaration of leaf types
-Int_t           event;
+//Int_t           event;
 Int_t           acqNumber;
 Int_t           n_slboards;
 Int_t           slot[15];
@@ -48,11 +48,13 @@ Int_t           badbcid[15][16][15];
 Int_t           nhits[15][16][15];
 Int_t           charge_lowGain[15][16][15][64];
 Int_t           charge_hiGain[15][16][15][64];
-Int_t           gain_hit_low[15][16][15][64];
-Int_t           gain_hit_high[15][16][15][64];
+Int_t           autogainbit_low[15][16][15][64];
+Int_t           autogainbit_high[15][16][15][64];
+Int_t           hitbit_low[15][16][15][64];
+Int_t           hitbit_high[15][16][15][64];
 
 // List of branches
-TBranch        *b_event;   //!
+//TBranch        *b_event;   //!
 TBranch        *b_acqNumber;   //!
 TBranch        *b_n_slboards;   //!
 TBranch        *b_slot;   //!
@@ -72,12 +74,14 @@ TBranch        *b_badbcid;   //!
 TBranch        *b_nhits;   //!
 TBranch        *b_lowGain;   //!
 TBranch        *b_highGain;   //!
-TBranch        *b_gain_hit_low;   //!
-TBranch        *b_gain_hit_high;   //!
+TBranch        *b_autogainbit_low;   //!
+TBranch        *b_autogainbit_high;   //!
+TBranch        *b_hitbit_low;   //!
+TBranch        *b_hitbit_high;   //!
 
 
 void SetBranchAddressFunction(TTree *fChain) {
-  fChain->SetBranchAddress("event", &event, &b_event);
+  //  fChain->SetBranchAddress("event", &event, &b_event);
   fChain->SetBranchAddress("acqNumber", &acqNumber, &b_acqNumber);
   fChain->SetBranchAddress("n_slboards", &n_slboards, &b_n_slboards);
   fChain->SetBranchAddress("slot", slot, &b_slot);
@@ -97,7 +101,9 @@ void SetBranchAddressFunction(TTree *fChain) {
   fChain->SetBranchAddress("nhits", nhits, &b_nhits);
   fChain->SetBranchAddress("charge_lowGain", charge_lowGain, &b_lowGain);
   fChain->SetBranchAddress("charge_hiGain", charge_hiGain, &b_highGain);
-  fChain->SetBranchAddress("gain_hit_low", gain_hit_low, &b_gain_hit_low);
-  fChain->SetBranchAddress("gain_hit_high", gain_hit_high, &b_gain_hit_high);
+  fChain->SetBranchAddress("autogainbit_low", autogainbit_low, &b_autogainbit_low);
+  fChain->SetBranchAddress("autogainbit_high", autogainbit_high, &b_autogainbit_high);
+  fChain->SetBranchAddress("hitbit_low", hitbit_low, &b_hitbit_low);
+  fChain->SetBranchAddress("hitbit_high", hitbit_high, &b_hitbit_high);
   // Notify();
 }
