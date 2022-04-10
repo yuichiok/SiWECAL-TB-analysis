@@ -72,7 +72,7 @@ public:
     _ASCIIOUT = false;
     _debug = false;
     _debug2 = false;
-    _eudaq=false;
+    _eudaq=true;
     _maxReadOutCycleJump=10;
   }
   ~SLBraw2ROOT(){
@@ -467,61 +467,25 @@ void SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
 
       bool firstframe=false;
       bool readframe=false;
-      /*  if(_eudaq) {
-      //EUDAQ RAW FRAME
-      if(firstframe==false && initfilefound==false) {
-      unsigned char temp_char;
-      fin.read((char*)&temp_char, sizeof(unsigned char));
-      if(_debug2) std::cout<<" hex:"<<hex<<temp_char<<"  dec:"<<dec<<temp_char<<std::endl;
-
-      if(temp_char==0xAB) {
-      fin.read((char*)&temp_char, sizeof(unsigned char));
-      if(temp_char==0xCD) {
-      firstframe=true;
-      initfilefound=true;
-      if(_debug2) cout<<"FIRST FRAME FOUND "<<endl;
-      }
-      }
-      }
+      if(_eudaq) {
+	//EUDAQ RAW FRAME
+	unsigned char temp_char;
+	if(!fin.read((char*)&temp_char, sizeof(unsigned char))) break;
+	if(_debug2) std::cout<<" hex:"<<hex<<temp_char<<"  dec:"<<dec<<temp_char<<std::endl;
 	
-      if( (0xFFFF & dataResult) == 0xABCD || firstframe==true) {
-      if(_debug2) std::cout<<" HEADER "<<std::endl;
-      //  if(firstframe==true) fin.read((char *)&dataResult, sizeof(dataResult));
-		
-      unsigned char buffer[8];
-      unsigned char ucharVal0;
-      fin.read((char *)&ucharVal0, sizeof(ucharVal0));
-      unsigned char ucharVal1;
-      fin.read((char *)&ucharVal1, sizeof(ucharVal1));
-      unsigned char ucharVal2;
-      fin.read((char *)&ucharVal2, sizeof(ucharVal2));
+	if(temp_char==0xAB) {
+	  fin.read((char*)&temp_char, sizeof(unsigned char));
+	  if(temp_char==0xCD) {
+	    if(_debug2 && firstframe==false) cout<<"FIRST FRAME FOUND "<<endl;
+	    firstframe=true;
+	    initfilefound=true;
+	  }
 
-      //  datasize=((dataResult & 0xFFFF0000) >>16);
-      datasize=  ((unsigned short)ucharVal1 << 8) + ucharVal0;
-
-      if(_debug) cout<<"EventSize "<<datasize<<endl;
-      if(datasize<0) continue;
-      if(_debug2) std::cout<<" hex:"<<hex<<dataResult<<"  dec:"<<dec<<dataResult<<std::endl;
-	  
-      nbOfSingleSkirocEventsInFrame=0;
-	  
-      for(int ibuf=0; ibuf<5; ibuf++) {
-      unsigned char ucharVal;
-      fin.read((char *)&ucharVal, sizeof(ucharVal));
-      if(ibuf==0) coreDaughterIndex=ucharVal;
-      if(ibuf==3) slabAdd=ucharVal;
-      if(ibuf==4) slabIndex=ucharVal;
-      if(slabIndex==255) slabIndex=0;// for the USB conection we don't have address
+	}
       }
-	  
-      if(_debug) cout<<"CoreDaughterIndex "<<coreDaughterIndex<<endl;
-      if(_debug) cout<<"SlabAdd "<<slabAdd<<endl;
-      if(_debug) cout<<"SlabIndex "<<slabIndex<<endl;
-      readframe=true;
-      firstframe=false;
-      }
-      }*/
+      
       if(!_eudaq) {
+
 	if(firstframe==false && initfilefound==false) {
 	  unsigned char temp_char;
 	  fin.read((char*)&temp_char, sizeof(unsigned char));
@@ -537,15 +501,17 @@ void SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
 	    }
 	  }
 	}
+      }
+      
 	
-	if( firstframe==true || dataResult == 0xEEEEEEEE ) {
+      if( firstframe==true || (!_eudaq && (dataResult == 0xEEEEEEEE) ) || (_eudaq && (0xFFFF & dataResult) == 0xABCD ) ) {
 	  
-	  
-	  if(_debug) std::cout<<" HEADER "<<std::endl;
+	if(_debug) std::cout<<" HEADER "<<std::endl;
+	std::vector<unsigned char> ucharValFrameVec;
+
+	if(!_eudaq) {
 	  fin.read((char*)&skirocEventNumber, sizeof(int));
 	  if(_debug) cout<<"skirocEventNumber "<<skirocEventNumber<<endl;
-	  
-	  std::vector<unsigned char> ucharValFrameVec;
 	  
 	  for(int j=0; j<2; j++) {
 	    unsigned char ucharValFrame;
@@ -556,74 +522,96 @@ void SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
 	  fin.read((char *)&dataResult, sizeof(int));
 	  datasize=dataResult;
 	  if(_debug) cout<<"EventSize "<<datasize<<endl;
-	  
-	  
-	  for(int j=0; j<datasize; j++) {
-	    unsigned char ucharValFrame;
-	    fin.read((char *)&ucharValFrame, sizeof(unsigned char));
-	    ucharValFrameVec.push_back(ucharValFrame);
-	    if(_debug2) std::cout<<" LOOP, j="<<j<<" hex:"<<hex<<ucharValFrame<<"  dec:"<<dec<<ucharValFrame<<std::endl;
-	  }
-	  trailerWord =   ((unsigned short)ucharValFrameVec.at(datasize+2 -1) << 8) + ucharValFrameVec.at(datasize+2 -2);
-	  if(_debug) std:cout<<"Trailer Word hex:"<<hex<<trailerWord<<" dec:"<<dec<<trailerWord<<std::endl;
-	  if(trailerWord == 0x9697) {
-	    
-	    int latestfoundcycle=cycleIDDecoding(ucharValFrameVec);
-	    lastcycleid=latestfoundcycle;
-	    if(firstcycleid==-1) firstcycleid=latestfoundcycle;
-	    std::map<int, std::vector<std::vector<unsigned char>>>::iterator it;
-	    it=map_of_cycles_and_frames.find(latestfoundcycle);
-	    if( it == map_of_cycles_and_frames.end() ) {
-	      //new cycle
-	      std::vector<std::vector<unsigned char> > new_vector_of_frames;
-	      new_vector_of_frames.push_back(ucharValFrameVec);
-	      map_of_cycles_and_frames[latestfoundcycle]=new_vector_of_frames;
-	    } else {
-	      //existing cycle ID
-	      it->second.push_back(ucharValFrameVec);
+	}
+	
+	if(_eudaq) {
+          unsigned char ucharVal0;
+          fin.read((char *)&ucharVal0, sizeof(ucharVal0));
+          unsigned char ucharVal1;
+          fin.read((char *)&ucharVal1, sizeof(ucharVal1));
+          unsigned char ucharVal2;
+          fin.read((char *)&ucharVal2, sizeof(ucharVal2));
+
+          //  datasize=((dataResult & 0xFFFF0000) >>16);                                                                                                                                                   
+          datasize=  ((unsigned short)ucharVal1 << 8) + ucharVal0;
+	  for(int ibuf=0; ibuf<5; ibuf++) {
+            unsigned char ucharVal;
+            fin.read((char *)&ucharVal, sizeof(ucharVal));
+            if(ibuf==0) {
+	      coreDaughterIndex=ucharVal;
+	      ucharValFrameVec.push_back(ucharVal);
 	    }
-	    
-	    if(map_of_cycles_and_frames.size()> _maxReadOutCycleJump) {
-
-
-	      if(_debug) std::cout<<"MapSize:"<<map_of_cycles_and_frames.size()<<endl;
-
-	      cycleswithdata++;
-	      //sorting the map
-	      std::vector<pair<int, std::vector<std::vector<unsigned char> > > > map_dumped_into_a_vector;
-	      copy(map_of_cycles_and_frames.begin(),
-		   map_of_cycles_and_frames.end(),
-		   back_inserter<vector<pair<int, std::vector<std::vector<unsigned char> > > > >(map_dumped_into_a_vector));
-	      
-	      int nframes=map_dumped_into_a_vector[0].second.size();
-	      if(_debug)   std::cout<<"storing cycleID:"<<map_dumped_into_a_vector[0].first<<" that has "<<nframes<<" nframes"<<endl;
-
-	      for(int jframes=0; jframes<nframes; jframes++) {
-		if(jframes==0) treeInit(zerosupression);
-		DecodeRawFrame(map_dumped_into_a_vector[0].second.at(jframes));
-		RecordCycle(zerosupression);
-		if(getbadbcid_bool==true) GetBadBCID();
-	      }
-	      tree->Fill();
-	      // }
-	      std::map<int, std::vector<std::vector<unsigned char>>>::iterator it;
-	      it=map_of_cycles_and_frames.find(map_dumped_into_a_vector[0].first);
-	      if (it != map_of_cycles_and_frames.end())
-		map_of_cycles_and_frames.erase(it++);
-	    } 
-	  }else{
-	    cout<<"WARNING NO TRAILER FOUND!"<<endl;
+            if(ibuf==3) {
+	      slabAdd=ucharVal;
+	      ucharValFrameVec.push_back(ucharVal);
+            }
 	  }
-	}//header found
-      }//not eudaq
-      
+	}
+	
+	for(int j=0; j<datasize; j++) {
+	  unsigned char ucharValFrame;
+	  fin.read((char *)&ucharValFrame, sizeof(unsigned char));
+	  ucharValFrameVec.push_back(ucharValFrame);
+	  if(_debug2) std::cout<<" LOOP, j="<<j<<" hex:"<<hex<<ucharValFrame<<"  dec:"<<dec<<ucharValFrame<<std::endl;
+	}
+	trailerWord =   ((unsigned short)ucharValFrameVec.at(datasize+2 -1) << 8) + ucharValFrameVec.at(datasize+2 -2);
+	if(_debug) std:cout<<"Trailer Word hex:"<<hex<<trailerWord<<" dec:"<<dec<<trailerWord<<std::endl;
+	if(trailerWord == 0x9697) {
+	  
+	  int latestfoundcycle=cycleIDDecoding(ucharValFrameVec);
+	  lastcycleid=latestfoundcycle;
+	  if(firstcycleid==-1) firstcycleid=latestfoundcycle;
+	  std::map<int, std::vector<std::vector<unsigned char>>>::iterator it;
+	  it=map_of_cycles_and_frames.find(latestfoundcycle);
+	  if( it == map_of_cycles_and_frames.end() ) {
+	    //new cycle
+	    std::vector<std::vector<unsigned char> > new_vector_of_frames;
+	    new_vector_of_frames.push_back(ucharValFrameVec);
+	    map_of_cycles_and_frames[latestfoundcycle]=new_vector_of_frames;
+	  } else {
+	    //existing cycle ID
+	    it->second.push_back(ucharValFrameVec);
+	  }
+	} else {
+	  cout<<"WARNING NO TRAILER FOUND!"<<endl;
+        }
+
+      }//read frames
+      if(map_of_cycles_and_frames.size()> _maxReadOutCycleJump) {
+	
+	if(_debug) std::cout<<"MapSize:"<<map_of_cycles_and_frames.size()<<endl;
+	
+	cycleswithdata++;
+	//sorting the map
+	std::vector<pair<int, std::vector<std::vector<unsigned char> > > > map_dumped_into_a_vector;
+	copy(map_of_cycles_and_frames.begin(),
+	     map_of_cycles_and_frames.end(),
+	     back_inserter<vector<pair<int, std::vector<std::vector<unsigned char> > > > >(map_dumped_into_a_vector));
+	
+	int nframes=map_dumped_into_a_vector[0].second.size();
+	if(_debug)   std::cout<<"storing cycleID:"<<map_dumped_into_a_vector[0].first<<" that has "<<nframes<<" nframes"<<endl;
+	
+	for(int jframes=0; jframes<nframes; jframes++) {
+	  if(jframes==0) treeInit(zerosupression);
+	  DecodeRawFrame(map_dumped_into_a_vector[0].second.at(jframes));
+	  RecordCycle(zerosupression);
+	  if(getbadbcid_bool==true) GetBadBCID();
+	}
+	tree->Fill();
+	// }
+	std::map<int, std::vector<std::vector<unsigned char>>>::iterator it;
+	it=map_of_cycles_and_frames.find(map_dumped_into_a_vector[0].first);
+	if (it != map_of_cycles_and_frames.end())
+	  map_of_cycles_and_frames.erase(it++);
+      }//dump cycle if map file is large enough
    
       trailerWord=0;
-      if(initfilefound==true)
+      if(initfilefound==true && !_eudaq)
 	if(!fin.read((char *)&dataResult, sizeof(dataResult))) break;
-      //}// no eudaq
 
+     
       // fin.read((char *)&dataResult, sizeof(dataResult));
+
     }
 
     //save the remaining cycles
@@ -901,7 +889,7 @@ void SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
 		      _badbcid[i][k][ibc]=1; //this one should be used but it contains no info about the cells that were retriggered
 		      _badbcid[i][k][ibc+1]=2;//this one is to not be used
 		    }
-		    //case C&D: both bcids have triggers but, we do nothing
+		    //case C&D: both bcids have triggers: we do nothing
 		  }
 		  if( _badbcid[i][k][ibc]!=3 && ( _corr_bcid2-_corr_bcid1) >(BCIDTHRES - 1) && (_corr_bcid1-_corr_bcid) > 1 && (_corr_bcid1-_corr_bcid) <BCIDTHRES) {
 		    _badbcid[i][k][ibc]=3;
