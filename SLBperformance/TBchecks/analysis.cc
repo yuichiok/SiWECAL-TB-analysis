@@ -1,7 +1,7 @@
 #include "analysis.h"
 
  
-void analysis(TString run="3GeVMIPscan", TString gain="high", bool pedestal=false, bool mip=true, int pedestal_mode=0) {
+void analysis(TString run="3GeVMIPscan", TString gain="high", bool pedestal=false, bool mip=true, int pedestal_mode=0, TString run_pedestal="") {
 
 
   // pedestal_mode==0 --> no subtraction
@@ -24,7 +24,7 @@ void analysis(TString run="3GeVMIPscan", TString gain="high", bool pedestal=fals
   
   if(pedestal==true)  pedanalysis(run,gain);
   else {
-    if(mip==true) mipanalysis_summary(run,gain,pedestal_mode);
+    if(mip==true) mipanalysis_summary(run,gain,pedestal_mode,run_pedestal);
     //    else s_n_analysis_summary(run,gain);
   }
 

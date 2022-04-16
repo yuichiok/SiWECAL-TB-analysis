@@ -1,10 +1,104 @@
 #include "Fit.h"
 
+void Maps(TString name_="3GeVMIPscan",TString st_gain="highgain"){
+
+  int nlayers=15;
+  int nchips=16;
+  int nsca=1;
+  gStyle->SetOptStat(0);
+
+  TFile *_file1 = new TFile(TString::Format("../../../pedestals/PedMaps_method2_%s_%s.root",name_.Data(),st_gain.Data()),"RECREATE");
+  for(int layer=0; layer<nlayers; layer++) {
+
+    for(int isca=0; isca<nsca; isca++) {
+      TString sca=TString::Format("%s_sca%i",st_gain.Data(),isca);
+      TFile *file = TFile::Open(TString::Format("Summary_%s_%s.root",name_.Data(),sca.Data()));
+      
+      TH2F * h2_ped_xy=(TH2F*)file->Get(TString::Format("pedestal_layer%i_xy",layer));
+      TH2F * h2_i_xy=(TH2F*)file->Get(TString::Format("2d noise-incoherent layer%i - xy",layer));
+      TH2F * h2_c1_xy=(TH2F*)file->Get(TString::Format("2d noise-coherent-1 layer%i -xy",layer));
+      TH2F * h2_c2_xy=(TH2F*)file->Get(TString::Format("2d noise-coherent-2 layer%i -xy",layer));
+
+      
+      TH2F * h2_ped=(TH2F*)file->Get(TString::Format("pedestal_layer%i",layer));
+      TH2F * h2_i=(TH2F*)file->Get(TString::Format("2d noise-incoherent layer%i",layer));
+      TH2F * h2_c1=(TH2F*)file->Get(TString::Format("2d noise-coherent-1 layer%i",layer));
+      TH2F * h2_c2=(TH2F*)file->Get(TString::Format("2d noise-coherent-2 layer%i",layer));
+
+   
+      _file1->cd();
+
+      TCanvas* canvas0= new TCanvas(TString::Format("Noise, x-y maps, layer%i",layer),TString::Format("Noise, x-y maps, layer%i",layer),1200,1200);   
+      canvas0->Divide(2,2);
+      canvas0->cd(1);
+      h2_ped_xy->SetTitle("Pedestal, "+name_);
+      h2_ped_xy->GetXaxis()->SetTitle("x");
+      h2_ped_xy->GetYaxis()->SetTitle("y");
+      h2_ped_xy->GetZaxis()->SetRangeUser(180,280);
+      h2_ped_xy->Draw("colz");
+      canvas0->cd(2);
+      h2_i_xy->SetTitle("Incoherent noise, "+name_);
+      h2_i_xy->GetXaxis()->SetTitle("x");
+      h2_i_xy->GetYaxis()->SetTitle("y");
+      h2_i_xy->GetZaxis()->SetRangeUser(0,5);
+      h2_i_xy->Draw("colz");
+      canvas0->cd(3);
+      h2_c1_xy->SetTitle("C1 noise, "+name_);
+      h2_c1_xy->GetXaxis()->SetTitle("x");
+      h2_c1_xy->GetYaxis()->SetTitle("y");
+      h2_c1_xy->GetZaxis()->SetRangeUser(0,5);
+      h2_c1_xy->Draw("colz");
+    
+      canvas0->cd(4);
+      h2_c2_xy->SetTitle("C2 noise, "+name_);
+      h2_c2_xy->GetXaxis()->SetTitle("x");
+      h2_c2_xy->GetYaxis()->SetTitle("y");
+      h2_c2_xy->GetZaxis()->SetRangeUser(0,5);
+      h2_c2_xy->Draw("colz");
+      canvas0->Write();
+      delete canvas0;
+
+      TCanvas* canvas1= new TCanvas(TString::Format("Noise, chip-chn maps, layer%i",layer),TString::Format("Noise, chip-chn maps, layer%i",layer),1200,1200);   
+      canvas1->Divide(2,2);
+      canvas1->cd(1);
+      h2_ped->SetTitle("Pedestal, "+name_);
+      h2_ped->GetXaxis()->SetTitle("chip");
+      h2_ped->GetYaxis()->SetTitle("chn");
+      h2_ped->GetZaxis()->SetRangeUser(180,280);
+      h2_ped->Draw("colz");
+      canvas1->cd(2);
+      h2_i->SetTitle("Incoherent noise, "+name_);
+      h2_i->GetXaxis()->SetTitle("chip");
+      h2_i->GetYaxis()->SetTitle("chn");
+      h2_i->GetZaxis()->SetRangeUser(0,5);
+      h2_i->Draw("colz");
+      canvas1->cd(3);
+      h2_c1->SetTitle("C1 noise, "+name_);
+      h2_c1->GetXaxis()->SetTitle("chip");
+      h2_c1->GetYaxis()->SetTitle("chn");
+      h2_c1->GetZaxis()->SetRangeUser(0,5);
+      h2_c1->Draw("colz");
+    
+      canvas1->cd(3);
+      h2_c2->SetTitle("C2 noise, "+name_);
+      h2_c2->GetXaxis()->SetTitle("chip");
+      h2_c2->GetYaxis()->SetTitle("chn");
+      h2_c2->GetZaxis()->SetRangeUser(0,5);
+      h2_c2->Draw("colz");
+      canvas1->Write();
+      delete canvas1;
+
+    }
+  }
+  
+}
+
+
 void SummaryPedestal(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 
   int nlayers=15;
   int nchips=16;
-  int nsca=4;
+  int nsca=3;
   TH2F* ped=new TH2F("ped","pedestal pos. ; Layer*20+Chip  ; SCA*100 +chn; ADC",300,-0.5,299.5,1500,-0.5,1499.5);
   TH2F* ped_rms=new TH2F("ped_rms","pedestal RMS. ; Layer*20+Chip  ; SCA*100 +chn; ADC",300,-0.5,299.5,1500,-0.5,1499.5);
   TH2F* ped_i=new TH2F("ped_i","pedestal incoherent noise. ; Layer*20+Chip  ; SCA*100 +chn; ADC",300,-0.5,299.5,1500,-0.5,1499.5);
@@ -58,6 +152,8 @@ void SummaryPedestal(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 	  TH2F * h2_i=(TH2F*)file->Get(TString::Format("2d noise-incoherent layer%i",layer));
 	  TH2F * h2_c1=(TH2F*)file->Get(TString::Format("2d noise-coherent-1 layer%i",layer));
 	  TH2F * h2_c2=(TH2F*)file->Get(TString::Format("2d noise-coherent-2 layer%i",layer));
+
+	  
 	  if(h2_ped->GetBinContent(chip+1,j+1)>10) {
 	    pedv+=h2_ped->GetBinContent(chip+1,j+1);
 	    pedrmsv+=h2_eped->GetBinContent(chip+1,j+1);
@@ -182,7 +278,10 @@ void SummaryPedestal(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 }
 
 void SummaryPlots(TString runname="Pedestal_W_run_050263_merged"){
-  SummaryPedestal(runname,"highgain");
-  SummaryPedestal(runname,"lowgain");
+
+  //  SummaryPedestal(runname,"highgain");
+  // SummaryPedestal(runname,"lowgain");
+  Maps(runname,"highgain");
+  Maps(runname,"lowgain");
 }
 

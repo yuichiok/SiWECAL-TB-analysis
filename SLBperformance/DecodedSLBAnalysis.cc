@@ -204,8 +204,8 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=1, int
        for(int isca=0; isca<15; isca++) {
          TH1F *ped_low_sca2 = new TH1F(TString::Format("ped_low_layer%i_chip%i_chn%i_sca%i",ilayer,ichip,ichn,isca),TString::Format("ped_low_layer%i_chip%i_chn%i_sca%i",ilayer,ichip,ichn,isca),400,100.5,500.5);
          TH1F *ped_high_sca2 = new TH1F(TString::Format("ped_high_layer%i_chip%i_chn%i_sca%i",ilayer,ichip,ichn,isca),TString::Format("ped_high_layer%i_chip%i_chn%i_sca%i",ilayer,ichip,ichn,isca),400,100.5,500.5);
-         TH1F *mip_low_sca2 = new TH1F(TString::Format("mip_low_layer%i_chip%i_chn%i_sca%i",ilayer,ichip,ichn,isca),TString::Format("mip_low_layer%i_chip%i_chn%i_sca%i",ilayer,ichip,ichn,isca),500,100.5,600.5);
-         TH1F *mip_high_sca2 = new TH1F(TString::Format("mip_high_layer%i_chip%i_chn%i_sca%i",ilayer,ichip,ichn,isca),TString::Format("mip_high_layer%i_chip%i_chn%i_sca%i",ilayer,ichip,ichn,isca),500,100.5,600.5);
+         TH1F *mip_low_sca2 = new TH1F(TString::Format("mip_low_layer%i_chip%i_chn%i_sca%i",ilayer,ichip,ichn,isca),TString::Format("mip_low_layer%i_chip%i_chn%i_sca%i",ilayer,ichip,ichn,isca),900,100.5,1000.5);
+         TH1F *mip_high_sca2 = new TH1F(TString::Format("mip_high_layer%i_chip%i_chn%i_sca%i",ilayer,ichip,ichn,isca),TString::Format("mip_high_layer%i_chip%i_chn%i_sca%i",ilayer,ichip,ichn,isca),900,100.5,1000.5);
          ped_lowtemp_sca2.push_back(ped_low_sca2);
          ped_hightemp_sca2.push_back(ped_high_sca2);
          mip_lowtemp_sca2.push_back(mip_low_sca2);
@@ -254,8 +254,7 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=1, int
 	  if( nhits[ilayer][ichip][isca]>maxnhit ) continue;
 
 	  int bcid_seen = SimpleCoincidenceTagger(ilayer,maxnhit,bcid[ilayer][ichip][isca]);
-	  if(bcid[ilayer][ichip][isca]>10 && badbcid[ilayer][ichip][isca]==0 && bcid_seen>5) cout<<badbcid[ilayer][ichip][isca]<<" "<<ilayer<<" "<<ichip<<" "<<isca<<" "<<bcid[ilayer][ichip][isca]<<" "<<maxnhit<<" "<<bcid_seen<<endl;
-	  
+	 	  
           if(bcid_seen<(nslabshit-1)) continue;
 
             /*int triggers=0;

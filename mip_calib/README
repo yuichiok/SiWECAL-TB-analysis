@@ -1,10 +1,14 @@
 # A. Irles
 # irles NOT SMPAM @lal.in2p3.fr
 
-
-# 01/08/2019
-# Dummy list of MIP values created by createDummyMIPfiles.cc
-
+# 16/04/2022
+ Two set of MIP files are provided (for the low and high values of the dual gains)
+ First set corresponds to the settings with the gains optimzied for DESY energies (~GeV electrons) - 1.2pF for thick sensorrs (more than 320um) and 0.8pF for the 320um
+             --> https://llrelog.in2p3.fr/calice/2336
+ Second set corresponds to the settings optimzied for CERN energies (and ILC with ~100GeV electrons) - 6pF for all layers
+             -->  https://llrelog.in2p3.fr/calice/2324
+ Layer geometry explained here https://llrelog.in2p3.fr/calice/2325
+# Important NOTE --> the mip scans are from before the layer reshufling explained here https://llrelog.in2p3.fr/calice/2325 but the output files ahve been reshuffled to match the ordering described in the elog entry
 
 #24/01/2022
 Two different methods are used, for the pedestal calculation.
@@ -12,4 +16,8 @@ Two different methods are used, for the pedestal calculation.
 - the standard one (without special name) doing gaussian fits to the pedestal distributions (hit-bit=0)
 - method 2 based on https://arxiv.org/pdf/1401.7095.pdf
    ---> this one is taken as default one
+
+
+# 01/08/2019
+# Dummy list of MIP values created by createDummyMIPfiles.cc
 

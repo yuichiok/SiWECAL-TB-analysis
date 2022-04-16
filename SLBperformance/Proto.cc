@@ -15,7 +15,7 @@ int Proto(TString filename_in, TString output="", int monitoring=0){
   int result1=1;
   int result2=1;
   if(monitoring>0) ss.HitMonitoring(output,1000,4);
-  else result2=ss.NSlabsAnalysis(output,5,7);
+  else result2=ss.NSlabsAnalysis(output,2,9);
   return result1*result2;
 
 }
