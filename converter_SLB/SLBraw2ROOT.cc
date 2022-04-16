@@ -375,8 +375,8 @@ bool SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
 	  
 	  rawData = (unsigned short)ucharValFrameVec.at(index+2*channel) + ((unsigned short)ucharValFrameVec.at(index+1+2*channel) << 8);
 	  rawValue = (int)(rawData & 0xFFF);
-	  gainvalue_high[sca][channel] =  (rawData & 0x1000)>>12;
-	  hitvalue_high[sca][channel] =  (rawData & 0x2000)>>13;
+	  hitvalue_high[sca][channel] =  (rawData & 0x1000)>>12;
+	  gainvalue_high[sca][channel] =  (rawData & 0x2000)>>13;
 	  int adcValuetemp =  Convert_FromGrayToBinary(rawValue , 12); 
 	  adcvalue_high[sca][channel] = adcValuetemp;
 	  if(_debug) std::cout<<"chn:"<<channel<<" gainvalue_1:"<<gainvalue_high[sca][channel]<<" hitvalue_1:"<<hitvalue_high[sca][channel]<<" "<<"adcValue_1:"<<adcvalue_high[sca][channel]<<std::endl;
@@ -391,8 +391,8 @@ bool SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
 	  if(_debug) std::cout<<"chn:"<<channel<<endl;
 	  rawData = (unsigned short)ucharValFrameVec.at(index+2*channel) + ((unsigned short)ucharValFrameVec.at(index+1+2*channel) << 8);
 	  rawValue = (int)(rawData & 0xFFF);
-	  gainvalue_low[sca][channel] =  (rawData & 0x1000)>>12;
-	  hitvalue_low[sca][channel] =  (rawData & 0x2000)>>13;  
+	  hitvalue_low[sca][channel] =  (rawData & 0x1000)>>12;
+	  gainvalue_low[sca][channel] =  (rawData & 0x2000)>>13;  
 	  int adcValuetemp = Convert_FromGrayToBinary(rawValue , 12);
 	  adcvalue_low[sca][channel] = adcValuetemp;
 	  if(_debug) std::cout<<"chn:"<<channel<<" gainvalue_0:"<<gainvalue_low[sca][channel]<<" hitvalue_0:"<<hitvalue_low[sca][channel]<<" "<<"adcValue_0:"<<adcvalue_low[sca][channel]<<std::endl;
@@ -830,8 +830,8 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
 	_autogainbit_low[slabAdd][chipId][isca][ichn]=gainvalue_low[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
 	_hitbit_low[slabAdd][chipId][isca][ichn]=hitvalue_low[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
 	_adc_high[slabAdd][chipId][isca][ichn]=adcvalue_high[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
-	_hitbit_high[slabAdd][chipId][isca][ichn]=gainvalue_high[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
-	_autogainbit_high[slabAdd][chipId][isca][ichn]=hitvalue_high[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
+	_hitbit_high[slabAdd][chipId][isca][ichn]=hitvalue_high[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
+	_autogainbit_high[slabAdd][chipId][isca][ichn]=gainvalue_high[isca][NB_OF_CHANNELS_IN_SKIROC-ichn-1];
 	
       }
     }//end isca
@@ -853,7 +853,7 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
 	    // if sca+1 is not filled with consec bcid,  _badbcid==0
 	    // if sca and sca+1 have consecutive bcids but are not retriggers, then we consider 3 types of EMPTY events
 	    //     case A: empty events after a event with triggers
-	    //     case B: empty events before a event with triggers --> TO BE UNDERSTOOD but it seems that the good one is the one without the trigger (the first)
+	    //     case B: empty events before a event with triggers --> TO BE UNDERSTOOD but it seems that the good one is the one with the trigger (the second)
 	    //     case C&D: both bcids have triggers but, we do nothing
 	    
 	    if(ibc==0) {
@@ -876,10 +876,10 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
 		    _badbcid[i][k][ibc]=0;
 		    _badbcid[i][k][ibc+1]=2;//this one is to not be used in any case
 		  }
-		  //case B: empty events before a event with triggers --> TO BE UNDERSTOOD but it seems that the good one is the one without the trigger (the first)
+		  //case B: empty events before a event with triggers --> TO BE UNDERSTOOD but it seems that the good one is the one with trigger (the second bcid)
 		  if(_nhits[i][k][ibc]==0 && _nhits[i][k][ibc+1]>0) {
-		    _badbcid[i][k][ibc]=1; //this one should be used but it contains no info about the cells that were retriggered
-		    _badbcid[i][k][ibc+1]=2;//this one is to not be used
+		    _badbcid[i][k][ibc]=1; //empty event
+		    _badbcid[i][k][ibc+1]=0;//good one
 		  }
 		  //case C&D: both bcids have triggers but, we do nothing
 		}
@@ -921,10 +921,10 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
 		      _badbcid[i][k][ibc]=0;
 		      _badbcid[i][k][ibc+1]=2;//this one is to not be used in any case
 		    }
-		    //case B: empty events before a event with triggers --> TO BE UNDERSTOOD but it seems that the good one is the one without the trigger (the first)
+		    //case B: empty events before a event with triggers --> TO BE UNDERSTOOD but it seems that the good one is the one with the trgger (the second bcid)
 		    if(_nhits[i][k][ibc]==0 && _nhits[i][k][ibc+1]>0) {
-		      _badbcid[i][k][ibc]=1; //this one should be used but it contains no info about the cells that were retriggered
-		      _badbcid[i][k][ibc+1]=2;//this one is to not be used
+		      _badbcid[i][k][ibc]=1; //empty event before the real event
+		      _badbcid[i][k][ibc+1]=0;//good event
 		    }
 		    //case C&D: both bcids have triggers: we do nothing
 		  }
