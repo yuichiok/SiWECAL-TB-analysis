@@ -15,7 +15,7 @@ The commissioning has to be performed before.
 
 ## Usage
 
-Either change the default values (mainly in [`help_tools.py`](./help_tools.py))
+Either change the default values (mainly in [`default_eventbuilding.cfg`](./default_eventbuilding.cfg))
 or provide the changes through the command line interface.
 For an exhaustive list of steering options, see the program's help:
 
@@ -23,18 +23,22 @@ For an exhaustive list of steering options, see the program's help:
 python buildevents.py --help
 ```
 
-The top-level [`cosmics.mk`](../cosmics.mk) Makefile demonstrates the whole data preparation chain,
-starting with the raw `.datXXXX` files from the DAQ.
+You will need a version of CERN root with python bindings. E.g.:
 
-Note that this Makefile is not intended to be used automatically from raw to build.
-Instead, use the intermediate steps that are provided and confirm their results
-before continuing to the next step.
+```bash
+source /cvmfs/sft.cern.ch/lcg/views/LCG_99/x86_64-centos7-gcc10-opt/setup.sh
+```
 
 ## Features
 
 - Build events from the raw data using calibration information.
 - Apply a BCID merging of nearby, good BCIDs.
 - Change the configuration at any time through the `--redo-config` mode.
+- Compare two `build.root` files:
+  - Tree comparison (e.g. the `ecal` tree) with
+    `root -l -q -b test/AssertTreeEquality.C\(\"previous.root\",\"new.root\"\)`
+  - (Calibration) histogram comparison with
+    `./test/compare_histograms.py previous.root new.root --root_directory config`
 
 ## Dictionary
 
