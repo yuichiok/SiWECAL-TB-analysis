@@ -22,9 +22,9 @@ def get_hits_per_event(entry, bcid_handler, ecal_config, zero_suppress=True):
     channel_arange = np.arange(n_channels)
 
     # It is faster to fill the arrays once outside the loop.
-    all_gain_hit = np.array(entry.gain_hit_high)
-    all_hg = np.array(entry.charge_hiGain)
-    all_lg = np.array(entry.charge_lowGain)
+    all_gain_hit = np.array(entry.hitbit_high)
+    all_hg = np.array(entry.adc_high)
+    all_lg = np.array(entry.adc_low)
 
     # assert bcid_handler.merged_bcid.shape == np.array(event.bcid).shape
     for i_chip, scas, bcid, bcid_before_merge in bcid_handler.yield_from_spill():
@@ -35,24 +35,24 @@ def get_hits_per_event(entry, bcid_handler, ecal_config, zero_suppress=True):
                 np.repeat(i_chip * n_scas + np.array(scas), n_channels)
                 * n_channels
             ).reshape(-1, n_channels) + channel_arange
-            gain_hit_high = all_gain_hit[all_scas_bcid_channel_id]
+            hitbit_high = all_gain_hit[all_scas_bcid_channel_id]
             # Pick the first trigger of each channel within the BCID window.
             bcid_channel_id = all_scas_bcid_channel_id[
-                np.argmax(gain_hit_high, axis=0), channel_arange
+                np.argmax(hitbit_high, axis=0), channel_arange
             ]
-        gain_hit_high = all_gain_hit[bcid_channel_id]
-        if np.all(gain_hit_high < 0):
+        hitbit_high = all_gain_hit[bcid_channel_id]
+        if np.all(hitbit_high < 0):
             raise EventBuildingException(
                 "Should have been caught in BCIDHandler",
-                i_chip, scas, bcid, bcid_before_merge, gain_hit_high
+                i_chip, scas, bcid, bcid_before_merge, hitbit_high
             )
-        # gain_hit_high == gain_hit_low (up to tiny errors), confirmed by Stephane Callier.
-        is_hit = np.array(gain_hit_high > 0)
+        # hitbit_high == hitbit_low (up to tiny errors), confirmed by Stephane Callier.
+        is_hit = np.array(hitbit_high > 0)
         if zero_suppress:
             if is_hit.sum() == 0:
                 raise EventBuildingException(
                     "Should have been caught in BCIDHandler",
-                    i_chip, scas, bcid, bcid_before_merge, gain_hit_high
+                    i_chip, scas, bcid, bcid_before_merge, hitbit_high
                 )
 
             def ext(name, array):
