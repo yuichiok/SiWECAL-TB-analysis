@@ -22,9 +22,9 @@ def get_hits_per_event(entry, bcid_handler, ecal_config, zero_suppress=True):
     channel_arange = np.arange(n_channels)
 
     # It is faster to fill the arrays once outside the loop.
-    all_gain_hit = np.array(entry.gain_hit_high)
-    all_hg = np.array(entry.charge_hiGain)
-    all_lg = np.array(entry.charge_lowGain)
+    all_gain_hit = np.array(entry.hitbit_high)
+    all_adc_high = np.array(entry.adc_high)
+    all_adc_low = np.array(entry.adc_low)
 
     # assert bcid_handler.merged_bcid.shape == np.array(event.bcid).shape
     for i_chip, scas, bcid, bcid_before_merge in bcid_handler.yield_from_spill():
@@ -35,24 +35,24 @@ def get_hits_per_event(entry, bcid_handler, ecal_config, zero_suppress=True):
                 np.repeat(i_chip * n_scas + np.array(scas), n_channels)
                 * n_channels
             ).reshape(-1, n_channels) + channel_arange
-            gain_hit_high = all_gain_hit[all_scas_bcid_channel_id]
+            hitbit_high = all_gain_hit[all_scas_bcid_channel_id]
             # Pick the first trigger of each channel within the BCID window.
             bcid_channel_id = all_scas_bcid_channel_id[
-                np.argmax(gain_hit_high, axis=0), channel_arange
+                np.argmax(hitbit_high, axis=0), channel_arange
             ]
-        gain_hit_high = all_gain_hit[bcid_channel_id]
-        if np.all(gain_hit_high < 0):
+        hitbit_high = all_gain_hit[bcid_channel_id]
+        if np.all(hitbit_high < 0):
             raise EventBuildingException(
                 "Should have been caught in BCIDHandler",
-                i_chip, scas, bcid, bcid_before_merge, gain_hit_high
+                i_chip, scas, bcid, bcid_before_merge, hitbit_high
             )
-        # gain_hit_high == gain_hit_low (up to tiny errors), confirmed by Stephane Callier.
-        is_hit = np.array(gain_hit_high > 0)
+        # hitbit_high == hitbit_low (up to tiny errors), confirmed by Stephane Callier.
+        is_hit = np.array(hitbit_high > 0)
         if zero_suppress:
             if is_hit.sum() == 0:
                 raise EventBuildingException(
                     "Should have been caught in BCIDHandler",
-                    i_chip, scas, bcid, bcid_before_merge, gain_hit_high
+                    i_chip, scas, bcid, bcid_before_merge, hitbit_high
                 )
 
             def ext(name, array):
@@ -76,19 +76,19 @@ def get_hits_per_event(entry, bcid_handler, ecal_config, zero_suppress=True):
         ext("y", np.array(ecal_config.y[slab_id, chip]))
         ext("z", np.array(ecal_config.z[slab_id, chip]))
 
-        hg = all_hg[bcid_channel_id]
-        energy = hg.astype(float)
+        adc_high = all_adc_high[bcid_channel_id]
+        energy = adc_high.astype(float)
         energy -= ecal_config.pedestal_map[per_sca_picker]
         energy /= ecal_config.mip_map[slab_id, chip]
-        ext("hg", hg)
+        ext("adc_high", adc_high)
         ext("energy", energy)
-        lg = all_lg[bcid_channel_id]
+        adc_low = all_adc_low[bcid_channel_id]
         if not ecal_config.no_lg:
-            energy_lg = lg.astype(float)
+            energy_lg = adc_low.astype(float)
             energy_lg -= ecal_config.pedestal_lg_map[per_sca_picker]
             energy_lg /= ecal_config.mip_lg_map[slab_id, chip]
             ext("energy_lg", energy_lg)
-        ext("lg", lg)
+        ext("adc_low", adc_low)
 
         n_in_batch = n_channels
         ext("slab", np.full(n_in_batch, slab, dtype=int))
@@ -131,8 +131,6 @@ class BuildEvents:
             "bcid/I",
             "bcid_first_sca_full/I",
             "bcid_merge_end/I",
-            "bcid_prev/I",
-            "bcid_next/I",
             "id_run/I",
             "id_dat/I",
         # "hit summary":
@@ -140,7 +138,6 @@ class BuildEvents:
             "nhit_chip/I",
             "nhit_chan/I",
             "nhit_len/I",
-            "sum_hg/F",
             "sum_energy/F",
             "sum_energy_lg/F",
         # 64: the number of channels on a chip.
@@ -154,8 +151,8 @@ class BuildEvents:
             "hit_y[nhit_len]/F",
             "hit_z[nhit_len]/F",
         # "hit readout":
-            "hit_hg[nhit_len]/I",
-            "hit_lg[nhit_len]/I",
+            "hit_adc_high[nhit_len]/I",
+            "hit_adc_low[nhit_len]/I",
             "hit_energy[nhit_len]/F",
             "hit_energy_lg[nhit_len]/F",
             "hit_n_scas_filled[nhit_len]/I",
@@ -395,11 +392,11 @@ class BuildEvents:
             if branch_name == "hit_energy":
                 mip = self.ecal_config.mip_map[event.hit_slab, event.hit_chip, event.hit_chan]
                 pedestal = self.ecal_config.pedestal_map[event.hit_slab, event.hit_chip, event.hit_chan, event.hit_sca]
-                arr = (event.hit_hg - pedestal) + mip
+                arr = (event.hit_adc_high - pedestal) + mip
             elif branch_name == "hit_energy_lg":
                 mip = self.ecal_config.mip_lg_map[event.hit_slab, event.hit_chip, event.hit_chan]
                 pedestal = self.ecal_config.pedestal_lg_map[event.hit_slab, event.hit_chip, event.hit_chan, event.hit_sca]
-                arr = (event.hit_lg - pedestal) + mip
+                arr = (event.hit_adc_low - pedestal) + mip
             elif branch_name == "hit_isCommissioned":
                 arr = self.ecal_config.is_commissioned_map[event.hit_slab, event.hit_chip, event.hit_chan, event.hit_sca]
             elif branch_name == "hit_isMasked":
@@ -464,8 +461,6 @@ class BuildEvents:
             b["bcid"][0] = bcid
             b["bcid_first_sca_full"][0] = bcid_handler.bcid_first_sca_full
             b["bcid_merge_end"][0] = bcid_merge_end[bcid]
-            b["bcid_prev"][0] = bcid_handler.previous_bcid(bcid)
-            b["bcid_next"][0] = bcid_handler.next_bcid(bcid)
             b["id_run"][0] = self._id_run
             b["id_dat"][0] = self._id_dat
 
@@ -476,15 +471,14 @@ class BuildEvents:
             b["nhit_len"][0] = hits["isHit"].size
             tmp_for_unique = tmp_for_unique * self.ecal_config._n_channels + hits["chan"]
             b["nhit_chan"][0] = np.unique(tmp_for_unique[hits["isHit"]]).size
-            b["sum_hg"][0] = hits["hg"][hits["isHit"]].sum()
             b["sum_energy"][0] = hits["energy"][hits["isHit"]].sum()
             if "energy_lg" in hits:
                 b["sum_energy_lg"][0] = hits["energy_lg"][hits["isHit"]].sum()
 
             if max_hits > 0 and len(hits) > max_hits:
                 txt = "Suspicious number of hits! %i " %len(hits)
-                txt += "for bcid %i and previous bcid %i" %(b["bcid"][0], b["prev_bcid"][0])
-                txt += "\nSkipping event %i." % b["event"][0]
+                txt += "for bcid %i." %b["bcid"][0]
+                txt += "Skipping event %i." % b["event"][0]
                 print(txt)
                 continue
 
