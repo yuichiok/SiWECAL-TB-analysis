@@ -69,7 +69,7 @@ void CreateHistos(TString run="3GeVMIPscan", int igain=0, int isca=0){
 	
 	h2_exy_i->Fill(double(map_pointX[0][chip][j]),double(map_pointY[0][chip][j]),esigma_i[j]);
 	h2_exy_c1->Fill(double(map_pointX[0][chip][j]),double(map_pointY[0][chip][j]),esigma_c1[j]);
-	  h2_exy_c2->Fill(double(map_pointX[0][chip][j]),double(map_pointY[0][chip][j]),esigma_c2[j]);
+	h2_exy_c2->Fill(double(map_pointX[0][chip][j]),double(map_pointY[0][chip][j]),esigma_c2[j]);
       }
       
     }//chip
@@ -104,15 +104,10 @@ void CreateHistos(TString run="3GeVMIPscan", int igain=0, int isca=0){
 
 }
 
-void NoiseStudy(){
+void NoiseStudy(TString run="Pedestal_W_run_050263_merged", int isca=1){
 
-  TString run[1]={"03102022_pedestal_13slabs"};
-  for(int irun=0; irun<1; irun++) {
-    for(int isca=1; isca<16;isca++) {
-      CreateHistos(run[irun],1,isca);
-      CreateHistos(run[irun],0,isca);
-    }
-  }
-
+  CreateHistos(run,1,isca);
+  CreateHistos(run,0,isca);
+  
 }
 

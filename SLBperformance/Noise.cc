@@ -4,13 +4,13 @@
 #include "TFile.h"
 #include "DecodedSLBAnalysis.cc"
 
-int Noise(TString filename_in, TString output="", int gain=1, int sca=15){
+int Noise(TString filename_in, TString output="", int gain=1){
 
   cout<<" Display of file: "<<filename_in<<endl;
   DecodedSLBAnalysis ss(filename_in,"siwecaldecoded");
 
   cout<<"Start NSlabsNAalysis"<<endl;
-  int result=ss.NSlabsAnalysisNoise(output,gain,sca);
+  int result=ss.NSlabsAnalysisNoise(output,gain);
   return result;
 
 }
