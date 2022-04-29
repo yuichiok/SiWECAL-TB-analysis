@@ -335,7 +335,7 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=1, int
 
 
 
-int DecodedSLBAnalysis::NSlabsAnalysisNoise(TString outputname="", int gain=1, int iscamax=4)
+int DecodedSLBAnalysis::NSlabsAnalysisNoise(TString outputname="", int gain=1, int iscamax=4, bool frominjection=true,int maxnhit=2, int nslabshit=8)
 {
 
   //Read the channel/chip -- x/y mapping
@@ -414,7 +414,13 @@ int DecodedSLBAnalysis::NSlabsAnalysisNoise(TString outputname="", int gain=1, i
         for(int isca=0; isca<iscamax; isca++) {
 	  if(bcid[ilayer][ichip][isca]<0) continue;
 	  if(badbcid[ilayer][ichip][isca]!=0) continue;
+	  if(nhits[ilayer][ichip][isca]==0) continue;
 
+	  if(frominjection==false) {
+	    if( nhits[ilayer][ichip][isca]>maxnhit ) continue;
+	    int bcid_seen = SimpleCoincidenceTagger(ilayer,maxnhit,bcid[ilayer][ichip][isca]);
+	    if(bcid_seen<(nslabshit-1)) continue;
+	  }
      	  for(int j=0; j<64; j++) {
 	    if(gain==1 && hitbit_high[ilayer][ichip][isca][j]==0 ) h_ped.at(isca).at(ilayer).at(ichip).at(j)->Fill(adc_high[ilayer][ichip][isca][j]);
 	    if(gain==0 && hitbit_low[ilayer][ichip][isca][j]==0 ) h_ped.at(isca).at(ilayer).at(ichip).at(j)->Fill(adc_low[ilayer][ichip][isca][j]);
@@ -463,7 +469,14 @@ for (Long64_t jentry=0; jentry<nentries;jentry++) {
 	  //	  if(isca>0) if(badbcid[ilayer][ichip][isca]-) continue;
        if(bcid[ilayer][ichip][isca]<0) continue;
        if(badbcid[ilayer][ichip][isca]!=0) continue;
-       
+       if(nhits[ilayer][ichip][isca]==0) continue;
+
+       if(frominjection==false) {
+	 if( nhits[ilayer][ichip][isca]>maxnhit ) continue;
+	 int bcid_seen = SimpleCoincidenceTagger(ilayer,maxnhit,bcid[ilayer][ichip][isca]);
+	 if(bcid_seen<(nslabshit-1)) continue;
+       }
+
        for(int ichn=0; ichn<64; ichn++) {                   
          if(ped_value.at(isca).at(ilayer).at(ichip).at(ichn)<1 || hitbit_high[ilayer][ichip][isca][ichn]==1 ) continue;
          if(adc_high[ilayer][ichip][isca][ichn]<0) continue;
@@ -512,7 +525,7 @@ for (Long64_t jentry=0; jentry<nentries;jentry++) {
       cdhisto[ilayer]->cd();
       
       for(int ichip=0; ichip<16; ichip++) {
-	if( cov.at(isca).at(ilayer).at(ichip)->GetEntries()>400) {
+	if( cov.at(isca).at(ilayer).at(ichip)->GetEntries()>10) {
 	  cov.at(isca).at(ilayer).at(ichip)->SetName(TString::Format("cov_unnorm_layer%i_chip%i",ilayer,ichip));
 	  cov.at(isca).at(ilayer).at(ichip)->Write();
 	  nevents.at(isca).at(ilayer).at(ichip)->SetName(TString::Format("nevents_layer%i_chip%i",ilayer,ichip));
