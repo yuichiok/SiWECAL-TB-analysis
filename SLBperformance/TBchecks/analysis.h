@@ -367,8 +367,8 @@ void mipanalysis_summary(TString run="3GeVMIPscan", TString gain="high", int ped
 	  _file0->cd();
 	  // TCanvas* canvashmips=new TCanvas;
 	  
-	  TH1F *temp=(TH1F*)_file0->Get(TString::Format("layer_%i/mip_%s_chip%i_chn%i_sca%i",new_layer_ord[layer],gain.Data(),i,j,isca));
-	  TH1F *temp2=(TH1F*)_file0->Get(TString::Format("layer_%i/ped_%s_chip%i_chn%i_sca%i",new_layer_ord[layer],gain.Data(),i,j,isca));
+	  TH1F *temp=(TH1F*)_file0->Get(TString::Format("layer_%i/mip_%s_chip%i_chn%i_sca%i",layer,gain.Data(),i,j,isca));
+	  TH1F *temp2=(TH1F*)_file0->Get(TString::Format("layer_%i/ped_%s_chip%i_chn%i_sca%i",layer,gain.Data(),i,j,isca));
 
 	  if(temp==NULL || temp2==NULL) continue;
 
@@ -379,7 +379,7 @@ void mipanalysis_summary(TString run="3GeVMIPscan", TString gain="high", int ped
 	    ped_mean=temp2->GetMean();
 	    //cout<<ped_mean<<endl;
 	  }
-	  if(pedestal_mode==2) ped_mean=ped_mean_slboard.at(layer).at(i).at(j).at(isca);
+	  if(pedestal_mode==2) ped_mean=ped_mean_slboard.at(new_layer_ord[layer]).at(i).at(j).at(isca);
 	  for (int k=0;k<900;k++) {
 	    double y = temp->GetBinContent(k);
 	    if(y>0 && pedestal_mode==0) hmips->Fill(int(temp->GetXaxis()->GetBinCenter(k)),y);
