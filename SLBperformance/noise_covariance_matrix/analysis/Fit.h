@@ -112,9 +112,11 @@ TH2F* OpenCovMatrix(TString filename="3GeVMIPscan_scagt0",TString gain="highgain
       continue;
     }
     if(htemp->GetEntries()>50) {
-      htemp->GetXaxis()->SetRangeUser(htemp->GetMean()-15,htemp->GetMean()+15);
-      pedestal[i]=htemp->GetMean();
-      epedestal[i]=htemp->GetRMS();
+      htemp->GetXaxis()->SetRangeUser(htemp->GetMean()-30,htemp->GetMean()+30);
+      TF1 *g = new TF1("g","gaus",htemp->GetMean()-15,htemp->GetMean()+15);
+      htemp->Fit("g","QRE");
+      pedestal[i]=g->GetParameter(1);
+      epedestal[i]=g->GetParameter(2);
     
       for (int j=0; j<64; j++) {
 	if(norm_temp->GetBinContent(i+1,j+1)>0  ) {

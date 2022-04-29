@@ -1,12 +1,18 @@
-for sca in {0..14}
+initial=${PWD}
+cd ../../converter_SLB/convertedfiles/
+for run in "fromMIPScan_LowEnergyElectrons"
 do
-    # run="03102022_pedestal_13slabs"
-    run="Run_ILC_03112022_pedestal"
-    cd ../
-    root -l -q Noise.cc\(\"../converter_SLB/convertedfiles/${run}.root\",\"${run}\",0,${sca}\)
-    root -l -q Noise.cc\(\"../converter_SLB/convertedfiles/${run}.root\",\"${run}\",1,${sca}\)
-    cd -
+
+    cd ${initial}/analysis
+    for sca in {1..15}
+    do
+	# run="03102022_pedestal_13slabs"
+	root -l -q NoiseStudy.C\(\"${run}\",${sca}\)
+    done
+    root -l -q SummaryPlots.C\(\"$run\"\)
+    cd ${initial}
 done
+
 
 
 	
