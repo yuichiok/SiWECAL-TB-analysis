@@ -43,9 +43,20 @@ source /cvmfs/sft.cern.ch/lcg/views/LCG_99/x86_64-centos7-gcc10-opt/setup.sh
 ## Dictionary
 
 - `cycle`: `acqNumber` in converted.root files. Counts the acquisitions done by the DAQ.
-- `spill`: Only counts those DAQ cycles where data was written.
-  If the event building is performed on parts of the run
-  (multiprocessing in [SiWECAL-TB-monitoring](https://github.com/SiWECAL-TestBeam/SiWECAL-TB-monitoring)),
-  then this counter will restart on each new run.
 - `event`: Event counter within a cycle.
   (_new_. Previously, the counter was not reset for the next cycle)
+- `id_run`: E.g. 50123 for all events in a file. Counter that increases by 1 for each new run that we start.
+- `id_dat`: Within a run, the DAQ will write the data into partial files.
+   This tracks which of the partial files the event is from. 
+   When we run the event building in parallel, or as part of the monitoring, the order might be shuffled.
+   In most situations, this branch is not interesting (more for debugging).
+- `nhit_len`: Is more an implementation detail (needed for the ROOT TBranches that take an array (e.g. hit_adc_high). 
+   It tells ROOT the length of a specific leaf's array). 
+   `nhit_len != nhit_chan` if you choose to also record the non-triggered channels (`zero_suppress = False`).
+- `nhit_slab`: Number of slabs where at least one chip recorded a hit.
+   E.g. for a MIP you would hope that this is close to 15. 
+   In a 3GeV shower, 10 might be good (as the shower depletes).
+- `spill`: Only counts those DAQ cycles where data was written.
+   If the event building is performed on parts of the run
+   (multiprocessing in [SiWECAL-TB-monitoring](https://github.com/SiWECAL-TestBeam/SiWECAL-TB-monitoring)),
+   then this counter will restart on each new run.
