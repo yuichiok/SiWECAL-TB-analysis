@@ -11,6 +11,7 @@
 #include "TString.h"
 #include <iostream>
 #include <fstream>
+#include "../conf_struct.h"
 
 //#include "../../style/Style.C"
 //#include "../../style/Labels.C"
