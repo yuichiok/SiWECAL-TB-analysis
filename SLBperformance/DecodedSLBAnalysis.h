@@ -47,7 +47,7 @@ public :
   //Proto Analysis
   virtual void     HitMonitoring(TString, int, int);
   virtual int     NSlabsAnalysis(TString, int, int);
-  virtual int     NSlabsAnalysisNoise(TString , int , int);
+  virtual int     NSlabsAnalysisNoise(TString , int , int, bool, int, int);
 
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
