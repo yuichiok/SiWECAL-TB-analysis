@@ -1,9 +1,11 @@
+run=$1
+output="/eos/project-s/siw-ecal/TB2021-11/beamData/rootfiles/3GeVMIPscan/"
+
 for sca in {0..14}
 do
-    run="03102022_pedestal_13slabs"
     cd ../
-    root -l -q Noise.cc\(\"../converter_SLB/convertedfiles/${run}.root\",\"${run}\",0,${sca}\) &
-    root -l -q Noise.cc\(\"../converter_SLB/convertedfiles/${run}.root\",\"${run}\",1,${sca}\)
+    root -l -q Noise.cc\(\"${output}/${run}.root\",\"${run}\",0,${sca}\)
+    root -l -q Noise.cc\(\"${output}/${run}.root\",\"${run}\",1,${sca}\)
     cd -
 done
 
