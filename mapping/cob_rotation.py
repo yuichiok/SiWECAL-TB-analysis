@@ -5,6 +5,8 @@ import ROOT
 
 reader = csv.reader(open("backup/fev11_cob_chip_channel_x_y_mapping.txt"), delimiter=" ")
 
+MyFile = ROOT.TFile("output.root","RECREATE");
+
 chip=-1
 x0=9999
 y0=9999
@@ -153,3 +155,12 @@ with open('cob_tmp3.txt', 'w') as outfile2:
 			input_string[5] = str(y)
 
 			writer.writerow(input_string)
+
+ROOT.gStyle.SetOptStat(0)
+MyFile.cd()
+mapxy_chip.Write()
+mapxy_13.Write()
+mapxy_13_rot.Write()
+mapxy_15.Write()
+mapxy_15_rot.Write()
+
