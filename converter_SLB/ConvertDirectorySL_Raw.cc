@@ -42,11 +42,11 @@ void ConvertDirectorySL_Raw(string dirname, bool zerosupression=false, TString r
 
   std::cout << "dirname " << dirname << std::endl; 
 
-  for(int j=jinitial; j<5000; j+=3) {
+  for(int j=jinitial; j<5000; j+=1) {
     //for(int j=0; j<1; j++) {
     
     TString filen="_raw.bin";
-    if(j==0) filen=TString::Format("%s_raw.bin_000%i",run.Data(),j);
+    // if(j==0) filen=TString::Format("%s_raw.bin_000%i",run.Data(),j);
     if(j>0 && j<10) filen=TString::Format("%s_raw.bin_000%i",run.Data(),j);
     if(j>9 && j<100) filen=TString::Format("%s_raw.bin_00%i",run.Data(),j);
     if(j>99 && j<1000) filen=TString::Format("%s_raw.bin_0%i",run.Data(),j);
