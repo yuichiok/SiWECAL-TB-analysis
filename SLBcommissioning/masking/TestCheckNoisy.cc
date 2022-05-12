@@ -7,6 +7,7 @@ void cosmics_check_test(TString filename_in, TString settings, TString settings_
 
   read_configuration_file(settings,false);
   cout<<"Reading configuration file: "<<settings<<endl;
+  window = detector.acq_window;
 
   TString filename=filename_in;
   
