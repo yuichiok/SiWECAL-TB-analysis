@@ -16,6 +16,7 @@ TString run_settings;
 TString scurves;
 bool debug;
 int acqwindow=1;
+int acqdelay=10;
 int acqwindow_cosm=100;
 
 void init(TString s1="", bool debug_=false) {
@@ -142,6 +143,8 @@ void triple_check(TString filename_in, int iteration=1, int voting=3, int window
   TString settings=run_settings+TString::Format("it%i.txt",iteration);
   cout<<"Reading configuration file: "<<settings<<endl;
   read_configuration_file(settings,false);
+  acqwindow = detector.acq_window;
+  acqdelay  = detector.acq_delay;
 
   if(voting!=0) {
 
@@ -150,7 +153,7 @@ void triple_check(TString filename_in, int iteration=1, int voting=3, int window
       filename=TString::Format("%s_%i.root",filename_in.Data(),irepetition);
       cout<<"Reading root file: "<<filename<<endl;
       DecodedSLBAnalysis ss(filename);
-      std::vector<std::array<int,9>> noiselevels= ss.NoiseLevels(window);
+      std::vector<std::array<int,9>> noiselevels= ss.NoiseLevels(acqwindow,acqdelay,true,false);
       for(unsigned i=0; i<noiselevels.size(); i++) {
 	if( under_or_over_flowcheck_trig(noiselevels.at(i),underflow_trig) == true || under_or_over_flowcheck_all(noiselevels.at(i),underflow) == true ||  trig_check(noiselevels.at(i),trig) == true ||  retrig_check(noiselevels.at(i),retrig) == true) {
 	  if(irepetition==0) mask1.at(noiselevels.at(i)[0]).at(noiselevels.at(i)[1]).at(noiselevels.at(i)[2])=1;
@@ -284,11 +287,14 @@ void triple_check(TString filename_in, int iteration=1, int voting=3, int window
   TString settings=run_settings+TString::Format("it%i.txt",iteration);
   read_configuration_file(settings,false);
   cout<<"Reading configuration file: "<<settings<<endl;
+  acqwindow = detector.acq_window;
+  acqdelay  = detector.acq_delay;
+
 
   filename_in="../../converter_SLB/convertedfiles/Run_ILC_"+filename_in;
   TString filename=filename_in+TString::Format("_cosmic_it%i.root",iteration);
   DecodedSLBAnalysis ss_0(filename);
-  std::vector<std::array<int,9>> noiselevels_0= ss_0.NoiseLevels(window);
+  std::vector<std::array<int,9>> noiselevels_0= ss_0.NoiseLevels(acqwindow,acqdelay,false,false);
   for(unsigned i=0; i<noiselevels_0.size(); i++) {
     if(    trig_check(noiselevels_0.at(i),trig) == true
 	   || retrig_check(noiselevels_0.at(i),trig/2.) == true
