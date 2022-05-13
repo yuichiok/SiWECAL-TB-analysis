@@ -8,11 +8,12 @@ void cosmics_check_test(TString filename_in, TString settings, TString settings_
   read_configuration_file(settings,false);
   cout<<"Reading configuration file: "<<settings<<endl;
   window = detector.acq_window;
+  int delay = detector.acq_delay;
 
   TString filename=filename_in;
   
   DecodedSLBAnalysis ss_0(filename);
-  std::vector<std::array<int,9>> noiselevels_0= ss_0.NoiseLevels(window,true);
+  std::vector<std::array<int,9>> noiselevels_0= ss_0.NoiseLevels(window,delay,false,false);
   for(unsigned i=0; i<noiselevels_0.size(); i++) {
 
     /* if( detector.slab[0][noiselevels_0.at(i)[0]].add==10) {
