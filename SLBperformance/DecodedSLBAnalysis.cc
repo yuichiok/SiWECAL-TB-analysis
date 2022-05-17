@@ -30,19 +30,12 @@ void DecodedSLBAnalysis::HitMonitoring(TString outputname="", int maxnhit=5, int
   Long64_t nentries = fChain->GetEntriesFast();
   //  nentries/=10;
   
-  TH2F *hit_monitoring = new TH2F("hitmonitoring","hitmonitoring",18,0.5,18.5,300,-0.5,299.5);
-  TH2F *hit_monitoring_layer = new TH2F("hitmonitoring_layer","hitmonitoring_layer",18,0.5,18.5,30,-0.5,29.5);
+  TH2F *goodhit_monitoring = new TH2F("goodhitmonitoring","BADBCID=0 Hit/cycle; chn; Layer*20+asic",64,-0.5,63.5,300,-0.5,299.5);//-1 = total, 0= good, 1=no coinc
+  TH2F *badhit_monitoring = new TH2F("badhitmonitoring","BADBCID==3 Hit/cycle rate; chn; Layer*20+asic",64,-0.5,63.5,300,-0.5,299.5);//-1 = total, 0= good, 1=no coinc
+  TH2F *sca_monitoring = new TH2F("sca_monitoring","Filled sca/cycle; sca; Layer*20+asic",15,-0.5,14.5,300,-0.5,299.5);
+  TH2F *good_eventrate_monitoring = new TH2F("goodeventrate_monitoring","BADBCID==0 Evt/cycle; layer; asic",15,-0.5,14.5,16,-0.5,15.5);
+  TH2F *bad_eventrate_monitoring = new TH2F("badeventrate_monitoring","BADBCID==3 Evt/cycle; layer; asic",15,-0.5,14.5,16,-0.5,15.5);
 
-  TH2F *event_monitoring = new TH2F("eventmonitoring","eventmonitoring",18,0.5,18.5,300,-0.5,299.5);
-  TH2F *event_monitoring_layer = new TH2F("eventmonitoring_layer","eventmonitoring_layer",18,0.5,18.5,30,-0.5,29.5);
-
-  TH2F *hit_monitoring_norettrains = new TH2F("hitmonitoring_norettrains","hitmonitoring_norettrains",18,0.5,18.5,300,-0.5,299.5);
-  TH2F *hit_monitoring_norettrains_layer = new TH2F("hitmonitoring_norettrains_layer","hitmonitoring_norettrains_layer",18,0.5,18.5,30,-0.5,29.5);
-
-  TH2F *event_monitoring_norettrains = new TH2F("eventmonitoring_norettrains","eventmonitoring_norettrains",18,0.5,18.5,300,-0.5,299.5);
-  TH2F *event_monitoring_norettrains_layer = new TH2F("eventmonitoring_norettrains_layer","eventmonitoring_norettrains_layer",18,0.5,18.5,30,-0.5,29.5);
-
-  
   Long64_t nbytes = 0, nb = 0;
 
   // -----------------------------------------------------------------------------------------------------   
@@ -58,85 +51,28 @@ void DecodedSLBAnalysis::HitMonitoring(TString outputname="", int maxnhit=5, int
       printProgress(100.*jentry/nentries) ;
     for(int ilayer=0; ilayer<n_slboards; ilayer++) {
 
-      hit_monitoring_norettrains_layer->Fill(3,(ilayer));
-      event_monitoring_norettrains_layer->Fill(3,(ilayer));
-
-      hit_monitoring_layer->Fill(3,(ilayer));
-      event_monitoring_layer->Fill(3,(ilayer));
-
       for(int ichip=0; ichip<16; ichip++) {
-       hit_monitoring->Fill(3,(ilayer)*20. +ichip);
-       event_monitoring->Fill(3,(ilayer)*20. +ichip);
-
-       hit_monitoring_norettrains->Fill(3,(ilayer)*20. +ichip);
-       event_monitoring_norettrains->Fill(3,(ilayer)*20. +ichip);
-
-       int last_sca=0;
-       bool retrigger=false;
+      
        for(int isca=0; isca<15; isca++) {
-         if(bcid[ilayer][ichip][isca]>-1) last_sca=isca;
+         if( bcid[ilayer][ichip][isca]<10 ) continue;
 
-         if( bcid[ilayer][ichip][isca]<10 || (bcid[ilayer][ichip][isca]>950 && bcid[ilayer][ichip][isca]<1000) || badbcid[ilayer][ichip][isca]==1 || badbcid[ilayer][ichip][isca]==2 ) continue;
+	 if(badbcid[ilayer][ichip][isca]>-1 && badbcid[ilayer][ichip][isca]<3) good_eventrate_monitoring->Fill(ilayer,ichip);
+	 if(badbcid[ilayer][ichip][isca]==3) bad_eventrate_monitoring->Fill(ilayer,ichip);
 
-
-         int bcid_seen = SimpleCoincidenceTagger(ilayer,maxnhit,bcid[ilayer][ichip][isca]);
-         if(bcid_seen>nslabshit ) {
-           event_monitoring->Fill(1,(ilayer)*20 +ichip);
-           event_monitoring_layer->Fill(1,(ilayer));
-         } else {
-           event_monitoring->Fill(2,(ilayer)*20 +ichip);
-           event_monitoring_layer->Fill(2,(ilayer));
-         }
-
-         if(bcid_seen>nslabshit && (badbcid[ilayer][ichip][isca]!=3 || retrigger==false) ) {
-          event_monitoring_norettrains->Fill(1,(ilayer)*20 +ichip);
-          event_monitoring_norettrains_layer->Fill(1,(ilayer));
-        }
-        if(bcid_seen<(nslabshit+1) && (badbcid[ilayer][ichip][isca]!=3 || retrigger==false) ) {
-          event_monitoring_norettrains->Fill(2,(ilayer)*20 +ichip);
-          event_monitoring_norettrains_layer->Fill(2,(ilayer));
-        }
-
-	  // int ntaggedasbad = 0;
-	  // for(int ichn=0; ichn<64; ichn++) {
-	  //   if(adc_low[ilayer][ichip][isca][ichn]<180 && adc_low[ilayer][ichip][isca][ichn]>-1) {
-	  //     ntaggedasbad++;
-	  //   }
-	  //   if(adc_high[ilayer][ichip][isca][ichn]<200 && adc_high[ilayer][ichip][isca][ichn]>-1) {
-	  //     ntaggedasbad++;
-	  //   }
-	  // }//ichn 
+	 sca_monitoring->Fill(isca,(ilayer)*20. +ichip);
 
         for(int ichn=0; ichn<64; ichn++) {
-         if(hitbit_high[ilayer][ichip][isca][ichn]==1) {
-           if(bcid_seen>nslabshit ) { 
-            hit_monitoring->Fill(1,(ilayer)*20 +ichip);
-            hit_monitoring_layer->Fill(1,(ilayer));
-          } else {
-            hit_monitoring->Fill(2,(ilayer)*20 +ichip);
-            hit_monitoring_layer->Fill(2,(ilayer));
-          }
+	  if(hitbit_high[ilayer][ichip][isca][ichn]==1) {
+	   if(badbcid[ilayer][ichip][isca]>-1 && badbcid[ilayer][ichip][isca]<3)
+	     goodhit_monitoring->Fill(ichn,(ilayer)*20. +ichip);
+	   if(badbcid[ilayer][ichip][isca]==3)
+	     badhit_monitoring->Fill(ichn,(ilayer)*20. +ichip);
+	  }
+	}//ichn
+	
+       }//isca
 
-          if(bcid_seen>nslabshit && (badbcid[ilayer][ichip][isca]!=3 || retrigger==false)) {
-            hit_monitoring_norettrains->Fill(1,(ilayer)*20 +ichip);
-            hit_monitoring_norettrains_layer->Fill(1,(ilayer));
-          }
-          if(bcid_seen<(nslabshit+1) && (badbcid[ilayer][ichip][isca]!=3 || retrigger==false) ) {
-            hit_monitoring_norettrains->Fill(2,(ilayer)*20 +ichip);
-            hit_monitoring_norettrains_layer->Fill(2,(ilayer));
-          }
-        }
-      }
-
-      if(badbcid[ilayer][ichip][isca]==3) retrigger=true;
-
-	}//isca
-	if(last_sca>0) {
-   hit_monitoring->Fill(3+last_sca,(ilayer)*20 +ichip);
-   hit_monitoring_layer->Fill(3+last_sca,(ilayer));
-   hit_monitoring_norettrains->Fill(3+last_sca,(ilayer)*20 +ichip);
-   hit_monitoring_norettrains_layer->Fill(3+last_sca,(ilayer));
- }
+       
       }//ichip 
       
     }// ilayer 
@@ -147,16 +83,18 @@ void DecodedSLBAnalysis::HitMonitoring(TString outputname="", int maxnhit=5, int
   // PEDESTAL ANALYSIS
   TFile *pedfile = new TFile("results_proto/stats_"+outputname+".root" , "RECREATE");
   pedfile->cd();
-  hit_monitoring->Write();
-  hit_monitoring_layer->Write();
-  event_monitoring->Write();
-  event_monitoring_layer->Write();
-  hit_monitoring_norettrains->Write();
-  hit_monitoring_norettrains_layer->Write();
-  event_monitoring_norettrains->Write();
-  event_monitoring_norettrains_layer->Write();
-  
-  
+  goodhit_monitoring->Scale(1./nentries);
+  badhit_monitoring->Scale(1./nentries);
+  goodhit_monitoring->Write();
+  badhit_monitoring->Write();
+
+  sca_monitoring->Scale(1./nentries);
+  sca_monitoring->Write();
+
+  good_eventrate_monitoring->Scale(1./nentries);
+  bad_eventrate_monitoring->Scale(1./nentries);
+  good_eventrate_monitoring->Write();
+  bad_eventrate_monitoring->Write();
 
 }
 
