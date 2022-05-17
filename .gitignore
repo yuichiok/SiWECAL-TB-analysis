@@ -49,3 +49,4 @@
 *.pdf
 *.png
 *.txt
+!mapping/*mapping.txt

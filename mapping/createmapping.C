@@ -17,7 +17,7 @@
 #include <iostream>
 #include <fstream>
 #include "TLatex.h"
-#include "include/utils.h"
+#include "../include/utils.h"
 
 //#include "../../style/Style.C"
 //#include "../../style/Labels.C"
@@ -25,7 +25,7 @@
 using namespace std;
 
 void createmapping(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
-  TString name[2]={"fev10","fev11_cob"};
+  TString name[2]={"fev10","fev11_cob_rotate"};
 
   for(int iname=0; iname<2; iname++) {
 
@@ -37,7 +37,8 @@ void createmapping(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
     	float flipy=1;
 	if(iflipy==1) flipy=-1;
 	
-  TString mapstring="../../mapping/"+name[iname]+"_chip_channel_x_y_mapping.txt";
+  // TString mapstring="../../mapping/"+name[iname]+"_chip_channel_x_y_mapping.txt";
+  TString mapstring=name[iname]+"_chip_channel_x_y_mapping.txt";
   ReadMap(mapstring,0);
   TH2F* map =new TH2F("map","map; chip; chn",16,-0.5,15.5,64,-0.5,63.5);
   TH2F* map_chip =new TH2F("map_chip","map; chip; chn",16,-0.5,15.5,1,-0.5,63.5);
@@ -55,7 +56,7 @@ void createmapping(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
     }
   }
 
-  ofstream fout_ped(TString::Format("IJmapping_type_%s_flipx%i_flipy%i.txt",name[iname].Data(),iflipx,iflipy).Data(),ios::out);
+  ofstream fout_ped(TString::Format("IJmapping/IJmapping_type_%s_flipx%i_flipy%i.txt",name[iname].Data(),iflipx,iflipy).Data(),ios::out);
   fout_ped<<"### IJmapping " <<endl;
   fout_ped<<"## TYPE: "<<name[iname]<< " FLIPX: "<<iflipx<< " FLIPY: "<<iflipy <<endl;
   fout_ped<<"#chip channel I J"<<endl;
@@ -83,7 +84,7 @@ void createmapping(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
 
 
   gStyle->SetOptStat(0);
-  TCanvas* canvas2= new TCanvas(TString::Format("IJmapping_type_%s_flipx%i_flipy%i.txt",name[iname].Data(),iflipx,iflipy),TString::Format("IJmapping_type_%s_flipx%i_flipy%i.txt",name[iname].Data(),iflipx,iflipy),1800,400);   
+  TCanvas* canvas2= new TCanvas(TString::Format("IJmapping/IJmapping_type_%s_flipx%i_flipy%i.txt",name[iname].Data(),iflipx,iflipy),TString::Format("IJmapping_type_%s_flipx%i_flipy%i.txt",name[iname].Data(),iflipx,iflipy),1800,400);   
   canvas2->Divide(3,1);
   canvas2->cd(1);
   map_chip->Draw("colz");
@@ -99,7 +100,7 @@ void createmapping(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
   mapIJ_chip->Draw("colz");
   mapIJ->Draw("textsame");
   canvas2->cd(2);
-  canvas2->Print(TString::Format("IJmapping_type_%s_flipx%i_flipy%i.pdf",name[iname].Data(),iflipx,iflipy));
+  canvas2->Print(TString::Format("IJmapping/IJmapping_type_%s_flipx%i_flipy%i.pdf",name[iname].Data(),iflipx,iflipy));
       }
     }
   }

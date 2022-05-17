@@ -85,21 +85,21 @@ std::vector<std::array<int,9>>  DecodedSLBAnalysis::NoiseLevels(int acqwindow=15
 	    //save number of retrigger initiators and total
 	    if(badbcid[ilayer][ichip][isca]>0 ) {
 	      if(first_retrig[isca]==true) {
-		if(gain_hit_high[ilayer][ichip][isca][ichn]==1) {
+		if(hitbit_high[ilayer][ichip][isca][ichn]==1) {
 		  retrigger_start[ilayer][ichip][ichn]++;
 		}
 	      }
-	      if(gain_hit_high[ilayer][ichip][isca][ichn]==1) retrigger_train[ilayer][ichip][ichn]++;
+	      if(hitbit_high[ilayer][ichip][isca][ichn]==1) retrigger_train[ilayer][ichip][ichn]++;
 	    }
 	  
 	    //save number of under or over flow events .... triggered or not!!
-	    if( (charge_hiGain[ilayer][ichip][isca][ichn]<100 || charge_hiGain[ilayer][ichip][isca][ichn]>1000)) {
+	    if( (adc_high[ilayer][ichip][isca][ichn]<100 || adc_high[ilayer][ichip][isca][ichn]>1000)) {
 	      under_or_over_flow_all[ilayer][ichip][ichn]++;
-	      if(gain_hit_high[ilayer][ichip][isca][ichn]==1 ) under_or_over_flow_trig[ilayer][ichip][ichn]++;
+	      if(hitbit_high[ilayer][ichip][isca][ichn]==1 ) under_or_over_flow_trig[ilayer][ichip][ichn]++;
 	    }
 	    
 	    if(badbcid[ilayer][ichip][isca]==0) {
-	      if(gain_hit_high[ilayer][ichip][isca][ichn]==1 && charge_hiGain[ilayer][ichip][isca][ichn]>100 && charge_hiGain[ilayer][ichip][isca][ichn]<1000) trigger[ilayer][ichip][ichn]++;
+	      if(hitbit_high[ilayer][ichip][isca][ichn]==1 && adc_high[ilayer][ichip][isca][ichn]>100 && adc_high[ilayer][ichip][isca][ichn]<1000) trigger[ilayer][ichip][ichn]++;
 	    }
 	  }
 	    

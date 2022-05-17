@@ -3,8 +3,25 @@
 #include "conf_struct.h"
 
 
-void test_read_masked_channels(TString filename="15102021/Run_Settings_DataTaking_TB2021_15102021", bool debug=true) {
-  read_configuration_file(filename+".txt",true);
+void test_read_masked_channels_inputlist(TString filename="Run_Settings.txt", bool debug=true) {
+  read_configuration_file(filename,true);
+
+  int masking[15][16][64]={0};
+
+  std::ifstream reading_file("inputmaskedchannels.txt");
+  if(!reading_file){
+    cout<<" dameyo - damedame"<<endl;
+  }
+  
+  TString tmpst;
+  reading_file >> tmpst >> tmpst >> tmpst ;
+  while(reading_file){
+    Int_t tmp_layer=-1, tmp_chip = 1,tmp_channel = -1;
+    reading_file >> tmp_layer >> tmp_chip >> tmp_channel;
+    cout<<tmp_layer<<endl;
+    if(tmp_layer>-1) masking[tmp_layer][tmp_chip][tmp_channel]=1;
+  }
+
 
   TH2F* mask_chip_chn[15];
   TH2F* mask_x_y[15];
@@ -12,36 +29,19 @@ void test_read_masked_channels(TString filename="15102021/Run_Settings_DataTakin
   float totalmasked[15];
   float totalmasked_chip[15][16];
 
-  int mapping_slab[15];
-  mapping_slab[0]=18;
-  mapping_slab[1]=23;
-  mapping_slab[2]=17;
-  mapping_slab[3]=22;//
-  mapping_slab[4]=25;
-  mapping_slab[5]=24;
-  mapping_slab[6]=31;
-  mapping_slab[7]=30;//
-  mapping_slab[8]=21;
-  mapping_slab[9]=20;//
-  mapping_slab[10]=19;//
-  mapping_slab[11]=15;
-  mapping_slab[12]=14;//
-  mapping_slab[13]=13;
-  mapping_slab[14]=16;
-
 
   ofstream fout(filename+"_masked.txt",ios::out);
   fout<<"#masked_chns_list layer chip chns (0=not masked, 1=masked)"<<endl;
 
   int nslabs=15;
   for(int islab=0; islab<nslabs; islab++) {
-    // TString map_name="../mapping/fev10_chip_channel_x_y_mapping.txt";
+    TString map_name="../mapping/fev10_chip_channel_x_y_mapping.txt";
     // TString map_name="../mapping/fev11_cob_chip_channel_x_y_mapping.txt";
-    TString map_name="../mapping/fev11_cob_rotate_chip_channel_x_y_mapping.txt";
+    // TString map_name="../mapping/fev11_cob_rotate_chip_channel_x_y_mapping.txt";
 
     // the two cobs are equipped with slboards 2.08 and 2.12 (26th May 2020)
-    //    if(detector.slab[0][islab].add==8 || detector.slab[0][islab].add==12)
-    //  map_name="../mapping/fev11_cob_chip_channel_x_y_mapping.txt";
+    if(detector.slab[0][islab].add==3 || detector.slab[0][islab].add==3)
+      map_name="../mapping/fev11_cob_chip_channel_x_y_mapping.txt";
     
     cout<<" -------------------------------------------------------------------------------------------- " <<endl;
     cout<<"Slab idx" << islab<< "with slabAdd: "<<detector.slab[0][islab].add<< " and mapping file: "<< map_name<<endl;
@@ -56,9 +56,19 @@ void test_read_masked_channels(TString filename="15102021/Run_Settings_DataTakin
       totalmasked_chip[islab][ichip]=0;
       fout<<islab<<" "<<ichip;
       for(int ichn=0; ichn<64; ichn++) {
+
+	if(masking[islab][ichip][ichn]==1) {
+	  detector.slab[0][islab].asu[0].skiroc[ichip].mask[ichn]=1;
+	  detector.slab[0][islab].asu[0].skiroc[ichip].preamplifier_mask[ichn]=1;
+	  cout<<" masking "<<islab<<" "<<ichip<<" "<<ichn<<endl;
+	}
+	    
 	if(detector.slab[0][islab].asu[0].skiroc[ichip].mask[ichn]==1) {
 	  totalmasked[islab]++;
 	  totalmasked_chip[islab][ichip]++;
+	  detector.slab[0][islab].asu[0].skiroc[ichip].preamplifier_mask[ichn]=1;
+	  cout<<" Fix PreaAmp "<<islab<<" "<<ichip<<" "<<ichn<<endl;
+
 	}
 	
 	float msk= detector.slab[0][islab].asu[0].skiroc[ichip].mask[ichn]+0.001;
@@ -99,6 +109,7 @@ void test_read_masked_channels(TString filename="15102021/Run_Settings_DataTakin
   cout << "####           CHECK THE MASK MAP FILE !!!!!!               ####" << endl;
   cout << "################################################################" << endl;
   cout << "################################################################" << endl;
+  write_configuration_file("Run_Settings_new.txt");
 
   
 }
