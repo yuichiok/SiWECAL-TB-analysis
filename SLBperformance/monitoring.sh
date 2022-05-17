@@ -5,7 +5,8 @@ for run in  "Run_ILC_11052022_datarate_aq100" "Run_ILC_11052022_datarate_aq10"
 do
     initial=${PWD}
     
-    data_folder="/home/airqui/cernbox/SiWECAL/TB2022/commissioning/"${run}"/"
+#    data_folder="/home/airqui/cernbox/SiWECAL/TB2022/commissioning/"${run}"/"
+    data_folder="/eos/project/s/siw-ecal/TB2022-06/commissioning/"${run}"/"
     cd ${data_folder}
     FILE_start=${run}"_raw.bin"
     if test -f "${FILE_start}"; then
