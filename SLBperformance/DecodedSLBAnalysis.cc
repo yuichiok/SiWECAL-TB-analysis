@@ -169,7 +169,7 @@ int DecodedSLBAnalysis::NSlabsAnalysis(TString outputname="", int maxnhit=1, int
   //Read the channel/chip -- x/y mapping
   //  ReadMap(map_filename);
 
-  int nSLB=1;// get it as argument or read it from ntuple or somethng ? 
+  int nSLB=15;// get it as argument or read it from ntuple or somethng ? 
   if (fChain == 0) return -1;
 
   Long64_t nentries = fChain->GetEntriesFast();

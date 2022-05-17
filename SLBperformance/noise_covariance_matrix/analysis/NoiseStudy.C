@@ -106,7 +106,8 @@ void CreateHistos(TString run="3GeVMIPscan", int igain=0, int isca=0){
 
 void NoiseStudy(){
 
-  TString run[1]={"03102022_pedestal_13slabs"};
+  // TString run[1]={"03102022_pedestal_13slabs"};
+  TString run[1]={"3GeVMIPscan_run_050060"};
   for(int irun=0; irun<1; irun++) {
     for(int isca=1; isca<16;isca++) {
       CreateHistos(run[irun],1,isca);
