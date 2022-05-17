@@ -2,7 +2,7 @@
 
 void SummaryPedestal(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 
-  TString map="../../mapping/fev10_chip_channel_x_y_mapping.txt";
+  TString map="../../../mapping/fev10_chip_channel_x_y_mapping.txt";
   //  if(layer==0 || layer==2)  map="../../mapping/fev11_cob_chip_channel_x_y_mapping.txt";
   ReadMap(map,0);
   int nlayers=15;
@@ -188,7 +188,8 @@ void SummaryPedestal(TString name_="3GeVMIPscan",TString st_gain="highgain"){
 }
 
 void SummaryPlots(){
-  TString runname="03102022_pedestal_13slabs";
+  //TString runname="03102022_pedestal_13slabs";
+  TString runname="3GeVMIPscan_run_050060";
   SummaryPedestal(runname,"highgain");
   SummaryPedestal(runname,"lowgain");
 }
