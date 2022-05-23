@@ -347,7 +347,7 @@ void mipanalysis_summary(TString run="3GeVMIPscan", TString gain="high", int ped
     looklikerealMIPs_layer[layer]= new TH2F(TString::Format("looklikerealMIPs_layer%i",layer),TString::Format("looklikerealMIPs_layer%i; chip; chn; Fitted MPV",layer),16,-0.5,15.5,64,-0.5,63.5);
 
     TString map="../../mapping/fev10_chip_channel_x_y_mapping.txt";
-    if(layer==2 || layer==3)  map="../../mapping/fev11_cob_chip_channel_x_y_mapping.txt";
+    if(layer==5 || layer==6)  map="../../mapping/fev11_cob_rotate_chip_channel_x_y_mapping.txt";
     ReadMap(map,layer);
  
 
