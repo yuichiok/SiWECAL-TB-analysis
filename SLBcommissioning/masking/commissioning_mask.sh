@@ -32,8 +32,8 @@ if [ ! -d "${softw_path}/SLBcommissioning/masking/histos" ]; then
     mkdir ${softw_path}/SLBcommissioning/masking/histos
 fi
 
-# data_path="/mnt/win1/"
-data_path="/mnt/win2/"
+data_path="/mnt/win1/"
+#data_path="/mnt/win2/"
 
 
 if [[ $round == "masking" ]]
@@ -41,7 +41,9 @@ then
     for i in 0 1 2
     do
 	run="Run_ILC_"${date}"_"${round}"_it"${it}"_"${i}"_Ascii"
-	mkdir ${softw_path}/converter_SLB/convertedfiles/${run}
+        echo "Before creating coverting file dir"
+	mkdir -p ${softw_path}/converter_SLB/convertedfiles/${run}
+        echo "After creating coverting file dir"
 	output=${softw_path}"/converter_SLB/convertedfiles/"${run}"/"
 	
 	cd ../../converter_SLB

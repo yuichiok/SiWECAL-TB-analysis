@@ -40,7 +40,8 @@ public:
 
   };
   
-  void ReadFile(TString inputFileName, bool overwrite=false, TString outFileName = "default",bool zerosupression=false);
+  //  void ReadFile(TString inputFileName, bool overwrite=false, TString outFileName = "default",bool zerosupression=false);
+  unsigned ReadFile(TString inputFileName, bool overwrite=false, TString outFileName = "default",bool zerosupression=false);
 
 protected:
 
@@ -217,7 +218,8 @@ void SLBdecoded2ROOT::treeInit(bool zerosupression=false) { //init data for a si
 
 //******************************************************************************************************************
 
-void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString outFileName, bool zerosupression) {
+//void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString outFileName, bool zerosupression) {
+unsigned SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString outFileName, bool zerosupression) {
 
   event=0;
   acqNumber=0;
@@ -230,7 +232,7 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
   if(!overwrite){
     fout = new TFile(outFileName,"create");
     if(!fout->IsOpen()){
-      return;
+      return 0;
     }
   }
   else {
@@ -484,7 +486,7 @@ void SLBdecoded2ROOT::ReadFile(TString inputFileName, bool overwrite, TString ou
 //  }
   fout->Close();
     
-  return;
+  return 0;
 }
 
 void SLBdecoded2ROOT::GetBadBCID() {
