@@ -7,11 +7,13 @@ void cosmics_check_test(TString filename_in, TString settings, TString settings_
 
   read_configuration_file(settings,false);
   cout<<"Reading configuration file: "<<settings<<endl;
+  window = detector.acq_window;
+  int delay = detector.acq_delay;
 
   TString filename=filename_in;
   
   DecodedSLBAnalysis ss_0(filename);
-  std::vector<std::array<int,9>> noiselevels_0= ss_0.NoiseLevels(window,true);
+  std::vector<std::array<int,9>> noiselevels_0= ss_0.NoiseLevels(window,delay,false,false);
   for(unsigned i=0; i<noiselevels_0.size(); i++) {
 
     /* if( detector.slab[0][noiselevels_0.at(i)[0]].add==10) {
@@ -29,8 +31,8 @@ void cosmics_check_test(TString filename_in, TString settings, TString settings_
       if(debug==true && mask.at(noiselevels_0.at(i)[0]).at(noiselevels_0.at(i)[1]).at(noiselevels_0.at(i)[2])==0) cout_check(noiselevels_0.at(i),trig*2.,999999,trig*2.,trig,trig*2);
 
       if(detector.slab[0][noiselevels_0.at(i)[0]].asu[0].skiroc[noiselevels_0.at(i)[1]].chn_threshold_adj[noiselevels_0.at(i)[2]]>4) {
-        detector.slab[0][noiselevels_0.at(i)[0]].asu[0].skiroc[noiselevels_0.at(i)[1]].chn_threshold_adj[noiselevels_0.at(i)[2]]=detector.slab[0][noiselevels_0.at(i)[0]].asu[0].skiroc[noiselevels_0.at(i)[1]].chn_threshold_adj[noiselevels_0.at(i)[2]]-5;
-        cout<<" Adjusting:  slboard:"<<detector.slab[0][noiselevels_0.at(i)[0]].add<<" skiroc:"<<noiselevels_0.at(i)[1]<<" chn:"<<noiselevels_0.at(i)[2]<< " - " <<detector.slab[0][noiselevels_0.at(i)[0]].asu[0].skiroc[noiselevels_0.at(i)[1]].chn_threshold_adj[noiselevels_0.at(i)[2]]<<endl;
+        // detector.slab[0][noiselevels_0.at(i)[0]].asu[0].skiroc[noiselevels_0.at(i)[1]].chn_threshold_adj[noiselevels_0.at(i)[2]]=detector.slab[0][noiselevels_0.at(i)[0]].asu[0].skiroc[noiselevels_0.at(i)[1]].chn_threshold_adj[noiselevels_0.at(i)[2]]-5;
+        // cout<<" Adjusting:  slboard:"<<detector.slab[0][noiselevels_0.at(i)[0]].add<<" skiroc:"<<noiselevels_0.at(i)[1]<<" chn:"<<noiselevels_0.at(i)[2]<< " - " <<detector.slab[0][noiselevels_0.at(i)[0]].asu[0].skiroc[noiselevels_0.at(i)[1]].chn_threshold_adj[noiselevels_0.at(i)[2]]<<endl;
       } else {
         //if ind threshold =0 , then mask the channel                                                                                                                                   
         if(detector.slab[0][noiselevels_0.at(i)[0]].asu[0].skiroc[noiselevels_0.at(i)[1]].chn_threshold_adj[noiselevels_0.at(i)[2]]==0) {

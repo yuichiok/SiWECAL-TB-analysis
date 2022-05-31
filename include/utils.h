@@ -6,22 +6,19 @@
 
 
 int SimpleCoincidenceTagger(int ilayer, int maxnhit=5, int bcid_ref=0){
-  
+
   int bcid_seen=0;
   int bcid_seen_slb[30]={0};
   for(int islboard=0; islboard<n_slboards; islboard++) {
     if(islboard==ilayer) continue;
     for(int isca=0; isca<15; isca++) {
       for(int ichip=0; ichip<16; ichip++) {
-	if( bcid[islboard][ichip][isca]<10 || nhits[islboard][ichip][isca]>maxnhit || ( bcid[islboard][ichip][isca]<1000 && bcid[islboard][ichip][isca]>950) )
-	  continue;
-	//	if(badbcid[islboard][ichip][isca]!=0)
+	//	if( bcid[islboard][ichip][isca]<10 || nhits[islboard][ichip][isca]>maxnhit || ( bcid[islboard][ichip][isca]<1000 && bcid[islboard][ichip][isca]>950) )
 	//  continue;
+       	if(badbcid[islboard][ichip][isca]!=0 || bcid[islboard][ichip][isca]<0)
+	  continue;
 	
-	if(isca>0) if(bcid[islboard][ichip][isca]-bcid[islboard][ichip][isca-1]<3) continue;
-	if(isca<14) if(bcid[islboard][ichip][isca+1]-bcid[islboard][ichip][isca]<3) continue;
-	
-	if( fabs(bcid[islboard][ichip][isca]-bcid_ref)<4)
+	if( fabs(bcid[islboard][ichip][isca]-bcid_ref)<2)
 	  bcid_seen_slb[islboard]++;
       }//ichip
     }//isca
@@ -297,6 +294,7 @@ void ReadPedestalsProtoCovariance(TString filename)
   for(int islboard=0; islboard<15; islboard++) {
     std::vector<std::vector<std::vector<Double_t> > > chip_ped_mean_slb;
     std::vector<std::vector<std::vector<Double_t> > > chip_ped_w_i_slb;
+    std::vector<std::vector<std::vector<Double_t> > > chip_ped_error_slb;
     std::vector<std::vector<std::vector<Double_t> > > chip_ped_w_c1_slb;
     std::vector<std::vector<std::vector<Double_t> > > chip_ped_w_c2_slb;
 
@@ -304,41 +302,48 @@ void ReadPedestalsProtoCovariance(TString filename)
     for(int i=0; i<16; i++) {
       std::vector<std::vector<Double_t> > chip_ped_mean;
       std::vector<std::vector<Double_t> > chip_ped_w_i;
+      std::vector<std::vector<Double_t> > chip_ped_error;
       std::vector<std::vector<Double_t> > chip_ped_w_c1;
       std::vector<std::vector<Double_t> > chip_ped_w_c2;
 
       for(int j=0; j<64; j++) {
 	std::vector<Double_t> chn_ped_mean;
 	std::vector<Double_t> chn_ped_w_i;
+	std::vector<Double_t> chn_ped_error;
 	std::vector<Double_t> chn_ped_w_c1;
 	std::vector<Double_t> chn_ped_w_c2;
 
 	for(int isca=0; isca<15; isca++) {
 	  chn_ped_mean.push_back(-1);
 	  chn_ped_w_i.push_back(-1);
+	  chn_ped_error.push_back(-1);
 	  chn_ped_w_c1.push_back(-1);
 	  chn_ped_w_c2.push_back(-1);
 	}
 	chip_ped_mean.push_back(chn_ped_mean);
 	chip_ped_w_i.push_back(chn_ped_w_i);
+	chip_ped_error.push_back(chn_ped_error);
 	chip_ped_w_c1.push_back(chn_ped_w_c1);
 	chip_ped_w_c2.push_back(chn_ped_w_c2);
       }
       chip_ped_mean_slb.push_back(chip_ped_mean);
       chip_ped_w_i_slb.push_back(chip_ped_w_i);
+      chip_ped_error_slb.push_back(chip_ped_error);
       chip_ped_w_c1_slb.push_back(chip_ped_w_c1);
       chip_ped_w_c2_slb.push_back(chip_ped_w_c2);
     }
     ped_mean_slboard.push_back(chip_ped_mean_slb);
     ped_w_i_slboard.push_back(chip_ped_w_i_slb);
+    ped_error_slboard.push_back(chip_ped_error_slb);
     ped_w_c1_slboard.push_back(chip_ped_w_c1_slb);
     ped_w_c2_slboard.push_back(chip_ped_w_c2_slb);
   }
 
   Int_t tmp_layer=0, tmp_chip = 0,tmp_channel = 0;
-  Double_t tmp_ped[15], tmp_w_i[15], tmp_w_c1[15], tmp_w_c2[15];
+  Double_t tmp_ped[15], tmp_error[15], tmp_w_i[15], tmp_w_c1[15], tmp_w_c2[15];
   for(int isca=0; isca<15; isca++) {
     tmp_ped[isca]=0.;
+    tmp_error[isca]=0.;
     tmp_w_i[isca]=0.;
     tmp_w_c1[isca]=0.;
     tmp_w_c2[isca]=0.;
@@ -368,36 +373,36 @@ void ReadPedestalsProtoCovariance(TString filename)
   float tmperror=0;
   while(reading_file){
     reading_file >> tmp_layer >> tmp_chip >> tmp_channel >>
-      tmp_ped[0] >> tmp_w_i[0] >> tmp_w_c1[0] >>tmp_w_c2[0] >> tmperror >>
-      tmp_ped[1] >> tmp_w_i[1] >> tmp_w_c1[1] >>tmp_w_c2[1] >> tmperror >>
-      tmp_ped[2] >> tmp_w_i[2] >> tmp_w_c1[2] >>tmp_w_c2[2] >> tmperror >>
-      tmp_ped[3] >> tmp_w_i[3] >> tmp_w_c1[3] >>tmp_w_c2[3] >> tmperror >>
-      tmp_ped[4] >> tmp_w_i[4] >> tmp_w_c1[4] >>tmp_w_c2[4] >> tmperror >>
-      tmp_ped[5] >> tmp_w_i[5] >> tmp_w_c1[5] >>tmp_w_c2[5] >> tmperror >>
-      tmp_ped[6] >> tmp_w_i[6] >> tmp_w_c1[6] >>tmp_w_c2[6] >> tmperror >>
-      tmp_ped[7] >> tmp_w_i[7] >> tmp_w_c1[7] >>tmp_w_c2[7] >> tmperror >>
-      tmp_ped[8] >> tmp_w_i[8] >> tmp_w_c1[8] >>tmp_w_c2[8] >> tmperror >>
-      tmp_ped[9] >> tmp_w_i[9] >> tmp_w_c1[9] >>tmp_w_c2[9] >> tmperror >>
-      tmp_ped[10] >> tmp_w_i[10] >> tmp_w_c1[10] >>tmp_w_c2[10] >> tmperror >>
-      tmp_ped[11] >> tmp_w_i[11] >> tmp_w_c1[11] >>tmp_w_c2[11] >> tmperror >>
-      tmp_ped[12] >> tmp_w_i[12] >> tmp_w_c1[12] >>tmp_w_c2[12] >> tmperror >>
-      tmp_ped[13] >> tmp_w_i[13] >> tmp_w_c1[13] >>tmp_w_c2[13] >> tmperror >>
-      tmp_ped[14] >> tmp_w_i[14] >> tmp_w_c1[14] >>tmp_w_c2[14] >> tmperror;
+      tmp_ped[0] >> tmp_error[0] >> tmp_w_i[0] >> tmp_w_c1[0] >>tmp_w_c2[0] >>
+      tmp_ped[1] >> tmp_error[1] >> tmp_w_i[1] >> tmp_w_c1[1] >>tmp_w_c2[1] >>
+      tmp_ped[2] >> tmp_error[2] >> tmp_w_i[2] >> tmp_w_c1[2] >>tmp_w_c2[2] >>
+      tmp_ped[3] >> tmp_error[3] >> tmp_w_i[3] >> tmp_w_c1[3] >>tmp_w_c2[3] >>
+      tmp_ped[4] >> tmp_error[4] >> tmp_w_i[4] >> tmp_w_c1[4] >>tmp_w_c2[4] >>
+      tmp_ped[5] >> tmp_error[5] >> tmp_w_i[5] >> tmp_w_c1[5] >>tmp_w_c2[5] >>
+      tmp_ped[6] >> tmp_error[6] >> tmp_w_i[6] >> tmp_w_c1[6] >>tmp_w_c2[6] >>
+      tmp_ped[7] >> tmp_error[7] >> tmp_w_i[7] >> tmp_w_c1[7] >>tmp_w_c2[7] >>
+      tmp_ped[8] >> tmp_error[8] >> tmp_w_i[8] >> tmp_w_c1[8] >>tmp_w_c2[8] >>
+      tmp_ped[9] >> tmp_error[9] >> tmp_w_i[9] >> tmp_w_c1[9] >>tmp_w_c2[9] >>
+      tmp_ped[10] >> tmp_error[10] >> tmp_w_i[10] >> tmp_w_c1[10] >>tmp_w_c2[10] >>
+      tmp_ped[11] >> tmp_error[11] >> tmp_w_i[11] >> tmp_w_c1[11] >>tmp_w_c2[11] >>
+      tmp_ped[12] >> tmp_error[12] >> tmp_w_i[12] >> tmp_w_c1[12] >>tmp_w_c2[12] >>
+      tmp_ped[13] >> tmp_error[13] >> tmp_w_i[13] >> tmp_w_c1[13] >>tmp_w_c2[13] >>
+      tmp_ped[14] >> tmp_error[14] >> tmp_w_i[14] >> tmp_w_c1[14] >>tmp_w_c2[14];
 
     for(int isca=0; isca<15; isca++) {
       if(tmp_ped[isca]>0. ){//&& (tmp_w_i[isca]<ped_w_i.at(tmp_chip).at(tmp_channel).at(isca) || ped_w_i.at(tmp_chip).at(tmp_channel).at(isca)==0) ){
 	ped_mean_slboard.at(tmp_layer).at(tmp_chip).at(tmp_channel).at(isca)=tmp_ped[isca];
+	ped_error_slboard.at(tmp_layer).at(tmp_chip).at(tmp_channel).at(isca)=tmp_error[isca];
 	ped_w_i_slboard.at(tmp_layer).at(tmp_chip).at(tmp_channel).at(isca)=tmp_w_i[isca];
 	ped_w_c1_slboard.at(tmp_layer).at(tmp_chip).at(tmp_channel).at(isca)=tmp_w_c1[isca];
 	ped_w_c2_slboard.at(tmp_layer).at(tmp_chip).at(tmp_channel).at(isca)=tmp_w_c2[isca];
-	cout<<tmp_layer<<" "<<tmp_chip<<" "<<tmp_channel<<" "<<isca<<"  "<<ped_mean_slboard.at(tmp_layer).at(tmp_chip).at(tmp_channel).at(isca)<<endl;
+	//	cout<<tmp_layer<<" "<<tmp_chip<<" "<<tmp_channel<<" "<<isca<<"  "<<ped_error_slboard.at(tmp_layer).at(tmp_chip).at(tmp_channel).at(isca)<<endl;
       }
     }
 
   }
 
 }
-
 
 void ReadPedestalsProto(TString filename, bool invertedordering=false) 
 {

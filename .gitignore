@@ -34,6 +34,7 @@
 *.la
 *.a
 *.lib
+*.pyc
 
 # Executables
 *.exe
@@ -48,3 +49,4 @@
 *.pdf
 *.png
 *.txt
+!mapping/*mapping.txt

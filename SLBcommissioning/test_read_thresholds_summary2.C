@@ -2,10 +2,10 @@
 
 #include "conf_struct.h"
 
+void test_read_thresholds_summary2(TString filename="/mnt/win2/Run_Data/Run_ILC_03112022_cosmic_it14_Ascii/Run_Settings.txt", bool debug=true) {
+  //void test_read_thresholds_summary(TString filename="15102021/Run_Settings_it10.txt", bool debug=true) {
 
-void test_read_thresholds(TString filename="14102021/Run_Settings_it8", bool debug=true) {
-
-  read_configuration_file(filename+".txt",false);
+  read_configuration_file(filename,false);
 
   TH2F* threshold_chip_chn[15];
   TH2F* threshold_x_y[15];
@@ -13,6 +13,24 @@ void test_read_thresholds(TString filename="14102021/Run_Settings_it8", bool deb
   TH2F* threshold_chip_chn_2[15];
   TH2F* threshold_x_y_2[15];
 
+  TH2F* threshold_layer_chip = new TH2F("threshold_chip_chn","threshold_chip_chn",15,-0.5,14.5,16,-0.5,15.5);
+  int mapping_slab[15];
+  mapping_slab[0]=18;
+  mapping_slab[1]=23;
+  mapping_slab[2]=17;
+  mapping_slab[3]=22;//
+  mapping_slab[4]=25;
+  mapping_slab[5]=24;
+  mapping_slab[6]=31;
+  mapping_slab[7]=30;//
+  mapping_slab[8]=21;
+  mapping_slab[9]=20;//
+  mapping_slab[10]=19;//
+  mapping_slab[11]=15;
+  mapping_slab[12]=14;//
+  mapping_slab[13]=13;
+  mapping_slab[14]=16;
+  
   
   for(int islab=0; islab<15; islab++) {
     TString map_name="../mapping/fev10_chip_channel_x_y_mapping.txt";
@@ -50,9 +68,11 @@ void test_read_thresholds(TString filename="14102021/Run_Settings_it8", bool deb
 	  threshold_x_y_2[islab]->Fill(map_pointX[ichip][ichn],map_pointY[ichip][ichn],th_glob); 
 	}
       }
+      threshold_layer_chip->Fill(islab,ichip,detector.slab[0][islab].asu[0].skiroc[ichip].threshold_dac);
       cout<<endl;
     }
 
+    /*
     TCanvas *canvas = new TCanvas(TString::Format("canvas_%i",islab),TString::Format("canvas_%i",islab),800,1600);
     gStyle->SetOptStat(0);
     gStyle->SetPalette(kLightTemperature);//RainBow);
@@ -70,11 +90,23 @@ void test_read_thresholds(TString filename="14102021/Run_Settings_it8", bool deb
     threshold_x_y_2[islab]->GetZaxis()->SetRangeUser(220,280);
     threshold_x_y_2[islab]->Draw("colz");
     threshold_x_y[islab]->Draw("text0same");
-    //canvas->Print(TString::Format("thresholds_slbAdd%i.eps",islab));
-    canvas->Print(TString::Format("plots/thresholds_slbAdd%i.png",islab));
-
+    canvas->Print(TString::Format("thresholds_slbAdd%i.eps",islab));
+    */
 
   }
+  
+
+     TCanvas *canvas2 = new TCanvas("canvas2","canvas2",600,600);
+     gStyle->SetOptStat(0);
+     gStyle->SetPalette(kRainBow);//Cherry);
+     gStyle->SetPadRightMargin(0.16);
+     
+     canvas2->cd(1);
+     threshold_layer_chip->GetXaxis()->SetTitle("SLAB-ID");
+     threshold_layer_chip->GetYaxis()->SetTitle("CHIP");
+     threshold_layer_chip->GetZaxis()->SetTitle("Global Threshold");
+     //     threshold_layer_chip->GetZaxis()->SetRangeUser(200,300);
+     threshold_layer_chip->Draw("colz");
 
   
 }

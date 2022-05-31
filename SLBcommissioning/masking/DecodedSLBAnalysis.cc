@@ -19,7 +19,7 @@
 
 using namespace std;
 
-std::vector<std::array<int,9>>  DecodedSLBAnalysis::NoiseLevels(int acqwindow=150, bool calculate_expected=false)
+std::vector<std::array<int,9>>  DecodedSLBAnalysis::NoiseLevels(int acqwindow=150, int acqdelay=100, bool discard_first_aq=false, bool calculate_expected=false)
 {
 
   
@@ -50,7 +50,12 @@ std::vector<std::array<int,9>>  DecodedSLBAnalysis::NoiseLevels(int acqwindow=15
   // -----------------------------------------------------------------------------------------------------   
   // SCA analysis
   Long64_t nbytes = 0, nb = 0;
-  for (Long64_t jentry=0; jentry<nentries;jentry++) {
+
+  int first_entry=0;
+//   (discard_first_aq) ? (first_entry=(int)(nentries*0.1)) : (first_entry=0);
+//   cout << discard_first_aq << ", " << first_entry << ", " << nentries << endl;
+
+  for (int jentry=first_entry; jentry<nentries;jentry++) {
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;
     nb = fChain->GetEntry(jentry);   nbytes += nb;
@@ -58,8 +63,12 @@ std::vector<std::array<int,9>>  DecodedSLBAnalysis::NoiseLevels(int acqwindow=15
       if(jentry==0) n_SLB=n_slboards;
 
     if ( jentry > 1000 && jentry % 1000 ==0 ) std::cout << "Progress: " << 100.*jentry/nentries <<" %"<<endl;
-
+	
     expected=0.25*acqNumber*float(acqwindow)/60.;
+
+	// skip first 30 seconds of acq
+	// float aqps = float(acqwindow+acqdelay) * 1000.;
+	// if (acqNumber > aqps*30) continue;
   
     for(int ilayer=0; ilayer<n_slboards; ilayer++) {
       
@@ -85,21 +94,21 @@ std::vector<std::array<int,9>>  DecodedSLBAnalysis::NoiseLevels(int acqwindow=15
 	    //save number of retrigger initiators and total
 	    if(badbcid[ilayer][ichip][isca]>0 ) {
 	      if(first_retrig[isca]==true) {
-		if(gain_hit_high[ilayer][ichip][isca][ichn]==1) {
+		if(hitbit_high[ilayer][ichip][isca][ichn]==1) {
 		  retrigger_start[ilayer][ichip][ichn]++;
 		}
 	      }
-	      if(gain_hit_high[ilayer][ichip][isca][ichn]==1) retrigger_train[ilayer][ichip][ichn]++;
+	      if(hitbit_high[ilayer][ichip][isca][ichn]==1) retrigger_train[ilayer][ichip][ichn]++;
 	    }
 	  
 	    //save number of under or over flow events .... triggered or not!!
-	    if( (charge_hiGain[ilayer][ichip][isca][ichn]<100 || charge_hiGain[ilayer][ichip][isca][ichn]>1000)) {
+	    if( (adc_high[ilayer][ichip][isca][ichn]<100 || adc_high[ilayer][ichip][isca][ichn]>1000)) {
 	      under_or_over_flow_all[ilayer][ichip][ichn]++;
-	      if(gain_hit_high[ilayer][ichip][isca][ichn]==1 ) under_or_over_flow_trig[ilayer][ichip][ichn]++;
+	      if(hitbit_high[ilayer][ichip][isca][ichn]==1 ) under_or_over_flow_trig[ilayer][ichip][ichn]++;
 	    }
 	    
 	    if(badbcid[ilayer][ichip][isca]==0) {
-	      if(gain_hit_high[ilayer][ichip][isca][ichn]==1 && charge_hiGain[ilayer][ichip][isca][ichn]>100 && charge_hiGain[ilayer][ichip][isca][ichn]<1000) trigger[ilayer][ichip][ichn]++;
+	      if(hitbit_high[ilayer][ichip][isca][ichn]==1 && adc_high[ilayer][ichip][isca][ichn]>100 && adc_high[ilayer][ichip][isca][ichn]<1000) trigger[ilayer][ichip][ichn]++;
 	    }
 	  }
 	    
