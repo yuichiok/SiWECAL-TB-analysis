@@ -27,14 +27,14 @@ do
     
     cd ../converter_SLB
     
-    root -l -q ConvertDirectorySL_Raw.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/${run}\",2\) &
-    root -l -q ConvertDirectorySL_Raw.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/${run}\",1\) &
+#    root -l -q ConvertDirectorySL_Raw.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/${run}\",2\) &
+#    root -l -q ConvertDirectorySL_Raw.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/${run}\",1\) &
     root -l -q ConvertDirectorySL_Raw.cc\(\"${data_folder}\",false,\"${run}\",\"../converter_SLB/convertedfiles/${run}\",0\)
     
     cd -
 
 
     #sleep 20s
-    hadd ../converter_SLB/convertedfiles/${run}.root  ../converter_SLB/convertedfiles/${run}/*root
-    root -l -q Proto.cc\(\"../converter_SLB/convertedfiles/${run}\",\"${run}\",1\)  &
+    hadd -f ../converter_SLB/convertedfiles/${run}.root  ../converter_SLB/convertedfiles/${run}/*root
+    root -l -q Proto.cc\(\"../converter_SLB/convertedfiles/${run}\",\"${run}\",1\)
 done
