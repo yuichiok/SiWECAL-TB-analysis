@@ -38,17 +38,17 @@ data_path="/mnt/win2/"
 if [[ $round == "cosmic" ]]
 then
 
-    run="Run_ILC_"${date}"_"${round}"_it"${it}"_Ascii"
+    run="Run_ILC_"${date}"_"${round}"_it"${it}""
     mkdir ${softw_path}"/converter_SLB/convertedfiles/"${run}
     output=${softw_path}"/converter_SLB/convertedfiles/"${run}"/"
 
     cd ../../converter_SLB
     data_folder=${data_path}"/Run_Data/"${run}"/"
-    root -l -q ConvertDirectorySL.cc\(\"${data_folder}\",false,\"${output}\"\)
+    root -l -q ConvertDirectorySL_Raw.cc\(\"${data_folder}\",false,\"${run}\",\"${output}\",0\)
     hadd ${output}/../Run_ILC_${date}_${round}_it${it}.root ${output}/*.root
     cd -
 
-    cp ${data_path}/Run_Data/Run_ILC_${date}_${round}_it${it}_Ascii/Run_Settings.txt  ${softw_path}/SLBcommissioning/${date}/Run_Settings_it${it}.txt
+    cp ${data_path}/Run_Data/Run_ILC_${date}_${round}_it${it}/Run_Settings.txt  ${softw_path}/SLBcommissioning/${date}/Run_Settings_it${it}.txt
     runfile=${softw_path}/SLBcommissioning/${date}/Run_Settings_it${it}.txt
     it2=$((it+1))
     runfile_new=${softw_path}/SLBcommissioning/${date}/Run_Settings_comm_it${it2}.txt

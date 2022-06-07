@@ -340,6 +340,9 @@ void read_configuration_file(TString filename="Run_Settings.txt", bool debug=tru
         if (debug) cout << " Daughter: " << i << " SlabIdx: " << detector.slab[i][j].idx << " SlabAdd: " << detector.slab[i][j].add << " SL_Board_SerNum: " << detector.slab[i][j].ser_num << " FPGA_Version: " << detector.slab[i][j].slb_fpga << " Nb_Of_Connected_ASUs: " << detector.slab[i][j].nb_asus << endl;
       }
 
+      // Calib Pulse Parameter
+      getline(reading_file,line);
+
       //CRP
       for (int k = 0; k < detector.slab[i][j].nb_asus; k++) {
 

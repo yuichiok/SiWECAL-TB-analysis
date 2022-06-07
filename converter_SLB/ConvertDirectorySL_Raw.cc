@@ -46,7 +46,7 @@ void ConvertDirectorySL_Raw(string dirname, bool zerosupression=false, TString r
     //for(int j=0; j<1; j++) {
     
     TString filen="_raw.bin";
-    // if(j==0) filen=TString::Format("%s_raw.bin_000%i",run.Data(),j);
+    if(j==0) filen=TString::Format("%s_raw.bin_000%i",run.Data(),j);
     if(j>0 && j<10) filen=TString::Format("%s_raw.bin_000%i",run.Data(),j);
     if(j>9 && j<100) filen=TString::Format("%s_raw.bin_00%i",run.Data(),j);
     if(j>99 && j<1000) filen=TString::Format("%s_raw.bin_0%i",run.Data(),j);
@@ -66,7 +66,7 @@ void ConvertDirectorySL_Raw(string dirname, bool zerosupression=false, TString r
     ss._maxReadOutCycleJump=10;
     bool result=false;
     while(result==false) {
-      result=ss.ReadFile((*filenames)[0], true, output);
+      result=ss.ReadFile((*filenames)[0], false, output);
       ss._maxReadOutCycleJump*=10;
     }
     //    delete ss;

@@ -32,8 +32,8 @@ if [ ! -d "${softw_path}/SLBcommissioning/masking/histos" ]; then
     mkdir ${softw_path}/SLBcommissioning/masking/histos
 fi
 
-# data_path="/mnt/win1/"
-data_path="/mnt/win2/"
+data_path="/mnt/win1/"
+#data_path="/mnt/win2/"
 
 
 if [[ $round == "masking" ]]
@@ -48,7 +48,7 @@ then
 	cd ../../converter_SLB
 	data_folder=${data_path}"/Run_Data/"${run}"/"
 	# root -l -q ConvertDirectorySL.cc\(\"${data_folder}\",false,\"${output}\"\) 
-	root -l -q ConvertDirectorySL_Raw.cc\(\"${data_folder}\",false,\"${date}\",\"${output}\",0\) 
+	root -l -q ConvertDirectorySL_Raw.cc\(\"${data_folder}\",false,\"${run}\",\"${output}\",0\) 
 	hadd ${output}/../Run_ILC_${date}_${round}_it${it}_${i}.root ${output}/*.root 
 	cd -
     done
@@ -89,7 +89,8 @@ then
 
     cd ../../converter_SLB
     data_folder=${data_path}"/Run_Data/"${run}"/"
-    root -l -q ConvertDirectorySL.cc\(\"${data_folder}\",false,\"${output}\"\)
+    # root -l -q ConvertDirectorySL.cc\(\"${data_folder}\",false,\"${output}\"\)
+	root -l -q ConvertDirectorySL_Raw.cc\(\"${data_folder}\",false,\"${run}\",\"${output}\",0\) 
     hadd ${output}/../Run_ILC_${date}_${round}_it${it}.root ${output}/*.root
     cd -
 
