@@ -10,6 +10,9 @@ using namespace std;
 Float_t map_pointX[15][16][64];
 Float_t map_pointY[15][16][64];
 Int_t masked[15][16][64];
+Float_t mpv_error[15][16][64];
+Float_t mpv[15][16][64];
+
 std::vector<std::vector<std::vector<Double_t> > > ped_mean;
 std::vector<std::vector<std::vector<Double_t> > > ped_error;
 std::vector<std::vector<std::vector<Double_t> > > ped_width;

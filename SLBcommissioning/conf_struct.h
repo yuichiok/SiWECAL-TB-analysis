@@ -44,6 +44,56 @@ void ReadMap(TString filename)
 
 }
 
+Float_t mpv_error[15][16][64];
+Float_t mpv[15][16][64];
+
+
+void ReadMIPCalibration(TString filename) 
+{
+
+  std::ifstream reading_file(filename);
+  if(!reading_file){
+    cout<<" dameyo - damedame"<<endl;
+  }
+
+  Int_t tmp_layer = 0, tmp_chip = 0,tmp_channel = 0;
+  Float_t tmp_mpv = 0 ,tmp_mpv_error = 0 , tmp_ = 0 ;
+  TString tmpst;
+  reading_file >> tmpst >> tmpst >> tmpst ;
+  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst>> tmpst >> tmpst >> tmpst ;
+  
+  while(reading_file){
+    reading_file >> tmp_layer >> tmp_chip >> tmp_channel >> tmp_mpv >> tmp_mpv_error >> tmp_ >> tmp_ >> tmp_ ;
+    mpv[tmp_layer][tmp_chip][tmp_channel]=tmp_mpv;
+    mpv_error[tmp_layer][tmp_chip][tmp_channel]=tmp_mpv_error;
+    
+  }
+
+ double ncalibrated=0.;
+  double ntotal=0;
+  
+  for(int k=0; k<15; k++) {
+    double ncalibrated_tmp=0.;
+    double ntotal_tmp=0;
+    for(int i=0; i<16; i++) {
+      for(int j=0; j<64; j++) {
+	if(mpv[k][i][j]==0 || mpv_error[k][i][j]<0) {
+	  ncalibrated++;
+	  ncalibrated_tmp++;
+	}
+	ntotal++;
+	ntotal_tmp++;
+      }
+    }
+    ncalibrated_tmp=100.-100.*ncalibrated_tmp/ntotal_tmp;
+    cout<< "In Layer: "<<k <<" we read that "<<ncalibrated_tmp<<"% of channels are calibrated"<<endl;
+  }
+  ncalibrated=100.-100.*ncalibrated/ntotal;
+  cout<< "TOTAL: In file " <<filename << " we read that "<<ncalibrated<<"% of channels are calibrated"<<endl;
+  
+
+}
+
 //# ASU: 0 
 //## ChipIndex: 0 ChipId: 0  FeedbackCap: 3 ThresholdDAC: 230 HoldDelay: 130 FSPeakTime: 2 GainSelectionThreshold: 255 
 //### Ch: 0 TrigMask: 0 ChThreshold: 0 PAMask: 0

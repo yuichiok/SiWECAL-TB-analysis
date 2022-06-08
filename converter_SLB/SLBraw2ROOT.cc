@@ -35,7 +35,7 @@ using std::endl;
 #define SLBDEPTH 15
 #define NB_CORE_DAUGHTERS 1 
 #define NEGDATA_THR 11
-#define BCIDTHRES 3
+#define BCIDTHRES 4
 
 /* ======================================================================= */
 int	Convert_FromGrayToBinary (int grayValue, int nbOfBits)
@@ -72,13 +72,13 @@ public:
     _ASCIIOUT = false;
     _debug = false;
     _debug2 = false;
-    _eudaq= false;
+    _eudaq= true;
     _maxReadOutCycleJump=10;
   }
   ~SLBraw2ROOT(){
   };
   
-  bool ReadFile(TString inputFileName, bool overwrite=false, TString outFileName = "default", bool zerosupression=false, bool getbadbcid_bool=true);
+  bool ReadFile(TString inputFileName="", bool overwrite=false, TString outFileName = "default", bool zerosupression=false, bool getbadbcid_bool=true);
   int _maxReadOutCycleJump;
 protected:
 
@@ -424,7 +424,7 @@ bool SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
  return true;
 }
 
-bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString outFileName = "default", bool zerosupression=false, bool getbadbcid_bool=true) {
+bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite, TString outFileName , bool zerosupression, bool getbadbcid_bool) {
 
  
     ifstream fin;
@@ -752,7 +752,7 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
     return;
   }
 
-  void SLBraw2ROOT::treeInit(bool zerosupression=false) { //init data for a single SPILL ?
+  void SLBraw2ROOT::treeInit(bool zerosupression) { //init data for a single SPILL ?
 
     for (int isl=0; isl<SLBDEPTH; isl++) {
       for (int k=0; k<NB_OF_SKIROCS_PER_ASU; k++) {
@@ -791,7 +791,7 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
     return;
   }
 
-  void SLBraw2ROOT::RecordCycle(bool zerosupression=false) {
+  void SLBraw2ROOT::RecordCycle(bool zerosupression) {
     _acqNumber=cycleID;
     _n_slboards=SLBDEPTH;
     int previousBCID=-1000;

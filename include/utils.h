@@ -83,6 +83,7 @@ void printProgress(double percentage) {
 }
 
 
+
 void ReadMasked(TString filename) 
 {
 
@@ -146,6 +147,8 @@ void ReadMasked(TString filename)
   cout<< "In file " <<filename << " we read that "<<nmasked<<"% of channels are masked"<<endl;
   
 }
+
+
 
 void ReadMap(TString filename, int slboard) 
 {
