@@ -44,6 +44,7 @@ void ReadMap(TString filename)
 
 }
 
+
 Float_t mpv_error[15][16][64];
 Float_t mpv[15][16][64];
 
@@ -93,6 +94,73 @@ void ReadMIPCalibration(TString filename)
   
 
 }
+
+Int_t masked[15][16][64];
+
+void ReadMasked(TString filename) 
+{
+
+  std::ifstream reading_file(filename);
+  if(!reading_file){
+    cout<<" dameyo - damedame"<<endl;
+  }
+
+  for(int k=0; k<15; k++) {
+    for(int i=0; i<16; i++) {
+      for(int j=0; j<64; j++) {
+	masked[k][i][j] = 0;
+      }
+    }
+  }
+  
+  Int_t tmp_layer=0, tmp_chip = 0,tmp_channel = 0;
+  Int_t tmp_masked = 0;
+  TString tmpst;
+  reading_file >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst >> tmpst ;
+
+  cout<<"Read Masked: "<<filename<<endl;
+  
+  while(reading_file){
+    double masked_temp[64];
+    reading_file >> tmp_layer >> tmp_chip ;
+      for(int j=0; j<64; j++) reading_file >>masked_temp[j];
+    for(int j=0; j<64; j++)masked[tmp_layer][tmp_chip][j]=masked_temp[j];      
+  }
+  
+  /* string line;
+  
+  if(reading_file.is_open())  {
+    while(!reading_file.eof())   {
+      getline(reading_file, line);
+      std::vector<int> masked_temp;
+
+      size_t pos = 0;
+      while ((pos = line.find(" ")) != string::npos) {
+        masked_temp.push_back(std::stoi(line.substr(0, pos)));
+        line.erase(0, pos + 1);
+      }
+      masked_temp.push_back(stoi(line.substr(0, pos)));
+      masked_temp.size();
+      for(int j=0; j<64; j++) masked[masked_temp.at(0)][masked_temp.at(1)][j]=masked_temp.at(j+2);  
+    }
+    }*/
+
+  double nmasked=0.;
+  double ntotal=0;
+  for(int k=0; k<15; k++) {
+    for(int i=0; i<16; i++) {
+      for(int j=0; j<64; j++) {
+	if(masked[k][i][j]==1) nmasked++;
+	if(k==0 && i==0) cout << masked[k][i][j];
+	ntotal++;
+      }
+    }
+  }
+  nmasked=100.*nmasked/ntotal;
+  cout<< "In file " <<filename << " we read that "<<nmasked<<"% of channels are masked"<<endl;
+  
+}
+
 
 //# ASU: 0 
 //## ChipIndex: 0 ChipId: 0  FeedbackCap: 3 ThresholdDAC: 230 HoldDelay: 130 FSPeakTime: 2 GainSelectionThreshold: 255 
