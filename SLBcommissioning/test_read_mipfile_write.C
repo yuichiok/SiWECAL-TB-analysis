@@ -2,12 +2,12 @@
 
 #include "conf_struct.h"
 
-void test_read_mipfile_write(TString filename="Run_Settings.txt", TString mipfile="../../SiWECAL-TB-analysis-ui05/mip_calib/MIP_pedestalsubmode1_cosmic_long_062022_merged_highgain.txt",bool debug=false) {
+void test_read_mipfile_write(TString filename="Run_Settings.txt", TString mipfile="../masked/masked_cosmic_long_062022_merged_highgain.txt",bool debug=false) {
   //void test_read_thresholds_summary(TString filename="15102021/Run_Settings_it10.txt", bool debug=true) {
 
   read_configuration_file(filename,debug);
-  ReadMIPCalibration(mipfile);
-
+  ReadMasked(mipfile);
+  
   int global_opt[15][16]={0};
   global_opt[0][7]=-2;
   global_opt[0][8]=-2;
@@ -117,5 +117,5 @@ void test_read_mipfile_write(TString filename="Run_Settings.txt", TString mipfil
      threshold_layer_chip->Draw("colz");
 
   write_configuration_file("Run_Settings_TB202206_file2.txt");
-  
+    
 }
