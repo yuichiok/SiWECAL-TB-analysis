@@ -72,7 +72,7 @@ std::vector<double> resultfit (TH1F* hmips, TString gain) {
   
     
     if(gain=="high") {
-      fr[0]=TMath::Max(hmips->GetMean()-0.8*hmips->GetRMS(),5.);
+      fr[0]=TMath::Max(hmips->GetMean()-hmips->GetRMS(),3.);
       hmips->GetXaxis()->SetRangeUser(fr[0], 100);
       fr[1]=hmips->GetMean()*1.3;
     } else {
@@ -144,9 +144,11 @@ void pedanalysis(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
 
   ofstream fout_ped(TString::Format("../../pedestals/Pedestal_%s_%sgain.txt",run.Data(),gain.Data()).Data(),ios::out);
   fout_ped<<"#pedestal results (fit to a gaussian) remove channels/sca with two pedestals peaks from the analysis : PROTO15"<<endl;
-  fout_ped<<"#layer chip channel";
-  for(int isca=0; isca<15; isca++) fout_ped<<TString::Format(" ped_mean%i ped_error%i ped_width%i",isca,isca,isca);
-  fout_ped<<endl;
+  //fout_ped<<"#layer chip channel";
+  //for(int isca=0; isca<15; isca++) fout_ped<<TString::Format(" ped_mean%i ped_error%i ped_width%i",isca,isca,isca);
+  //fout_ped<<endl;
+  fout_ped<<"#layer chip channel ped0 ped_rms0 noise_incoherent_ped0 noise_coherent1_ped0 noise_coherent2_ped0 ped1 ped_rms1 noise_incoherent_ped1 noise_coherent1_ped1 noise_coherent2_ped1 ped2 ped_rms2 noise_incoherent_ped2 noise_coherent1_ped2 noise_coherent2_ped2 ped3 ped_rms3 noise_incoherent_ped3 noise_coherent1_ped3 noise_coherent2_ped3 ped4 ped_rms4 noise_incoherent_ped4 noise_coherent1_ped4 noise_coherent2_ped4 ped5 ped_rms5 noise_incoherent_ped5 noise_coherent1_ped5 noise_coherent2_ped5 ped6 ped_rms6 noise_incoherent_ped6 noise_coherent1_ped6 noise_coherent2_ped6 ped7 ped_rms7 noise_incoherent_ped7 noise_coherent1_ped7 noise_coherent2_ped7 ped8 ped_rms8 noise_incoherent_ped8 noise_coherent1_ped8 noise_coherent2_ped8 ped9 ped_rms9 noise_incoherent_ped9 noise_coherent1_ped9 noise_coherent2_ped9 ped10 ped_rms10 noise_incoherent_ped10 noise_coherent1_ped10 noise_coherent2_ped10 ped11 ped_rms11 noise_incoherent_ped11 noise_coherent1_ped11 noise_coherent2_ped11 ped12 ped_rms12 noise_incoherent_ped12 noise_coherent1_ped12 noise_coherent2_ped12 ped13 ped_rms13 noise_incoherent_ped13 noise_coherent1_ped13 noise_coherent2_ped13 ped14 ped_rms14 noise_incoherent_ped14 noise_coherent1_ped14 noise_coherent2_ped14"<<endl;
+
 
   for(int layer=0; layer<nlayers; layer++) {
    
@@ -218,20 +220,20 @@ void pedanalysis(TString run="PedestalMIP_3GeVMIPscan", TString gain="low"){
 	double pedwidth_av=weigthedAv(pedwidth, pedwidtherror, 15);
 	for(int isca=0; isca<15; isca++) {  
 	  if(pedwidth[isca]>0.5 && pedwidth[isca]<8 ) {
-	    fout_ped<<ped[isca]<< " " << pederror[isca]<<" "<<pedwidth[isca]<<" "; //good fits
+	    fout_ped<<ped[isca]<< " " << pederror[isca]<<" "<<pedwidth[isca]<<" "<<1<<" "<<1<<" "<<1<<" "; //good fits
 	    ped_all->Fill(20*layer+i,100*isca+j,ped[isca]);
 	    width_all->Fill(20*layer+i,100*isca+j,pedwidth[isca]);
 	    width_layer[layer]->Fill(pedwidth[isca]);
 	  } else  {
 	    if(pedwidth[isca]>-0.5) {
-	      fout_ped<<ped_av<< " " << -5<<" "<<pedwidth_av<<" "; //bad fits
+	      fout_ped<<ped_av<< " " << -5<<" "<<pedwidth_av<<" "<<1<<" "<<1<<" "<<1<<" ";; //bad fits
 	      ped_all->Fill(20*layer+i,100*isca+j,ped_av);
 	      width_all->Fill(20*layer+i,100*isca+j,pedwidth_av);
 	      ped_morethan1peak->Fill(20*layer+i,100*isca+j,ped_av);
 	      width_morethan1peak->Fill(20*layer+i,100*isca+j,pedwidth_av);
 	    }
 	    if(pedwidth[isca]<0) {
-	      fout_ped<<ped_av<< " " << -10<<" "<<pedwidth_av<<" "; //no fits
+	      fout_ped<<ped_av<< " " << -10<<" "<<pedwidth_av<<" "<<1<<" "<<1<<" "<<1<<" "; //no fits
 	      ped_all->Fill(20*layer+i,100*isca+j,ped_av);
 	      width_all->Fill(20*layer+i,100*isca+j,pedwidth_av);
 	      ped_nofit->Fill(20*layer+i,100*isca+j,ped_av);
