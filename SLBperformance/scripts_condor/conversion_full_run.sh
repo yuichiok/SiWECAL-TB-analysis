@@ -1,10 +1,12 @@
 #!/bin/bash
 
-condor=1
-datapath="/lustre/ific.uv.es/prj/ific/flc/SiWECAL/TB202206/commissioning/"
-runname="cosmic_long_06042022_run_000015"
-output=${datapath}"/../converter_SLB/convertedfiles/"${runname}
+runN=$1
+condor=0
+datapath="/home/calice/TB2022-06/eudaq_data/raw/"
+runname="raw_siwecal_"${runN}
+output=${PWD}"/../../converter_SLB/convertedfiles/"${runname}
 slbperformancepath=${PWD}"/../"
+start=$PWD
 
 if [ -d "$output" ]; then                                     
     echo $output 
@@ -20,26 +22,16 @@ else
 fi
 
 
-for irun in 0 1 2 3 4 5
+for irun in 0
 do
     cat > logs/send_convert_${runname}_${irun}.sh <<EOF
-source /cvmfs/ilc.desy.de/sw/x86_64_gcc82_centos7/v02-02-01/init_ilcsoft.sh
 
 data_folder=${datapath}${runname}
-echo ${data_folder}
-cd ${data_folder}
-
-FILE_start=${runname}"_raw.bin"
-if test -f "${FILE_start}"; then
-    FILE_new=${FILE_start}"_0000"
-    mv ${FILE_start} ${FILE_new}
-fi
 
 cd ${slbperformancepath}
 
 cd ../converter_SLB
-
-root -l -q ConvertDirectorySL_Raw.cc\(\"${datapath}/${runname}/\",false,\"${runname}\",\"${datapath}/../converter_SLB/convertedfiles/${runname}\",$irun\) 
+root -l -q ConvertDirectorySL_Raw_TB202206.cc\(\"${datapath}/\",false,\"${runname}\",\"${output2}/${runname}\",$irun\) 
 
 cd -
 
@@ -62,7 +54,9 @@ EOF
 	condor_submit send_convert_${runname}_${irun}.sub
 	cd -
     else
-	source send_convert_${runname}_${irun}.sh &
-	cd -
+	source send_convert_${runname}_${irun}.sh 
+	#cd $start
+	#source mippedestal_full_run.sh ${runN} 0 &
     fi
 done
+cd $start

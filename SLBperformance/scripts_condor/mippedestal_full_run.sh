@@ -1,28 +1,25 @@
 #!/bin/bash
-condor=1
-datapath="/lustre/ific.uv.es/prj/ific/flc/SiWECAL/TB202206/commissioning/"
+
+runN=$1
+condor=0
+datapath="/home/calice/TB2022-06/eudaq_data/raw/"
+runname="raw_siwecal_"${runN}
 slbperfomancepath=${PWD}"/../"
-runname="cosmic_long_06042022_run_000015"
 scriptspath=${PWD}
 
 
-for i in 0 1 2 3 4 5 6 7
+for i in 0
 do
 
     cd ${scriptspath}/
     cat > logs/send_mippedestal_${runname}_${i}.sh <<EOF
 #!/bin/bash 
     
-source /cvmfs/ilc.desy.de/sw/x86_64_gcc82_centos7/v02-02-01/init_ilcsoft.sh
 cd ${slbperfomancepath}
-
-hadd -f -k ${datapath}/../converter_SLB/convertedfiles/${runname}_merged_${i}.root ${datapath}/../converter_SLB/convertedfiles/${runname}/*${i}?.root 
-
-cd ${slbperfomancepath}
-root -l -q Proto.cc\(\"${datapath}/../converter_SLB/convertedfiles/${runname}_merged_${i}\",\"${runname}_merged_${i}\",0\) 
+root -l -q Proto.cc\(\"../converter_SLB/convertedfiles/${runname}/converted_${runname}.raw\",\"${runname}\",0\) 
 
 #cd TBchecks
-#source analysis.sh ${runname}_merged_${i}
+#source analysis.sh ${runname}
 
 
 EOF
