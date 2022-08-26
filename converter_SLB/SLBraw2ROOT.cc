@@ -35,7 +35,7 @@ using std::endl;
 #define SLBDEPTH 15
 #define NB_CORE_DAUGHTERS 1 
 #define NEGDATA_THR 11
-#define BCIDTHRES 3
+#define BCIDTHRES 4
 
 /* ======================================================================= */
 int	Convert_FromGrayToBinary (int grayValue, int nbOfBits)
@@ -72,13 +72,13 @@ public:
     _ASCIIOUT = false;
     _debug = false;
     _debug2 = false;
-    _eudaq= false;
+    _eudaq= true;
     _maxReadOutCycleJump=10;
   }
   ~SLBraw2ROOT(){
   };
   
-  bool ReadFile(TString inputFileName, bool overwrite=false, TString outFileName = "default", bool zerosupression=false, bool getbadbcid_bool=true);
+  bool ReadFile(TString inputFileName="", bool overwrite=false, TString outFileName = "default", bool zerosupression=false, bool getbadbcid_bool=true);
   int _maxReadOutCycleJump;
 protected:
 
@@ -232,10 +232,10 @@ int SLBraw2ROOT::cycleIDDecoding(std::vector<unsigned char> ucharValFrameVec ) {
   int result=0;
   for(n= 0; n < 16; n++)
     {
-      result += ((unsigned int)(((ucharValFrameVec.at(2*n+1)& 0xC0)>> 6) << (30-2*i)));
+      result += ((unsigned int)(((ucharValFrameVec.at(2*n+1+2)& 0xC0)>> 6) << (30-2*i)));
       i++;
     }
-  if(_debug) std::cout<<"cycleIDDecoding:"<<dec<<result<<std::endl;
+    if(_debug)  std::cout<<"cycleIDDecoding:"<<dec<<result<<std::endl;
   i=0;
   n=0;
 
@@ -259,6 +259,18 @@ bool SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
   n=0;
   index=0;
 
+  nbOfSingleSkirocEventsInFrame = 0;
+  
+ // metadata
+  for(n= 0; n < 16; n++)
+    {
+      cycleID += ((unsigned int)(((ucharValFrameVec.at(2*n+1)& 0xC0)>> 6) << (30-2*i)));
+      i++;
+    }
+  if(_debug) std::cout<<"cycleID:"<<dec<<cycleID<<std::endl;
+  i=0;
+  n=0;
+
   coreDaughterIndex=ucharValFrameVec.at(0);//(dataResult >> (8*0)) & 0xff;//(unsigned char)dataResult;
   if(_debug) cout<<"CoreDaughterIndex "<<coreDaughterIndex<<endl;
   slabIndex=ucharValFrameVec.at(1);//(dataResult >> (8*1)) & 0xff;//(unsigned char)dataResult;
@@ -278,8 +290,10 @@ bool SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
   skirocIndex = chipId -asuIndex*NB_OF_SKIROCS_PER_ASU;
 
   nbOfSingleSkirocEventsInFrame =  (int)((actualdatasize-2-2)/SINGLE_SKIROC_EVENT_SIZE);
-  if(_debug) std::cout<<"nbOfSingleSkirocEventsInFrame: "<<dec<<nbOfSingleSkirocEventsInFrame<<std::endl;
+  if(_debug)
+    std::cout<<"nbOfSingleSkirocEventsInFrame: "<<dec<<nbOfSingleSkirocEventsInFrame<<std::endl;
 
+  cycleID=0;
   // metadata
   for(n= 0; n < 16; n++)
     {
@@ -287,7 +301,7 @@ bool SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
       i++;
     }
   if(_debug) std::cout<<"cycleID:"<<dec<<cycleID<<std::endl;
-	    
+  	    
   i=0;
   for(n= 16; n < 32; n++)
     {
@@ -424,7 +438,7 @@ bool SLBraw2ROOT::DecodeRawFrame(std::vector<unsigned char> ucharValFrameVec ) {
  return true;
 }
 
-bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString outFileName = "default", bool zerosupression=false, bool getbadbcid_bool=true) {
+bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite, TString outFileName , bool zerosupression, bool getbadbcid_bool) {
 
  
     ifstream fin;
@@ -597,19 +611,21 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
 	copy(map_of_cycles_and_frames.begin(),
 	     map_of_cycles_and_frames.end(),
 	     back_inserter<vector<pair<int, std::vector<std::vector<unsigned char> > > > >(map_dumped_into_a_vector));
-	
+
+	sort(map_dumped_into_a_vector.begin(), map_dumped_into_a_vector.end());
+
 	int nframes=map_dumped_into_a_vector[0].second.size();
-	if(_debug)   std::cout<<"storing cycleID:"<<map_dumped_into_a_vector[0].first<<" that has "<<nframes<<" nframes"<<endl;
-	
+	if(_debug)std::cout<<"storing cycleID:"<<map_dumped_into_a_vector[0].first<<" that has "<<nframes<<" nframes"<<endl;
+
 	for(int jframes=0; jframes<nframes; jframes++) {
 	  if(jframes==0) treeInit(zerosupression);
+	  InitializeRawFrame();
 	  if(DecodeRawFrame(map_dumped_into_a_vector[0].second.at(jframes))){
 	    RecordCycle(zerosupression);
 	    if(getbadbcid_bool==true) GetBadBCID();
 	  }
 	}
 	tree->Fill();
-	// }
 	std::map<int, std::vector<std::vector<unsigned char>>>::iterator it;
 	it=map_of_cycles_and_frames.find(map_dumped_into_a_vector[0].first);
 	if (it != map_of_cycles_and_frames.end())
@@ -632,7 +648,10 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
       std::vector<pair<int, std::vector<std::vector<unsigned char> > > > map_dumped_into_a_vector;
       copy(map_of_cycles_and_frames.begin(),
     	 map_of_cycles_and_frames.end(),
-    	 back_inserter<vector<pair<int, std::vector<std::vector<unsigned char> > > > >(map_dumped_into_a_vector));
+	   back_inserter<vector<pair<int, std::vector<std::vector<unsigned char> > > > >(map_dumped_into_a_vector));
+
+      sort(map_dumped_into_a_vector.begin(), map_dumped_into_a_vector.end());
+
       int nframes=map_dumped_into_a_vector[0].second.size();
       if(_debug)   std::cout<<"storing cycleID:"<<map_dumped_into_a_vector[0].first<<" that has "<<nframes<<" nframes"<<endl;
 
@@ -644,7 +663,7 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
 	}
       }
       tree->Fill();
-      // }
+
       std::map<int, std::vector<std::vector<unsigned char>>>::iterator it;
       it=map_of_cycles_and_frames.find(map_dumped_into_a_vector[0].first);
       if (it != map_of_cycles_and_frames.end())
@@ -752,7 +771,7 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
     return;
   }
 
-  void SLBraw2ROOT::treeInit(bool zerosupression=false) { //init data for a single SPILL ?
+  void SLBraw2ROOT::treeInit(bool zerosupression) { //init data for a single SPILL ?
 
     for (int isl=0; isl<SLBDEPTH; isl++) {
       for (int k=0; k<NB_OF_SKIROCS_PER_ASU; k++) {
@@ -788,10 +807,11 @@ bool SLBraw2ROOT::ReadFile(TString inputFileName, bool overwrite=false, TString 
     _n_slboards=-1;
     _acqNumber=-1;
 
-    return;
+    // return;
   }
 
-  void SLBraw2ROOT::RecordCycle(bool zerosupression=false) {
+  void SLBraw2ROOT::RecordCycle(bool zerosupression) {
+    //treeInit(zerosupression);
     _acqNumber=cycleID;
     _n_slboards=SLBDEPTH;
     int previousBCID=-1000;
