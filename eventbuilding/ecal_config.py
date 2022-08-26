@@ -277,7 +277,9 @@ class EcalConfig:
         if np.any(has_bad_mip):
             mip_malfunctioning_chip = float(self._commissioning_config["mip_malfunctioning_chip"])
             channel_is_used_for_average = mip_map >= mip_cutoff
-            per_chip_average = channel_is_used_for_average.mean(axis=-1)
+            channel_is_used_for_average_with_mpv = np.where(channel_is_used_for_average, mip_map, 0)
+            np.seterr(invalid='ignore')
+            per_chip_average = np.true_divide(channel_is_used_for_average_with_mpv.sum(2),(channel_is_used_for_average_with_mpv!=0).sum(2))
             per_chip_average[per_chip_average == 0] = mip_malfunctioning_chip
             mip_average_on_chip = np.empty_like(mip_map)
             mip_average_on_chip[:] = np.expand_dims(
