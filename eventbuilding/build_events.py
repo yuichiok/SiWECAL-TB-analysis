@@ -392,11 +392,11 @@ class BuildEvents:
             if branch_name == "hit_energy":
                 mip = self.ecal_config.mip_map[event.hit_slab, event.hit_chip, event.hit_chan]
                 pedestal = self.ecal_config.pedestal_map[event.hit_slab, event.hit_chip, event.hit_chan, event.hit_sca]
-                arr = (event.hit_adc_high - pedestal) + mip
+                arr = (event.hit_adc_high - pedestal) / mip
             elif branch_name == "hit_energy_lg":
                 mip = self.ecal_config.mip_lg_map[event.hit_slab, event.hit_chip, event.hit_chan]
                 pedestal = self.ecal_config.pedestal_lg_map[event.hit_slab, event.hit_chip, event.hit_chan, event.hit_sca]
-                arr = (event.hit_adc_low - pedestal) + mip
+                arr = (event.hit_adc_low - pedestal) / mip
             elif branch_name == "hit_isCommissioned":
                 arr = self.ecal_config.is_commissioned_map[event.hit_slab, event.hit_chip, event.hit_chan, event.hit_sca]
             elif branch_name == "hit_isMasked":
