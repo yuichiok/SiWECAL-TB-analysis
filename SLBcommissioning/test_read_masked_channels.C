@@ -4,7 +4,7 @@
 
 void test_read_masked_channels(TString filename = "15102021/Run_Settings_DataTaking_TB2021_15102021", bool debug = true)
 {
-  read_configuration_file(filename + ".txt", true);
+  read_configuration_file(filename, true);
 
   TH2F *mask_chip_chn[15];
   TH2F *mask_x_y[15];
@@ -80,18 +80,20 @@ void test_read_masked_channels(TString filename = "15102021/Run_Settings_DataTak
     canvas->Divide(1, 2);
     canvas->cd(1);
     // mask_chip_chn[islab]->SetTitle(TString::Format("SLABd%i",mapping_slab[islab]));
-    mask_chip_chn[islab]->SetTitle(TString::Format("SlabAdd%i", islab));
+    mask_chip_chn[islab]->SetTitle(TString::Format("Layer %i Mask cells Chip vs. Channel", islab));
     mask_chip_chn[islab]->GetXaxis()->SetTitle("CHIP");
     mask_chip_chn[islab]->GetYaxis()->SetTitle("CHANNEL");
     mask_chip_chn[islab]->Draw("col");
     canvas->cd(2);
-    mask_x_y[islab]->SetTitle(TString::Format("SLABd%i",mapping_slab[islab]));
+    mask_x_y[islab]->SetTitle(TString::Format("Layer %i Mask cells XY positions",islab));
+    // mask_x_y[islab]->SetTitle(TString::Format("SLABd%i",mapping_slab[islab]));
     // mask_x_y[islab]->SetTitle(TString::Format("SlabAdd%i", islab));
     mask_x_y[islab]->GetXaxis()->SetTitle("x");
     mask_x_y[islab]->GetYaxis()->SetTitle("y");
     mask_x_y[islab]->Draw("col");
     // canvas->Print(TString::Format("masked_channels_SLAB%i.png",mapping_slab[islab]));
-    canvas->Print(TString::Format("plots/masked_channels_SlabAdd%i.png", islab));
+    canvas->Print(TString::Format("plots/masked_channels_SlabAdd%i.pdf", islab));
+
   }
 
   cout << "################################################################" << endl;

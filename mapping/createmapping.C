@@ -65,8 +65,8 @@ void createmapping(TString run = "PedestalMIP_3GeVMIPscan", TString gain = "low"
         TH2F *map_chip = new TH2F("map_chip_" + str_name, "map; chip; chn", 16, -0.5, 15.5, 1, -0.5, 63.5);
         TH2F *mapxy = new TH2F("mapxy_" + str_name, "map-xy; x [mm]; y [mm]", 32, -90, 90, 32, -90, 90);
         TH2F *mapIJ = new TH2F("mapIJ_" + str_name, "map-IJ; I; J", 32, -0.5, 31.5, 32, -0.5, 31.5);
-        TH2F *mapxy_chip = new TH2F("mapxy_chip_" + str_name, "map-xy; x; y", 32, -90, 90, 32, -90, 90);
-        TH2F *mapxy_chip_display = new TH2F("mapxy_chip_display_" + str_name, "map-xy; x; y", 4, -90, 90, 4, -90, 90);
+        TH2F *mapxy_chip = new TH2F("mapxy_chip_" + str_name, "map-xy; x [mm]; y [mm]", 32, -90, 90, 32, -90, 90);
+        TH2F *mapxy_chip_display = new TH2F("mapxy_chip_display_" + str_name, "map-xy; x [mm]; y [mm]", 4, -90, 90, 4, -90, 90);
         TH2F *mapIJ_chip = new TH2F("mapIJ_chip_" + str_name, "map-IJ; I; J", 32, -0.5, 31.5, 32, -0.5, 31.5);
 
         for (int i = 0; i < 16; i++)
@@ -116,8 +116,8 @@ void createmapping(TString run = "PedestalMIP_3GeVMIPscan", TString gain = "low"
         pad1->SetGrid(0,0);
         mapxy_chip->SetTitle("");
         mapxy_chip->Draw("col");
-        mapxy_chip_display->Draw("textsame");
-        // mapxy->Draw("textsame");
+        // mapxy_chip_display->Draw("textsame");
+        mapxy->Draw("textsame");
 
         /*
         TCanvas *canvas2 = new TCanvas(TString::Format("IJmapping/IJmapping_type_%s_flipx%i_flipy%i.txt", name[iname].Data(), iflipx, iflipy), TString::Format("IJmapping_type_%s_flipx%i_flipy%i.txt", name[iname].Data(), iflipx, iflipy), 1800, 400);
