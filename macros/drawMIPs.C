@@ -31,27 +31,6 @@ Float_t charge_high[16][64]; // daughter, slab, asic, chn, DAC
 
 void drawMIPs()
 {
-
-  //  TCanvas *Tlva = new TCanvas("Tlva","Tlva",500,500);
-  //  Tlva->SetGrid();
-  //  Tlva->DrawFrame(0,0,1,1);
-  //  const char *longstring = "K_{S}... K^{*0}... #frac{2s}{#pi#alpha^{2}} #frac{d#sigma}{dcos#theta} (e^{+}e^{-} #rightarrow f#bar{f} ) = #left| #frac{1}{1 - #Delta#alpha} #right|^{2} (1+cos^{2}#theta)";
- 
-  //  TLatex latex;
-  //  latex.SetTextSize(0.025);
-  //  latex.SetTextAlign(13);  //align at top
-  //  latex.DrawLatex(.2,.9,"K_{S}");
-  //  latex.DrawLatex(.3,.9,"K^{*0}");
-  //  latex.DrawLatex(.2,.8,longstring);
- 
-  //  Tlva->Draw();
-
-
-
-
-
-
-
   TFile *file_MIPSummary = new TFile("../mip_calib/MIPSummary_pedestalsubmode1_raw_siwecal_90021to90070_highgain.root", "READ");
 
   TCanvas * mip_all = new TCanvas("mip_all","mip_all",800,800);

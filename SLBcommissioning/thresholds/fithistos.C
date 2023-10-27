@@ -176,7 +176,8 @@ TF1 *FitScurve(TGraphErrors *gr, float xmin_ = 200, float xmax_ = 350, float x0 
 
   TF1 *fit1 = new TF1("fit1", "[0]*TMath::Erfc((x-[1])/(sqrt(2)*[2]))", xmin, xmax);
 
-  fit1->SetParLimits(0, ymax * 0.1, ymax * 10);
+  // fit1->SetParLimits(0, ymax * 0.1, ymax * 10);
+  fit1->SetParLimits(0, 0, ymax * 1.5);
   fit1->SetParLimits(1, xmin_, xmax_);
 
   fit1->SetParameter(0, ymax);
@@ -286,7 +287,6 @@ void fithistos()
       {
         for (int ichn = 0; ichn < nchannels_fit; ichn++)
         {
-
           scurve[i][iasic][ichn] = (TGraphErrors *)file_summary->Get(TString::Format("scurve_slbAdd%i_chip%i_chn%i", i, iasic, ichn));
           scurvefit[ifile][i][iasic][ichn] = FitScurve(scurve[i][iasic][ichn]);
         }
