@@ -95,6 +95,9 @@ void test_read_thresholds_summary2(TString filename="/mnt/win2/Run_Data/Run_ILC_
 
   }
   
+     gStyle->SetPadTickX(1);
+     gStyle->SetPadTickY(1);
+     gROOT->ForceStyle();
 
      TCanvas *canvas2 = new TCanvas("canvas2","canvas2",600,600);
      gStyle->SetOptStat(0);
@@ -102,11 +105,15 @@ void test_read_thresholds_summary2(TString filename="/mnt/win2/Run_Data/Run_ILC_
      gStyle->SetPadRightMargin(0.16);
      
      canvas2->cd(1);
-     threshold_layer_chip->GetXaxis()->SetTitle("SLAB-ID");
+     canvas2->SetRightMargin(0.16);
+     threshold_layer_chip->SetTitle("Common Thresholds");
+     threshold_layer_chip->GetXaxis()->SetTitle("Layer");
      threshold_layer_chip->GetYaxis()->SetTitle("CHIP");
      threshold_layer_chip->GetZaxis()->SetTitle("Global Threshold");
+      threshold_layer_chip->GetZaxis()->SetTitleOffset(1.4);
      //     threshold_layer_chip->GetZaxis()->SetRangeUser(200,300);
      threshold_layer_chip->Draw("colz");
+     gPad->RedrawAxis();
 
   
 }

@@ -7,12 +7,12 @@ void Plots(TString name_ = "run_050575_injection_merged_ILCEnergyElectrons", TSt
   int nchips = 16;
   int nsca = 3;
 
-  ReadPedestalsProtoCovariance("Pedestal_method2_" + name_ + "_" + st_gain + ".txt");
+  ReadPedestalsProtoCovariance("Pedestal_method1_" + name_ + "_" + st_gain + ".txt");
 
-  TFile *_file1 = new TFile(TString::Format("plots/PedSummaryPlots_method2_%s_%s.root", name_.Data(), st_gain.Data()), "RECREATE");
+  TFile *_file1 = new TFile(TString::Format("plots/PedSummaryPlots_method1_%s_%s.root", name_.Data(), st_gain.Data()), "RECREATE");
   _file1->cd();
 
-  TFile *file0 = TFile::Open(TString::Format("PedSummary_method2_%s_%s.root", name_.Data(), st_gain.Data()));
+  TFile *file0 = TFile::Open(TString::Format("PedSummary_method1_%s_%s.root", name_.Data(), st_gain.Data()));
   TH2F *h2ped = (TH2F *)file0->Get("ped");
   TH2F *h2ped_i = (TH2F *)file0->Get("ped_i");
   TH2F *h2ped_c1 = (TH2F *)file0->Get("ped_c1");
@@ -273,7 +273,7 @@ void PlotsPedestal()
 
   for (int j = 0; j < 2; j++)
   {
-    Plots("3GeVMIPscan_run_050060", gain[j]);
+    Plots("cosmic_long_062022_merged", gain[j]);
   }
 
   // for(int i=0; i<2; i++) {
