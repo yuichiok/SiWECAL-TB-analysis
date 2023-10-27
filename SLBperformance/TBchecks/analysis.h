@@ -99,6 +99,7 @@ std::vector<double> resultfit (TH1F* hmips, TString gain) {
     double mpv=fitsnr_hmips->GetParameter(1);
     double empv=fitsnr_hmips->GetParError(1);
     double wmpv=fitsnr_hmips->GetParameter(0);
+    double ewmpv=fitsnr_hmips->GetParError(0);
     double chi2ndf=0;
     if(ndf>0) chi2ndf=chisqr/ndf;
 
@@ -107,6 +108,7 @@ std::vector<double> resultfit (TH1F* hmips, TString gain) {
     result.push_back(empv);
     result.push_back(wmpv);
     result.push_back(chi2ndf);
+    result.push_back(ewmpv);
     return result;
 
 }
