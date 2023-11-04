@@ -82,24 +82,29 @@ void test_read_thresholds_summary(TString filename = "15102021/Run_Settings_Data
       cout << endl;
     }
 
-    TCanvas *canvas = new TCanvas(TString::Format("canvas_%i", islab), TString::Format("canvas_%i", islab), 800, 1600);
+    TCanvas *canvas = new TCanvas(TString::Format("canvas_%i", islab), TString::Format("canvas_%i", islab), 500, 1000);
     gStyle->SetOptStat(0);
     gStyle->SetPalette(kLightTemperature); // RainBow);
     canvas->Divide(1, 2);
     canvas->cd(1);
+    gPad->SetRightMargin(0.15);
+    threshold_chip_chn_2[islab]->SetTitle(TString::Format("Layer %i Channel vs. Chip", islab));
     threshold_chip_chn_2[islab]->GetXaxis()->SetTitle("CHIP");
     threshold_chip_chn_2[islab]->GetYaxis()->SetTitle("CHANNEL");
+    threshold_chip_chn_2[islab]->GetZaxis()->SetTitle("Global Threshold");
     threshold_chip_chn_2[islab]->GetZaxis()->SetRangeUser(190, 240);
     threshold_chip_chn_2[islab]->Draw("colz");
     threshold_chip_chn[islab]->Draw("text0same");
 
     canvas->cd(2);
+    gPad->SetRightMargin(0.15);
+    threshold_x_y_2[islab]->SetTitle(TString::Format("Layer %i Theresholds and channel XY positions", islab));
     threshold_x_y_2[islab]->GetXaxis()->SetTitle("x");
     threshold_x_y_2[islab]->GetYaxis()->SetTitle("y");
     threshold_x_y_2[islab]->GetZaxis()->SetRangeUser(190, 240);
     threshold_x_y_2[islab]->Draw("colz");
     threshold_x_y[islab]->Draw("text0same");
-    canvas->Print(TString::Format("plots/thresholds_slbAdd%i.eps", islab));
+    canvas->Print(TString::Format("plots/thresholds_slbAdd%i.pdf", islab));
 
   }
 

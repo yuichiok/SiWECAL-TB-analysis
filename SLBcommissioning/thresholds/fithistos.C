@@ -24,6 +24,24 @@ int nchips = 16;
 int nchannels = 64;
 int nchannels_fit = 6;
 
+void print_current_progress(int progress, int total_progress)
+{
+  int barWidth = 70;
+  std::cout << "Progress: [";
+  int pos = barWidth * progress / total_progress;
+  for (int i = 0; i < barWidth; ++i)
+  {
+    if (i < pos)
+      std::cout << "=";
+    else if (i == pos)
+      std::cout << ">";
+    else
+      std::cout << " ";
+  }
+  std::cout << "] " << int(progress * 100. / total_progress) << " %\r";
+  std::cout.flush();
+}
+
 Float_t charge_low[16][64];  // daughter, slab, asic, chn, DAC
 Float_t charge_high[16][64]; // daughter, slab, asic, chn, DAC
 void ReadCharge(TString filename)
@@ -37,7 +55,7 @@ void ReadCharge(TString filename)
     === Hit Rate Vs Threshold Scan,for All Channels modulo 64 at once, AcqWindow 2 ms, MinThreshold = 170, MaxThreshold= 240, Nb Of Steps: 7, Nb Of Cycles per Step= 5 ===
   */
 
-  cout << "Reading scurve file: " << filename << endl;
+  // cout << "Reading scurve file: " << filename << endl;
   std::ifstream reading_file(filename);
   if (!reading_file)
   {
@@ -217,7 +235,8 @@ TF1 *FitScurve(TGraphErrors *gr, float xmin_ = 200, float xmax_ = 350, float x0 
 void fithistos()
 {
 
-  read_configuration_file("Run_Settings_090185.txt", false);
+  // read_configuration_file("Run_Settings_090185.txt", false);
+  read_configuration_file("../../../simulation/masking/Run_Settings/Run_Settings_90320_e-_10.0GeV.txt", false);
   double dac_value[15][16] = {0};
   double dac_value_p10[15][16] = {0};
   double dac_value_p20[15][16] = {0};
@@ -293,8 +312,12 @@ void fithistos()
       }
     }
   }
-  cout << " AAA " << endl;
-  TFile *file_summary2 = new TFile("../../mip_calib/MIPSummary_pedestalsubmode1_raw_siwecal_90021to90070_highgain.root", "READ");
+  // TFile *file_summary2 = new TFile("../../mip_calib/MIPSummary_pedestalsubmode1_raw_siwecal_90021to90070_highgain.root", "READ");
+  TFile *file_summary2 = new TFile("../../mip_calib/MIPSummary_pedestalsubmode1_raw_siwecal_90259to90285_highgain.root", "READ");
+
+  int total_progress = nslabs * nchips * nchannels_fit * 4;
+  int progress = 0;
+
   for (int i = 0; i < nslabs; i++)
   {
 
@@ -323,6 +346,9 @@ void fithistos()
         int nfiles = 0;
         for (int ifile = 0; ifile < 4; ifile++)
         {
+          progress++;
+          print_current_progress(progress, total_progress);          
+
           TString filename = "injection_3p0high_chn0to8";
           if (ifile == 1)
             filename = "injection_3p05high_chn0to8";
@@ -410,6 +436,6 @@ void fithistos()
 
   for (int i = 0; i < nslabs; i++)
   {
-    c_dac_vs_mip[i]->Print(TString::Format("slab_%i.pdf", i));
+    c_dac_vs_mip[i]->Print(TString::Format("plots/slab_%i.pdf", i));
   }
 }

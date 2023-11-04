@@ -73,7 +73,7 @@ void test_read_masked_channels(TString filename = "15102021/Run_Settings_DataTak
     }
     cout << "TOTAL Masked cells:" << 100. * totalmasked[islab] / 1024. << "%" << endl;
 
-    TCanvas *canvas = new TCanvas(TString::Format("canvas_%i", islab), TString::Format("canvas_%i", islab), 800, 1600);
+    TCanvas *canvas = new TCanvas(TString::Format("canvas_%i", islab), TString::Format("canvas_%i", islab), 500, 1000);
     gStyle->SetOptStat(0);
     gStyle->SetPalette(kInvertedDarkBodyRadiator); // Cherry);
     // TColor::InvertPalette();
@@ -95,6 +95,29 @@ void test_read_masked_channels(TString filename = "15102021/Run_Settings_DataTak
     canvas->Print(TString::Format("plots/masked_channels_SlabAdd%i.pdf", islab));
 
   }
+
+  TCanvas *canvas_chn_chip = new TCanvas("canvas_chn_chip", "canvas_chn_chip", 800, 800);
+  gStyle->SetOptStat(0);
+  gStyle->SetPalette(kInvertedDarkBodyRadiator); // Cherry);
+  mask_chip_chn[0]->SetTitle("Layer 0 Mask cells Chip vs. Channel");
+  mask_chip_chn[0]->GetXaxis()->SetTitle("CHIP");
+  mask_chip_chn[0]->GetYaxis()->SetTitle("CHANNEL");
+  gPad->SetLeftMargin(0.12);
+  gPad->SetRightMargin(0.09);
+  mask_chip_chn[0]->Draw("col");
+  canvas_chn_chip->Print("plots/mask_ChipChn_slab0.pdf");
+
+  TCanvas *canvas_x_y = new TCanvas("canvas_x_y", "canvas_x_y", 800, 800);
+  gStyle->SetOptStat(0);
+  gStyle->SetPalette(kInvertedDarkBodyRadiator); // Cherry);
+  mask_x_y[0]->SetTitle("Layer 0 Mask cells XY positions");
+  mask_x_y[0]->GetXaxis()->SetTitle("x");
+  mask_x_y[0]->GetYaxis()->SetTitle("y");
+  gPad->SetLeftMargin(0.12);
+  gPad->SetRightMargin(0.09);
+  mask_x_y[0]->Draw("col");
+  canvas_x_y->Print("plots/mask_xy_slab0.pdf");
+
 
   cout << "################################################################" << endl;
   cout << "################################################################" << endl;
