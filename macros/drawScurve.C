@@ -60,7 +60,8 @@ float FirstZero(TGraphErrors *gr)
   return 0;
 }
 
-TF1 *FitScurve(TGraphErrors *gr, float xmin_ = 200, float xmax_ = 350, float x0 = 200)
+// TF1 *FitScurve(TGraphErrors *gr, float xmin_ = 200, float xmax_ = 350, float x0 = 200)
+TF1 *FitScurve(TGraphErrors *gr, float xmin_ = 180, float xmax_ = 350, float x0 = 200)
 {
 
   double par1 = 0, par2 = 0, par3 = 0;
@@ -112,7 +113,10 @@ void drawScurve()
 {
   read_configuration_file("../SLBcommissioning/thresholds/Run_Settings_090185.txt", false);
 
-  TFile *file_scurve = new TFile("../SLBcommissioning/thresholds/histos/scurves_06132022_1MIPinjection_chn0to7.root", "READ");
+  // TFile *file_scurve = new TFile("../SLBcommissioning/thresholds/histos/scurves_06132022_1MIPinjection_chn0to7.root", "READ");
+  // TFile *file_scurve = new TFile("../SLBcommissioning/thresholds/histos/scurves_injection_3p0high_chn0to8.root", "READ");
+  TFile *file_scurve = new TFile("../SLBcommissioning/thresholds/histos/scurves_1.2pF.root", "READ");
+  // TFile *file_scurve = new TFile("../SLBcommissioning/thresholds/histos/scurves_RateVsThresholdScan_02192020_SLBoard_test2.root", "READ");
 
 // detector.slab[0][islab].asu[0].skiroc[ichip].mask[ichn] == 0
 
@@ -121,20 +125,23 @@ void drawScurve()
   c_scurve_sample->SetRightMargin(0.07);
   c_scurve_sample->SetGrid();
 
+  Int_t nchannels = 8;
+
   TMultiGraph *mg = new TMultiGraph();
-  TF1 *fit_scurve_sample[8];
+  TF1 *fit_scurve_sample[nchannels];
 
   Color_t color[8] = {kRed, kBlue, kGreen, kMagenta, kCyan, kOrange, kYellow, kBlack};
-  TString legend[8];
+  TString legend[nchannels];
 
-  for(int ichn=0; ichn < 8; ichn++){
-    TGraphErrors * h_scurve_sample = (TGraphErrors*) file_scurve->Get(Form("scurve_slbAdd0_chip12_chn%i", ichn));
+  for(int ichn=0; ichn < nchannels; ichn++){
+  // for(int ichn=10; ichn < 20; ichn++){
+    TGraphErrors * h_scurve_sample = (TGraphErrors*) file_scurve->Get(Form("scurve_slbAdd7_chip12_chn%i", ichn));
+    // TGraphErrors * h_scurve_sample = (TGraphErrors*) file_scurve->Get(Form("scurve_layer1_chip12_chn%i", ichn));
     fit_scurve_sample[ichn] = FitScurve(h_scurve_sample);
     h_scurve_sample->SetMarkerColor(color[ichn]);
     h_scurve_sample->SetLineColor(color[ichn]);
     h_scurve_sample->SetMarkerStyle(20+ichn);
     h_scurve_sample->SetMarkerSize(1.5);
-    // h_scurve_sample->SetLineWidth(2);
     fit_scurve_sample[ichn]->SetLineColor(color[ichn]);
     fit_scurve_sample[ichn]->SetLineWidth(2);
 
@@ -144,14 +151,16 @@ void drawScurve()
   }
   mg->SetTitle(";DAC;N Hits");
   gStyle->SetPalette(55);
+  mg->GetXaxis()->SetRangeUser(180,310);
+  mg->GetYaxis()->SetRangeUser(0,100);
   mg->Draw("a");
-  for(int ichn=0; ichn < 8; ichn++){
+  for(int ichn=0; ichn < nchannels; ichn++){
     fit_scurve_sample[ichn]->Draw("same");
   }
 
-  TLegend *leg = new TLegend(0.16,0.14,0.43,0.37);
+  TLegend *leg = new TLegend(0.63,0.63,0.90,0.86);
   leg->SetHeader("#bf{Channels}");
-  for(int ichn=0; ichn < 8; ichn++){
+  for(int ichn=0; ichn < nchannels; ichn++){
     leg->AddEntry(fit_scurve_sample[ichn],legend[ichn],"l");
   }
   leg->Draw();
