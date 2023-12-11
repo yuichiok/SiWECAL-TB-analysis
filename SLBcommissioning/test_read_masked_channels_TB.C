@@ -1,6 +1,7 @@
 // # Copyright 2020  Adrián Irles (IJCLab, CNRS/IN2P3)
 
 #include "conf_struct.h"
+#include "../include/style.h"
 
 void test_read_masked_channels_TB(TString filename = "/mnt/HardDrive/beamData/ascii/1.4GeV_W_run_050163/Run_Settings.txt", TString filename_out = "test")
 {
@@ -27,6 +28,9 @@ void test_read_masked_channels_TB(TString filename = "/mnt/HardDrive/beamData/as
     ReadMap(map_name);
 
     totalmasked[islab] = 0;
+
+    cout << " ---------------------------------- "<< islab <<" ----------------------------------------- " << endl;
+
     for (int ichip = 0; ichip < 16; ichip++)
     {
       totalmasked_chip[islab][ichip] = 0;
@@ -53,7 +57,15 @@ void test_read_masked_channels_TB(TString filename = "/mnt/HardDrive/beamData/as
     }
     cout << "TOTAL Masked cells:" << 100. * totalmasked[islab] / 1024. << "%" << endl;
     mask_layer->Fill(14 - islab, 100. * totalmasked[islab] / 1024.);
-    mask_rate->Fill(islab, 100. * totalmasked[islab] / 1024.);
+    // mask_rate->Fill(islab, 100. * totalmasked[islab] / 1024.);
+
+    Float_t mask12_15 = 0;
+    for(int ichip=12; ichip<16; ichip++){
+      mask12_15 += totalmasked_chip[islab][ichip];
+    }
+    mask12_15 = 100. * mask12_15 / 256.;
+    mask_rate->Fill(islab, mask12_15);
+
   }
 
   TCanvas *canvas = new TCanvas("canvas_accum", "canvas_accum", 800, 800);
@@ -82,9 +94,6 @@ void test_read_masked_channels_TB(TString filename = "/mnt/HardDrive/beamData/as
   mask_layer_chip->Draw("colz");
 
   canvas->cd(4);
-  TPad *pad = new TPad("pad", "", 0, 0, 1, 1);
-  pad->SetGrid(0, 1);
-  pad->Draw();
   mask_rate->SetMarkerStyle(20);
   mask_rate->SetBarWidth(0.9);
   mask_rate->SetFillColor(49);
@@ -94,12 +103,30 @@ void test_read_masked_channels_TB(TString filename = "/mnt/HardDrive/beamData/as
   mask_rate->GetYaxis()->SetRangeUser(0, 100);
   mask_rate->Draw("HIST bar2");
 
+
+  TCanvas *canvas_mask_xy = new TCanvas("canvas_mask_xy", "canvas_mask_xy", 800, 800);
+  TPad *p_mask_xy = new TPad("p_mask_xy", "p_mask_xy", 0, 0, 1, 1);
+  StylePad(p_mask_xy,0.1,0.1,0.15,0.12);
+  mask_x_y->SetTitle("Mask cells XY positions");
+  mask_x_y->Draw("colz");
+  p_mask_xy->Draw();
+
+  TCanvas *canvas_rate = new TCanvas("canvas_rate", "canvas_rate", 800, 800);
+  TPad *p_rate = new TPad("p_rate", "p_rate", 0, 0, 1, 1);
+  StylePad(p_rate,0.1,0.1,0.1,0.17);
+  p_rate->SetGrid(0, 1);
+  mask_rate->Draw("HIST bar2");
+  p_rate->Draw();
+
+
+
+
   // mask_layer->GetXaxis()->SetTitle("Layer");
   // mask_layer->GetYaxis()->SetTitle("[%] of channels that are masked");
   // mask_layer->GetZaxis()->SetTitle("");
   // mask_layer->GetZaxis()->SetRangeUser(0,35);
   // mask_layer->Draw("col");
 
-  canvas->Print(filename_out + ".root");
-  canvas->Print(filename_out + ".png");
+  // canvas->Print(filename_out + ".root");
+  // canvas->Print(filename_out + ".png");
 }

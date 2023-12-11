@@ -99,23 +99,23 @@ void test_read_masked_channels(TString filename = "15102021/Run_Settings_DataTak
   TCanvas *canvas_chn_chip = new TCanvas("canvas_chn_chip", "canvas_chn_chip", 800, 800);
   gStyle->SetOptStat(0);
   gStyle->SetPalette(kInvertedDarkBodyRadiator); // Cherry);
-  mask_chip_chn[0]->SetTitle("Layer 0 Mask cells Chip vs. Channel");
-  mask_chip_chn[0]->GetXaxis()->SetTitle("CHIP");
-  mask_chip_chn[0]->GetYaxis()->SetTitle("CHANNEL");
+  mask_chip_chn[1]->SetTitle("Layer 1 Mask cells Chip vs. Channel");
+  mask_chip_chn[1]->GetXaxis()->SetTitle("CHIP");
+  mask_chip_chn[1]->GetYaxis()->SetTitle("CHANNEL");
   gPad->SetLeftMargin(0.12);
   gPad->SetRightMargin(0.09);
-  mask_chip_chn[0]->Draw("col");
+  mask_chip_chn[1]->Draw("col");
   canvas_chn_chip->Print("plots/mask_ChipChn_slab0.pdf");
 
   TCanvas *canvas_x_y = new TCanvas("canvas_x_y", "canvas_x_y", 800, 800);
   gStyle->SetOptStat(0);
   gStyle->SetPalette(kInvertedDarkBodyRadiator); // Cherry);
-  mask_x_y[0]->SetTitle("Layer 0 Mask cells XY positions");
-  mask_x_y[0]->GetXaxis()->SetTitle("x");
-  mask_x_y[0]->GetYaxis()->SetTitle("y");
+  mask_x_y[1]->SetTitle("Layer 1 Mask cells XY positions");
+  mask_x_y[1]->GetXaxis()->SetTitle("x");
+  mask_x_y[1]->GetYaxis()->SetTitle("y");
   gPad->SetLeftMargin(0.12);
   gPad->SetRightMargin(0.09);
-  mask_x_y[0]->Draw("col");
+  mask_x_y[1]->Draw("col");
   canvas_x_y->Print("plots/mask_xy_slab0.pdf");
 
 
