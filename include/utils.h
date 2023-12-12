@@ -255,9 +255,7 @@ TF1* langaufit(TH1F *his, Double_t *fitrange, Double_t *startvalues, Double_t *p
   //   NDF             returns ndf
 
   Int_t i;
-  Char_t FunName[100];
-
-  sprintf(FunName,"Fitfcn_%s",his->GetName());
+  TString FunName = TString::Format("Fitfcn_%s",his->GetName());
 
   TF1 *ffitold = (TF1*)gROOT->GetListOfFunctions()->FindObject(FunName);
   if (ffitold) delete ffitold;
