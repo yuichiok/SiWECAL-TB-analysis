@@ -39,7 +39,7 @@ void test_read_masked_channels(TString filename = "15102021/Run_Settings_DataTak
     // TString map_name="../mapping/fev11_cob_rotate_chip_channel_x_y_mapping.txt";
 
     // the two cobs are equipped with slboards 2.08 and 2.12 (26th May 2020)
-       if(detector.slab[0][islab].add==5 || detector.slab[0][islab].add==6) 
+       if(detector.slab[0][islab].add==6 || detector.slab[0][islab].add==8) 
           map_name="../mapping/fev11_cob_rotate_chip_channel_x_y_mapping.txt";
 
     cout << " -------------------------------------------------------------------------------------------- " << endl;
@@ -105,18 +105,18 @@ void test_read_masked_channels(TString filename = "15102021/Run_Settings_DataTak
   gPad->SetLeftMargin(0.12);
   gPad->SetRightMargin(0.09);
   mask_chip_chn[1]->Draw("col");
-  canvas_chn_chip->Print("plots/mask_ChipChn_slab0.pdf");
+  canvas_chn_chip->Print("plots/mask_ChipChn_slab1.pdf");
 
   TCanvas *canvas_x_y = new TCanvas("canvas_x_y", "canvas_x_y", 800, 800);
   gStyle->SetOptStat(0);
   gStyle->SetPalette(kInvertedDarkBodyRadiator); // Cherry);
   mask_x_y[1]->SetTitle("Layer 1 Mask cells XY positions");
-  mask_x_y[1]->GetXaxis()->SetTitle("x");
-  mask_x_y[1]->GetYaxis()->SetTitle("y");
+  mask_x_y[1]->GetXaxis()->SetTitle("x [mm]");
+  mask_x_y[1]->GetYaxis()->SetTitle("y [mm]");
   gPad->SetLeftMargin(0.12);
   gPad->SetRightMargin(0.09);
   mask_x_y[1]->Draw("col");
-  canvas_x_y->Print("plots/mask_xy_slab0.pdf");
+  canvas_x_y->Print("plots/mask_xy_slab1.pdf");
 
 
   cout << "################################################################" << endl;

@@ -18,6 +18,8 @@ void test_read_masked_channels_TB(TString filename = "/mnt/HardDrive/beamData/as
   float totalmasked[15];
   float totalmasked_chip[15][16];
 
+  float tmpaverage = 0;
+
   ofstream fout(filename_out + ".txt", ios::out);
   fout << "#masked_chns_list layer chip chns (0=not masked, 1=masked)" << endl;
   int nslabs = 15;
@@ -64,6 +66,8 @@ void test_read_masked_channels_TB(TString filename = "/mnt/HardDrive/beamData/as
       mask12_15 += totalmasked_chip[islab][ichip];
     }
     mask12_15 = 100. * mask12_15 / 256.;
+    cout << "Masked cells in chips 12-15: " << mask12_15 << "%" << endl;
+    tmpaverage += mask12_15;
     mask_rate->Fill(islab, mask12_15);
 
   }
@@ -117,6 +121,8 @@ void test_read_masked_channels_TB(TString filename = "/mnt/HardDrive/beamData/as
   p_rate->SetGrid(0, 1);
   mask_rate->Draw("HIST bar2");
   p_rate->Draw();
+
+  cout << "mean mask rate chips 12-15: " << tmpaverage / 15. << endl;
 
 
 
