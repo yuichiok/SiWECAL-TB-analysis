@@ -78,13 +78,17 @@ void drawMIPs()
   TCanvas *c_mip_XY = new TCanvas("c_mip_XY", "c_mip_XY", 800, 800);
   TPad *p_mip_XY    = new TPad("p_mip_XY", "p_mip_XY", 0,0,1,1);
   StylePad(p_mip_XY,0.1,0.15,0.15,0.15);
-  mipXY->GetZaxis()->SetRangeUser(180, 300);
+  mipXY->GetZaxis()->SetTitle("MIP value [ADC]");
+  mipXY->GetZaxis()->SetTitleOffset(1.2);
+  mipXY->GetZaxis()->SetRangeUser(0, 50);
   mipXY->Draw("colz");
 
   TCanvas *c_width_XY = new TCanvas("c_width_XY", "c_width_XY", 800, 800);
   TPad *p_width_XY    = new TPad("p_width_XY", "p_width_XY", 0,0,1,1);
   StylePad(p_width_XY,0.1,0.15,0.15,0.15);
-  widthXY->GetZaxis()->SetRangeUser(1, 2);
+  widthXY->GetZaxis()->SetTitle("MIP width [ADC]");
+  widthXY->GetZaxis()->SetTitleOffset(1.2);
+  widthXY->GetZaxis()->SetRangeUser(0, 10);
   widthXY->Draw("colz");
 
 }
