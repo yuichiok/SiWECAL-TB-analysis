@@ -18,6 +18,9 @@ void test_read_masked_channels_TB(TString filename = "/mnt/HardDrive/beamData/as
   float totalmasked[15];
   float totalmasked_chip[15][16];
 
+  int total_delam_per = 0;
+  int total_sensors = 0;
+
   float tmpaverage = 0;
 
   ofstream fout(filename_out + ".txt", ios::out);
@@ -33,6 +36,7 @@ void test_read_masked_channels_TB(TString filename = "/mnt/HardDrive/beamData/as
 
     cout << " ---------------------------------- "<< islab <<" ----------------------------------------- " << endl;
 
+    int total_delam_chip[4] = {0};
     for (int ichip = 0; ichip < 16; ichip++)
     {
       totalmasked_chip[islab][ichip] = 0;
@@ -43,6 +47,7 @@ void test_read_masked_channels_TB(TString filename = "/mnt/HardDrive/beamData/as
         {
           totalmasked[islab]++;
           totalmasked_chip[islab][ichip]++;
+          total_delam_chip[ichip / 4]++;
         }
 
         float msk = detector.slab[0][islab].asu[0].skiroc[ichip].mask[ichn];
@@ -60,6 +65,19 @@ void test_read_masked_channels_TB(TString filename = "/mnt/HardDrive/beamData/as
     cout << "TOTAL Masked cells:" << 100. * totalmasked[islab] / 1024. << "%" << endl;
     mask_layer->Fill(14 - islab, 100. * totalmasked[islab] / 1024.);
     // mask_rate->Fill(islab, 100. * totalmasked[islab] / 1024.);
+
+
+    for (auto delam_sensor : total_delam_chip)
+    {
+      float delam_per = 100. * (float) delam_sensor / (float)(64*4);
+      cout << "Delaminated cell percentage in sensor: " << delam_per << "%" << endl;
+      total_sensors++;
+      if (70.0 < delam_per)
+      {
+        total_delam_per++;
+      }
+    }
+
 
     Float_t mask12_15 = 0;
     for(int ichip=12; ichip<16; ichip++){
@@ -123,7 +141,7 @@ void test_read_masked_channels_TB(TString filename = "/mnt/HardDrive/beamData/as
   p_rate->Draw();
 
   cout << "mean mask rate chips 12-15: " << tmpaverage / 15. << endl;
-
+  cout << "delaminated sensors: " << total_delam_per << " / " << total_sensors << " = " << 100. * total_delam_per / total_sensors << "%" << endl;
 
 
 

@@ -86,7 +86,7 @@ void drawPedestals()
   TCanvas *c_width_XY = new TCanvas("c_width_XY", "c_width_XY", 800, 800);
   TPad *p_width_XY    = new TPad("p_width_XY", "p_width_XY", 0,0,1,1);
   StylePad(p_width_XY,0.1,0.15,0.17,0.12);
-  widthXY->GetZaxis()->SetRangeUser(1, 2);
+  widthXY->GetZaxis()->SetRangeUser(1, 3);
   widthXY->GetZaxis()->SetTitle("Pedestal width [ADC]");
   widthXY->GetZaxis()->SetTitleOffset(1.4);
   widthXY->Draw("colz");
